@@ -1,0 +1,64 @@
+You are an elite presentation designer and content strategist. Your task is to generate a **complete, self-contained HTML presentation** from the provided source material.
+
+### DESIGN PHILOSOPHY
+- Each slide is a full-viewport section (`100vh`) with scroll-snap behavior
+- Pure CSS styling — **NO JavaScript, NO animations with JS**
+- Dark, modern aesthetic with gradient backgrounds, glass-morphism effects
+- Typography hierarchy: large impactful headings, readable body text
+- Each slide should have a DIFFERENT background style for visual variety
+- Use CSS gradients, subtle shadows, rounded cards, and proper spacing
+- Emojis as visual icons where appropriate (sparingly, tastefully)
+
+### SLIDE GUIDELINES
+- **Title slide**: Big bold title, subtitle, visually striking gradient background
+- **Content slides**: Use varied layouts — bullet cards, grids, timelines, comparison boxes, process flows, stat boxes, definition cards
+- **Data slides**: Use styled HTML tables, metric highlight boxes, or comparison grids
+- **Summary/Closing slide**: Clean wrap-up with key takeaways or thank-you
+
+### CONTENT RULES
+1. Extract and organize ALL key information from the source material
+2. Do NOT invent facts — only restructure and present what is provided
+3. Use clear, concise language suitable for presentations
+4. Each slide should have ONE clear focus/message
+5. Use bullet points (max 4-6 per slide), short phrases, not paragraphs
+6. Include relevant section headings, subheadings, and visual hierarchy
+7. Make content presentation-ready: professional, impactful, scannable
+
+### CSS REQUIREMENTS
+- Use CSS custom properties (`:root` variables) for theming
+- Scroll-snap on `html` element: `scroll-snap-type: y mandatory; scroll-behavior: smooth;`
+- Each `.slide` must be: `width: 100%; height: 100vh; scroll-snap-align: start;`
+- Responsive grid layouts using CSS Grid or Flexbox
+- Card-based layouts with `border-radius: 16px-24px`, subtle borders
+- Text colors: headings bright/white, body text slightly muted (#94a3b8 or similar)
+- Use `backdrop-filter: blur()` for glass effects where fitting
+- Float animation on title slide only (pure CSS `@keyframes`)
+- NO JavaScript whatsoever
+
+### THEME INSTRUCTIONS
+{{THEME_INSTRUCTIONS}}
+
+### SLIDE COUNT
+Target approximately {{SLIDE_COUNT}} slides. Adjust based on content density — quality over quantity.
+
+### ADDITIONAL INSTRUCTIONS FROM USER
+{{ADDITIONAL_INSTRUCTIONS}}
+
+### SOURCE MATERIAL
+"""
+{{MATERIAL_TEXT}}
+"""
+
+### OUTPUT FORMAT
+You MUST return **ONLY** a valid JSON object with this exact structure:
+
+{
+  "title": "Presentation Title",
+  "slide_count": <number>,
+  "theme": "brief theme description",
+  "html": "<full standalone HTML document as a single string>"
+}
+
+The `html` field must contain a COMPLETE, valid HTML document (<!DOCTYPE html> through </html>) with ALL CSS embedded in a <style> tag. No external dependencies.
+
+CRITICAL: The HTML must be a single continuous string with no line breaks inside the JSON string value — use proper JSON escaping. Return ONLY the JSON object, no markdown fences, no explanation.

@@ -1,0 +1,99 @@
+# Python 3.11 recommended
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+
+fastapi==0.115.6
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+fastapi-cache2==0.2.1
+
+pydantic==2.9.2
+pydantic-settings>=2.0.0
+python-dotenv==1.0.1
+
+langchain==0.2.16
+langchain-text-splitters==0.2.4
+langchain-google-genai==1.0.10
+langchain-nvidia-ai-endpoints
+langchain-ollama==0.1.3
+langchain-huggingface==0.0.3
+langgraph>=0.2.0
+
+numpy==1.26.4
+# torch==2.2.2
+sentence-transformers==3.1.1
+huggingface_hub==0.24.6
+tiktoken==0.7.0
+
+torch
+torchvision
+torchaudio
+transformers
+
+chromadb==0.5.5
+
+pypdf==4.3.1
+pymupdf==1.24.9
+pdfplumber==0.11.0  # For advanced table extraction
+pdf2image==1.17.0
+python-pptx==0.6.23  # For reading uploaded PPTX files (text extraction only)
+pillow==10.4.0
+
+# Document processing
+python-docx==1.1.2
+openpyxl==3.1.2
+xlrd==2.0.1
+
+# Optional: unstructured for better document parsing (DOCX, PPTX, HTML, emails)
+# Uncomment if you want enhanced structure extraction:
+# unstructured[local-inference]==0.11.6
+# unstructured-inference==0.7.24
+
+# OCR support
+pytesseract==0.3.10
+easyocr==1.7.1
+
+# Audio/Video transcription
+openai-whisper
+
+# Browser automation for screenshots
+playwright==1.40.0
+ffmpeg-python==0.2.0
+pydub==0.25.1
+
+# Web scraping and YouTube
+beautifulsoup4==4.12.3
+selenium==4.26.1
+webdriver-manager==4.0.2
+youtube-transcript-api>=1.2.0
+yt-dlp==2024.11.18
+
+# Additional file format support
+python-magic==0.4.27
+chardet==5.2.0
+json_repair==0.25.3
+
+requests==2.32.3
+httpx>=0.25.0
+fake-useragent>=1.4.0
+trafilatura>=1.6.0
+
+sqlalchemy[asyncio]==2.0.35  # kept for potential direct queries
+asyncpg==0.29.0             # kept for potential direct queries
+prisma==0.15.0
+redis==5.0.8
+
+# playwright removed — replaced by LibreOffice headless + poppler
+# pdf2image is already listed above
+
+TTS
+# moviepy — removed (no longer used; numpy concatenation replaced it)
+soundfile
+
+pytest>=7.0
+pytest-asyncio>=0.21
+
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+pydantic[email]

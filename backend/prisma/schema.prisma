@@ -1,0 +1,310 @@
+// Prisma Schema for KeplerLab AI Notebook
+// Run: prisma db push   (to sync schema to DB)
+// Run: prisma generate  (to generate Python client)
+
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ───────────────────────────────────────────────
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  email          String   @unique @db.VarChar(255)
+  username       String   @db.VarChar(100)
+  hashedPassword String   @map("hashed_password") @db.VarChar(255)
+  isActive       Boolean  @default(true) @map("is_active")
+  role           String   @default("user") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  notebooks        Notebook[]
+  materials        Material[]
+  chatSessions     ChatSession[]
+  chatMessages     ChatMessage[]
+  generatedContent GeneratedContent[]
+  refreshTokens    RefreshToken[]
+  backgroundJobs   BackgroundJob[]
+
+  @@map("users")
+}
+
+// ─── Notebooks ───────────────────────────────────────────
+
+model Notebook {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  owner            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materials        Material[]
+  chatSessions     ChatSession[]
+  chatMessages     ChatMessage[]
+  generatedContent GeneratedContent[]
+
+  @@index([userId])
+  @@map("notebooks")
+}
+
+// ─── Materials ───────────────────────────────────────────
+
+enum MaterialStatus {
+  pending
+  processing
+  ocr_running
+  transcribing
+  embedding
+  completed
+  failed
+}
+
+model Material {
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @map("user_id") @db.Uuid
+  notebookId   String?        @map("notebook_id") @db.Uuid
+  filename     String         @db.VarChar(255)
+  title        String?        @db.VarChar(510) // For custom titles (URLs, etc.)
+  originalText String?        @map("original_text") @db.Text
+  status       MaterialStatus @default(pending)
+  chunkCount   String         @default("0") @map("chunk_count") @db.VarChar(10)
+  sourceType   String?        @default("file") @map("source_type") @db.VarChar(50) // 'file', 'url', 'youtube', 'text'
+  metadata     String?        @db.Text // JSON string for extraction metadata
+  error        String?        @db.Text // Error message if processing failed
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  owner            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook         Notebook?          @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+  generatedContent GeneratedContent[]
+
+  @@index([userId])
+  @@index([notebookId])
+  @@index([sourceType])
+  @@map("materials")
+}
+
+// ─── Chat Sessions ───────────────────────────────────────
+
+model ChatSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  notebookId String   @map("notebook_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  title      String   @default("New Chat") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  notebook     Notebook      @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatMessages ChatMessage[]
+
+  @@index([notebookId])
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+// ─── Chat Messages ───────────────────────────────────────
+
+model ChatMessage {
+  id            String   @id @default(uuid()) @db.Uuid
+  notebookId    String   @map("notebook_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  chatSessionId String?  @map("chat_session_id") @db.Uuid
+  role          String   @db.VarChar(20)
+  content       String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  notebook    Notebook     @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatSession ChatSession? @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+
+  responseBlocks ResponseBlock[]
+
+  @@index([chatSessionId])
+  @@map("chat_messages")
+}
+
+// ─── Generated Content ───────────────────────────────────
+
+model GeneratedContent {
+  id          String   @id @default(uuid()) @db.Uuid
+  notebookId  String   @map("notebook_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  materialId  String?  @map("material_id") @db.Uuid
+  contentType String   @map("content_type") @db.VarChar(50)
+  title       String?  @db.VarChar(255)
+  data        Json
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  notebook Notebook  @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material? @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@map("generated_content")
+}
+
+// ─── Refresh Tokens (rotation tracking) ──────────────────
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
+  family    String   @db.VarChar(255) // Token family for rotation detection
+  used      Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@map("refresh_tokens")
+}
+
+// ─── Background Jobs ─────────────────────────────────────
+
+enum JobStatus {
+  pending
+  processing
+  ocr_running
+  transcribing
+  embedding
+  completed
+  failed
+}
+
+model BackgroundJob {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  jobType   String    @map("job_type") @db.VarChar(50)
+  status    JobStatus @default(pending)
+  result    Json?
+  error     String?   @db.Text
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("background_jobs")
+}
+
+// ─── User Token Usage ────────────────────────────────────
+
+model UserTokenUsage {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  date        DateTime @db.Date
+  tokensUsed  Int      @default(0) @map("tokens_used")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("user_token_usage")
+}
+
+// ─── API Usage Logs ──────────────────────────────────────
+
+model ApiUsageLog {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  endpoint           String   @db.VarChar(255)
+  materialIds        String[] @map("material_ids")
+  contextTokenCount  Int      @default(0) @map("context_token_count")
+  responseTokenCount Int      @default(0) @map("response_token_count")
+  modelUsed          String   @map("model_used") @db.VarChar(100)
+  llmLatency         Float    @default(0) @map("llm_latency")
+  retrievalLatency   Float    @default(0) @map("retrieval_latency")
+  totalLatency       Float    @default(0) @map("total_latency")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([endpoint])
+  @@index([createdAt])
+  @@map("api_usage_logs")
+}
+
+// ─── Agent Execution Log ─────────────────────────────────
+
+model AgentExecutionLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  notebookId    String   @map("notebook_id") @db.Uuid
+  intent        String   @db.VarChar(50)
+  confidence    Float    @default(0.0)
+  toolsUsed     String[] @map("tools_used")
+  stepsCount    Int      @default(0) @map("steps_count")
+  tokensUsed    Int      @default(0) @map("tokens_used")
+  elapsedTime   Float    @default(0.0) @map("elapsed_time")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([notebookId])
+  @@map("agent_execution_logs")
+}
+
+// ─── Response Blocks (for paragraph-level chat) ──────────
+
+model ResponseBlock {
+  id            String   @id @default(uuid()) @db.Uuid
+  chatMessageId String   @map("chat_message_id") @db.Uuid
+  blockIndex    Int      @map("block_index")
+  text          String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  chatMessage   ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
+
+  @@index([chatMessageId])
+  @@map("response_blocks")
+}
+
+// ─── Code Execution Sessions ─────────────────────────────
+
+model CodeExecutionSession {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  notebookId    String   @map("notebook_id") @db.Uuid
+  code          String   @db.Text
+  stdout        String?  @db.Text
+  stderr        String?  @db.Text
+  exitCode      Int      @default(-1) @map("exit_code")
+  hasChart      Boolean  @default(false) @map("has_chart")
+  elapsedTime   Float    @default(0.0) @map("elapsed_time")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([notebookId])
+  @@map("code_execution_sessions")
+}
+
+// ─── Research Sessions ───────────────────────────────────
+
+model ResearchSession {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  notebookId    String   @map("notebook_id") @db.Uuid
+  query         String   @db.Text
+  report        String?  @db.Text
+  sourcesCount  Int      @default(0) @map("sources_count")
+  queriesCount  Int      @default(0) @map("queries_count")
+  iterations    Int      @default(1)
+  elapsedTime   Float    @default(0.0) @map("elapsed_time")
+  sourceUrls    String[] @default([]) @map("source_urls")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([notebookId])
+  @@map("research_sessions")
+}
+

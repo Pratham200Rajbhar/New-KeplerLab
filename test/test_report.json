@@ -1,0 +1,1007 @@
+{
+  "timestamp": "2026-02-24T21:36:25.230815",
+  "base_url": "http://localhost:8000",
+  "tests": {
+    "total": 37,
+    "passed": 34,
+    "failed": 3,
+    "results": [
+      {
+        "name": "GET /health/simple",
+        "category": "Health",
+        "passed": true,
+        "duration_ms": 4.5,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"status\": \"ok\"\n}"
+      },
+      {
+        "name": "GET /health (full)",
+        "category": "Health",
+        "passed": true,
+        "duration_ms": 15.3,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"database\": \"ok\",\n  \"vector_db\": \"ok\",\n  \"llm\": \"ok\",\n  \"overall\": \"healthy\"\n}"
+      },
+      {
+        "name": "GET /models/status",
+        "category": "Models",
+        "passed": true,
+        "duration_ms": 6.3,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"models_directory\": \"data/models\",\n  \"cache_size\": \"8.7 GB\",\n  \"models\": {\n    \"embedding\": {\n      \"name\": \"BAAI/bge-m3\",\n      \"type\": \"sentence_transformer\",\n      \"required\": true,\n      \"available\": true,\n      \"status\": \"ready\"\n    }\n  },\n  \"summary\": {\n    \"total\": 1,\n    \"ready\": 1,\n    \"missing\": 0\n  }\n}"
+      },
+      {
+        "name": "GET /upload/supported-formats",
+        "category": "Upload",
+        "passed": true,
+        "duration_ms": 3.3,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"max_upload_size_mb\": 25,\n  \"file_extensions\": [\n    \"3gp\",\n    \"aac\",\n    \"avi\",\n    \"bmp\",\n    \"csv\",\n    \"doc\",\n    \"docx\",\n    \"eml\",\n    \"epub\",\n    \"flac\",\n    \"gif\",\n    \"html\",\n    \"jpg\",\n    \"m4a\",\n    \"md\",\n    \"mkv\",\n    \"mov\",\n    \"mp3\",\n    \"mp4\",\n    \"mpeg\",\n    \"msg\",\n    \"odp\",\n    \"ods\",\n    \"odt\",\n    \"ogg\",\n    \"pdf\",\n    \"png\",\n    \"ppt\",\n    \"pptx\",\n    \"rtf\",\n    \"svg\",\n    \"tiff\",\n    \"txt\",\n    \"wav\",\n    \"webm\",\n    \"webp\",\n    \"wmv\",\n    \"xls\",\n    \"xlsx\"\n  ],\n  \"ca"
+      },
+      {
+        "name": "POST /auth/signup",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 394.7,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"da7e6bb2-5270-4a9c-b3af-0f4fd7bb3de4\",\n  \"email\": \"tester_68c7d0@test.com\",\n  \"username\": \"test_runner\",\n  \"role\": \"user\"\n}"
+      },
+      {
+        "name": "POST /auth/login",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 399.8,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkYTdlNmJiMi01MjcwLTRhOWMtYjNhZi0wZjRmZDdiYjNkZTQiLCJleHAiOjE3NzE5NTAwMDYsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyOWQ0ZTFhMC02Y2QyLTRiOTMtOWMxYS00Y2E0NmVhYjAwNTMifQ.GbsXgaJy4UHpQb2mybJT-JpjjzbOMIrLx5Csx3E10Qc\",\n  \"token_type\": \"bearer\"\n}"
+      },
+      {
+        "name": "GET /auth/me",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 5.3,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"da7e6bb2-5270-4a9c-b3af-0f4fd7bb3de4\",\n  \"email\": \"tester_68c7d0@test.com\",\n  \"username\": \"test_runner\",\n  \"role\": \"user\"\n}"
+      },
+      {
+        "name": "POST /auth/refresh",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 17.7,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkYTdlNmJiMi01MjcwLTRhOWMtYjNhZi0wZjRmZDdiYjNkZTQiLCJleHAiOjE3NzE5NTAwMDcsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI3MTc0NGI4OC1hZDM4LTRkMWMtYWEyOC00YWU5OGRjMDVjY2EifQ.vnWgW4OEo1uAcTS8-PTrEuNOYaF0EXVUrO277wgrSlQ\",\n  \"token_type\": \"bearer\"\n}"
+      },
+      {
+        "name": "POST /notebooks (create)",
+        "category": "Notebooks",
+        "passed": true,
+        "duration_ms": 11.4,
+        "status_code": 201,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"9b87faa5-12f5-46c6-9cd8-e2fefe82f93b\",\n  \"name\": \"IaaS Test Notebook\",\n  \"description\": \"Testing with IaaS PDF\",\n  \"created_at\": \"2026-02-24T16:05:07.096000+00:00\",\n  \"updated_at\": \"2026-02-24T16:05:07.096000+00:00\"\n}"
+      },
+      {
+        "name": "GET /notebooks (list)",
+        "category": "Notebooks",
+        "passed": true,
+        "duration_ms": 14.4,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "[\n  {\n    \"id\": \"345c50aa-0a34-4bb7-a055-c24697c0fc6c\",\n    \"name\": \"IaaS Test Notebook 2\",\n    \"description\": null,\n    \"created_at\": \"2026-02-24T16:05:07.108000+00:00\",\n    \"updated_at\": \"2026-02-24T16:05:07.108000+00:00\"\n  }\n]"
+      },
+      {
+        "name": "GET /notebooks/:id",
+        "category": "Notebooks",
+        "passed": true,
+        "duration_ms": 12.9,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"345c50aa-0a34-4bb7-a055-c24697c0fc6c\",\n  \"name\": \"IaaS Test Notebook 2\",\n  \"description\": null,\n  \"created_at\": \"2026-02-24T16:05:07.108000+00:00\",\n  \"updated_at\": \"2026-02-24T16:05:07.108000+00:00\"\n}"
+      },
+      {
+        "name": "PUT /notebooks/:id (rename)",
+        "category": "Notebooks",
+        "passed": true,
+        "duration_ms": 21.9,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"345c50aa-0a34-4bb7-a055-c24697c0fc6c\",\n  \"name\": \"IaaS Test (Renamed)\",\n  \"description\": \"Updated description\",\n  \"created_at\": \"2026-02-24T16:05:07.108000+00:00\",\n  \"updated_at\": \"2026-02-24T16:05:07.169000+00:00\"\n}"
+      },
+      {
+        "name": "POST /upload (IaaS.pdf)",
+        "category": "Upload",
+        "passed": true,
+        "duration_ms": 51.0,
+        "status_code": 202,
+        "detail": "",
+        "response_snippet": "{\n  \"material_id\": \"c98d77fe-494e-40c8-a373-f47825fb48de\",\n  \"job_id\": \"acc32b2b-4b9a-4440-b5d3-0861240f4d01\",\n  \"filename\": \"4. IaaS.pdf\",\n  \"status\": \"pending\"\n}"
+      },
+      {
+        "name": "Material processing completes",
+        "category": "Upload",
+        "passed": true,
+        "duration_ms": 0,
+        "status_code": null,
+        "detail": "",
+        "response_snippet": ""
+      },
+      {
+        "name": "GET /materials (list)",
+        "category": "Materials",
+        "passed": true,
+        "duration_ms": 14.7,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "[\n  {\n    \"id\": \"c98d77fe-494e-40c8-a373-f47825fb48de\",\n    \"filename\": \"4. IaaS.pdf\",\n    \"title\": \"4. IaaS\",\n    \"status\": \"completed\",\n    \"chunk_count\": \"32\",\n    \"source_type\": \"file\",\n    \"created_at\": \"2026-02-24T16:05:07.210000+00:00\"\n  }\n]"
+      },
+      {
+        "name": "GET /materials/:id/text",
+        "category": "Materials",
+        "passed": true,
+        "duration_ms": 11.2,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"text\": \"# Chapter outline\\n\\nIaaS\\n\\uf0a7\\nCharacteristics of IaaS\\n\\uf0a7\\nUtilization\\n\\uf0a7\\nBenefits and Futures\\n\\uf0a7\\nAdvantages and disadvantages\\n\\uf0a7\\nVirtualization\\n\\uf0a7\\n\\n2\\n\\n# What is IaaS?\\n\\nAll cloud computing services it provides access to computing resource in a\\n\\uf0a7\\nvirtualized environment, \\u2015the Cloud\\u2016, across a public connection, usually the\\ninternet.\\nIn the case of IaaS the computing resource provided is specifically that of\\n\\uf0a7\\nvirtualized"
+      },
+      {
+        "name": "PATCH /materials/:id (rename)",
+        "category": "Materials",
+        "passed": true,
+        "duration_ms": 16.2,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"c98d77fe-494e-40c8-a373-f47825fb48de\",\n  \"filename\": \"4. IaaS.pdf\",\n  \"status\": \"completed\",\n  \"chunk_count\": \"32\",\n  \"source_type\": \"file\"\n}"
+      },
+      {
+        "name": "POST /upload/text",
+        "category": "Upload",
+        "passed": true,
+        "duration_ms": 21.0,
+        "status_code": 202,
+        "detail": "",
+        "response_snippet": "{\n  \"material_id\": \"e3cfa8ce-bdfb-4c21-b020-b5ce6b416496\",\n  \"job_id\": \"66cfc064-5cdc-4fd4-8461-7e095bdce35e\",\n  \"filename\": \"IaaS Summary Text\",\n  \"title\": \"IaaS Summary Text\",\n  \"status\": \"pending\",\n  \"source_type\": \"text\"\n}"
+      },
+      {
+        "name": "POST /chat/sessions (create)",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 20.8,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"session_id\": \"1d47d198-c2c6-4ee6-bae1-e2fff97d2283\"\n}"
+      },
+      {
+        "name": "GET /chat/sessions/:notebook_id",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 17.0,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"sessions\": [\n    {\n      \"id\": \"1d47d198-c2c6-4ee6-bae1-e2fff97d2283\",\n      \"title\": \"IaaS Test Chat\",\n      \"created_at\": \"2026-02-24T16:05:27.488000+00:00\",\n      \"messages_text\": \"\"\n    }\n  ]\n}"
+      },
+      {
+        "name": "POST /chat (non-streaming)",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 20434.8,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"session_id\": \"1d47d198-c2c6-4ee6-bae1-e2fff97d2283\",\n  \"answer\": \"I'm sorry, I couldn't complete your request within the allowed number of steps. Please try simplifying your request.\",\n  \"confidence\": 0.0,\n  \"context_tokens\": 9,\n  \"response_tokens\": 24,\n  \"total_tokens\": 33,\n  \"model_max_tokens\": 1000000,\n  \"truncated\": false,\n  \"agent_metadata\": {\n    \"intent\": \"QUESTION\",\n    \"confidence\": 0.5,\n    \"tools_used\": [\n      \"rag_tool\",\n      \"rag_tool\",\n      \"rag_tool\",\n      \"rag_tool\",\n   "
+      },
+      {
+        "name": "POST /chat (SSE streaming)",
+        "category": "Chat",
+        "passed": false,
+        "duration_ms": 23054.2,
+        "status_code": 200,
+        "detail": "Received 0 tokens, done=True",
+        "response_snippet": "tokens=0"
+      },
+      {
+        "name": "POST /chat/suggestions",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 3034.1,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"suggestions\": []\n}"
+      },
+      {
+        "name": "GET /chat/history/:notebook_id",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 16.6,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "[\n  {\n    \"id\": \"33977e16-6efa-4685-a237-d39a18b78ef9\",\n    \"role\": \"user\",\n    \"content\": \"What are the main components of IaaS?\",\n    \"created_at\": \"2026-02-24T16:05:47.936000+00:00\",\n    \"blocks\": []\n  },\n  {\n    \"id\": \"b3e0610a-6243-4988-bbf3-e0811ef5ce17\",\n    \"role\": \"assistant\",\n    \"content\": \"I'm sorry, I couldn't complete your request within the allowed number of steps. Please try simplifying your request.\",\n    \"created_at\": \"2026-02-24T16:05:47.940000+00:00\",\n    \"blocks\": [\n      {\n"
+      },
+      {
+        "name": "POST /flashcard",
+        "category": "Flashcards",
+        "passed": false,
+        "duration_ms": 3157.5,
+        "status_code": 500,
+        "detail": "Failed to generate flashcards",
+        "response_snippet": ""
+      },
+      {
+        "name": "POST /quiz",
+        "category": "Quiz",
+        "passed": false,
+        "duration_ms": 3119.7,
+        "status_code": 500,
+        "detail": "Failed to generate quiz",
+        "response_snippet": ""
+      },
+      {
+        "name": "POST /search/web",
+        "category": "Search",
+        "passed": true,
+        "duration_ms": 3952.3,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "[\n  {\n    \"title\": \"What is IaaS (Infrastructure as a Service)? | Google Cloud\",\n    \"link\": \"https://cloud.google.com/learn/what-is-iaas\",\n    \"snippet\": \"What isIaaS?IaaS, or Infrastructure as a Service, is acloudcomputingmodel that provides on-demand access tocomputingresources such as servers, storage, networking, and virtualization.IaaSis attractive because acquiringcomputingresources to run applications or store data the traditional way requires time and capital.\"\n  },\n  {\n    \"title\": \"Wh"
+      },
+      {
+        "name": "POST /agent/execute (SSE)",
+        "category": "Agent",
+        "passed": true,
+        "duration_ms": 782.9,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": ""
+      },
+      {
+        "name": "GET /jobs/:job_id",
+        "category": "Jobs",
+        "passed": true,
+        "duration_ms": 11.5,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"id\": \"acc32b2b-4b9a-4440-b5d3-0861240f4d01\",\n  \"type\": \"material_processing\",\n  \"status\": \"completed\",\n  \"created_at\": \"2026-02-24T16:05:07.218000+00:00\",\n  \"updated_at\": \"2026-02-24T16:05:24.388000+00:00\",\n  \"result\": {\n    \"user_id\": \"da7e6bb2-5270-4a9c-b3af-0f4fd7bb3de4\",\n    \"filename\": \"4. IaaS.pdf\",\n    \"file_path\": \"./data/uploads/da7e6bb2-5270-4a9c-b3af-0f4fd7bb3de4/3cc72498b98e4a89a2f287bdf5e3343a_4. IaaS.pdf\",\n    \"material_id\": \"c98d77fe-494e-40c8-a373-f47825fb48de\",\n    \"noteboo"
+      },
+      {
+        "name": "GET /notebooks/:id/content",
+        "category": "Content",
+        "passed": true,
+        "duration_ms": 11.8,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": ""
+      },
+      {
+        "name": "GET /notebooks (no auth \u2192 401/403)",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 4.7,
+        "status_code": 403,
+        "detail": "",
+        "response_snippet": "{\n  \"detail\": \"Not authenticated\"\n}"
+      },
+      {
+        "name": "GET /auth/me (bad token \u2192 401)",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 3.7,
+        "status_code": 401,
+        "detail": "",
+        "response_snippet": "{\n  \"detail\": \"Invalid or expired token\"\n}"
+      },
+      {
+        "name": "DELETE /chat/history/:notebook_id",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 18.0,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"cleared\": true\n}"
+      },
+      {
+        "name": "DELETE /chat/sessions/:session_id",
+        "category": "Chat",
+        "passed": true,
+        "duration_ms": 13.7,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"deleted\": true\n}"
+      },
+      {
+        "name": "DELETE /materials/:id",
+        "category": "Materials",
+        "passed": true,
+        "duration_ms": 20.6,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"deleted\": true\n}"
+      },
+      {
+        "name": "DELETE /notebooks/:id",
+        "category": "Notebooks",
+        "passed": true,
+        "duration_ms": 18.0,
+        "status_code": 204,
+        "detail": "",
+        "response_snippet": ""
+      },
+      {
+        "name": "POST /auth/logout",
+        "category": "Auth",
+        "passed": true,
+        "duration_ms": 14.6,
+        "status_code": 200,
+        "detail": "",
+        "response_snippet": "{\n  \"message\": \"Logged out successfully\"\n}"
+      }
+    ]
+  },
+  "log_analysis": {
+    "total_lines": 23470,
+    "error_count": 102,
+    "warning_count": 78,
+    "info_count": 6782,
+    "endpoints_hit": {
+      "GET /jobs/22c7c04f-addf-4e33-b31b-cf02068db076": 280,
+      "GET /materials": 165,
+      "GET /notebooks": 158,
+      "POST /auth/refresh": 141,
+      "GET /auth/me": 89,
+      "GET /notebooks/a97ab67a-718a-45b9-8c87-38251698c2aa": 60,
+      "GET /notebooks/a97ab67a-718a-45b9-8c87-38251698c2aa/content": 50,
+      "GET /chat/history/a97ab67a-718a-45b9-8c87-38251698c2aa": 47,
+      "POST /chat": 35,
+      "POST /upload/batch": 20,
+      "GET /notebooks/38acf154-dc2c-4175-a658-8a955d739d2f": 20,
+      "POST /auth/login": 18,
+      "GET /notebooks/a3bf09c3-8bd4-4c78-9c82-876c95be9fec": 18,
+      "POST /ppt": 17,
+      "GET /chat/history/38acf154-dc2c-4175-a658-8a955d739d2f": 13,
+      "GET /notebooks/38acf154-dc2c-4175-a658-8a955d739d2f/content": 13,
+      "GET /notebooks/3105ad7e-051a-438f-b57e-1943d71e7aed": 12,
+      "GET /chat/history/a3bf09c3-8bd4-4c78-9c82-876c95be9fec": 12,
+      "GET /notebooks/a3bf09c3-8bd4-4c78-9c82-876c95be9fec/content": 12,
+      "GET /chat/history/9c9dbf2f-5cc0-4ff3-88d1-9a43ddc0da48": 11,
+      "GET /notebooks/9c9dbf2f-5cc0-4ff3-88d1-9a43ddc0da48/content": 11,
+      "GET /notebooks/44f2428a-11ec-41fd-9564-5f3f0e97a289": 11,
+      "POST /presentation": 10,
+      "GET /notebooks/44f2428a-11ec-41fd-9564-5f3f0e97a289/content": 10,
+      "GET /chat/history/44f2428a-11ec-41fd-9564-5f3f0e97a289": 10,
+      "GET /api/presentation/slides/028ae193-ebb6-4444-82fc-fda0f113d8b2/9a06afd8979e/slide_1.png": 10,
+      "GET /api/presentation/slides/028ae193-ebb6-4444-82fc-fda0f113d8b2/ba302a2d8be9/slide_1.png": 10,
+      "GET /chat/history/3105ad7e-051a-438f-b57e-1943d71e7aed": 9,
+      "GET /notebooks/3105ad7e-051a-438f-b57e-1943d71e7aed/content": 9,
+      "GET /notebooks/9c9dbf2f-5cc0-4ff3-88d1-9a43ddc0da48": 8
+    },
+    "errors": [
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionAddEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given",
+      "PPT pipeline failed: job=06b0e292-2297-4980-99b1-4dfc7eb31e28 \u2014 Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input typ",
+      "Failed to update job 6e6c219d-1718-4aeb-bf07-3058f13e7980: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job status for job 6e6c219d-1718-4aeb-bf07-3058f13e7980: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to update job 6e6c219d-1718-4aeb-bf07-3058f13e7980: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "PPT pipeline failed: job=6e6c219d-1718-4aeb-bf07-3058f13e7980 \u2014 MyOpenLM._call() takes from 2 to 3 positional arguments but 4 were given",
+      "Failed to update job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job status for job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Failed to update job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job 421d9372-356b-4772-acf1-bd580370825d: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "Failed to update job status for job 421d9372-356b-4772-acf1-bd580370825d: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Failed to update job 421d9372-356b-4772-acf1-bd580370825d: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed input type for",
+      "PPT pipeline failed: job=9824a060-a961-4e4c-a32a-45b6411215ca \u2014 Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.",
+      "PPT pipeline failed: job=c3f1b1ac-eacc-4f6a-8e54-08db14429c49 \u2014 ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))",
+      "Presentation generation failed: LLM validation failed after 3 attempts: 2 validation errors for PPTOutput",
+      "Presentation generation failed: LLM validation failed after 3 attempts: 2 validation errors for PPTOutput",
+      "Presentation generation failed: LLM validation failed after 3 attempts: 1 validation error for PPTOutput",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionAddEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionAddEvent: capture() takes 1 positional argument but 3 were given",
+      "Presentation generation failed: LLM validation failed after 3 attempts: LLM response is empty after stripping reasoning tags. Original length: 0",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionAddEvent: capture() takes 1 positional argument but 3 were given",
+      "PPT screenshot capture FAILED after 0.00s: asyncio.run() cannot be called from a running event loop",
+      "PPT screenshot capture FAILED after 0.00s: asyncio.run() cannot be called from a running event loop",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given",
+      "Failed to send telemetry event CollectionAddEvent: capture() takes 1 positional argument but 3 were given",
+      "PPT screenshot capture FAILED after 0.00s: asyncio.run() cannot be called from a running event loop",
+      "Screenshot capture FAILED | user=028ae193-ebb6-4444-82fc-fda0f113d8b2 | presentation_id=2e184e888ea9 | error=Executable doesn't exist at /home/pratham/.cache/ms-playwright/chromium-1091/chrome-linux/c",
+      "PPT screenshot capture FAILED after 0.51s: Executable doesn't exist at /home/pratham/.cache/ms-playwright/chromium-1091/chrome-linux/chrome",
+      "Screenshot capture FAILED | user=028ae193-ebb6-4444-82fc-fda0f113d8b2 | presentation_id=6dd0ec031e52 | error=Executable doesn't exist at /home/pratham/.cache/ms-playwright/chromium-1091/chrome-linux/c",
+      "PPT screenshot capture FAILED after 0.21s: Executable doesn't exist at /home/pratham/.cache/ms-playwright/chromium-1091/chrome-linux/chrome",
+      "Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given"
+    ],
+    "warnings": [
+      "No refresh token cookie found. Looking for: refresh_token",
+      "Refresh token not found in DB for user 55ed4b3b-a1fe-4887-8827-a7d2dc2a4624",
+      "Token validation failed - clearing cookie",
+      "Failed to update job status for job 6e6c219d-1718-4aeb-bf07-3058f13e7980: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Failed to update job status for job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Failed to update job status for job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Diagram chart_1: LLM reports insufficient data \u2014 Insufficient data in source for this diagram type",
+      "Failed to update job status for job 70eefda2-6a46-4a6c-b515-f767b6a68b56: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Failed to update job status for job 421d9372-356b-4772-acf1-bd580370825d: Unable to match input value to any allowed input type for the field. Parse errors: [Unable to match input value to any allowed",
+      "Slide 1 validation failed (attempt 1): Significant HTML tag imbalance detected",
+      "Slide 3 validation failed (attempt 1): Hardcoded hex color in class attribute: ['[#1877F2]', '[#1877F2]']",
+      "Slide 2 validation failed (attempt 1): Significant HTML tag imbalance detected",
+      "Slide 2 validation failed (attempt 2): Significant HTML tag imbalance detected; Design heuristic: non-title slide lacks visual polish (needs backdrop-blur, shadow-xl+, rounded-2xl+, or semi-transparen",
+      "Slide 2 accepted after 2 retries with errors: Root element is not a <section>",
+      "Slide 3 validation failed (attempt 1): Significant HTML tag imbalance detected",
+      "Slide 3 validation failed (attempt 2): Root element is not a <section>",
+      "Slide 3 accepted after 2 retries with errors: Root element is not a <section>",
+      "PPT generated with 2 warnings: ['Slide 2 accepted with validation warnings: Root element is not a <section>', 'Slide 3 accepted with validation warnings: Root element is not a <section>']",
+      "Async LLM validation failed (attempt 1): 1 validation error for PresentationPlan",
+      "Async LLM validation failed (attempt 2): 1 validation error for PresentationPlan",
+      "Section 0 validation failed (attempt 1): Wrong id: expected 'section-0', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 0 validation failed (attempt 2): Wrong id: expected 'section-0', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 0 accepted after 2 retries with errors: Wrong id: expected 'section-0', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 1 validation failed (attempt 1): Wrong id: expected 'section-1', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 1 validation failed (attempt 2): Wrong id: expected 'section-1', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 1 accepted after 2 retries with errors: Wrong id: expected 'section-1', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 2 validation failed (attempt 1): Wrong id: expected 'section-2', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 2 validation failed (attempt 2): Wrong id: expected 'section-2', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Section 2 accepted after 2 retries with errors: Wrong id: expected 'section-2', got 'none'; Missing aria-label on <section>; Section has too little text content (< 20 chars)",
+      "Async LLM validation failed (attempt 1): 1 validation error for PresentationPlan",
+      "Async LLM validation failed (attempt 2): 1 validation error for PresentationPlan",
+      "Async LLM validation failed (attempt 1): 1 validation error for PresentationPlan",
+      "LLM validation failed (attempt 1): 1 validation error for PPTOutput",
+      "LLM validation failed (attempt 2): 2 validation errors for PPTOutput",
+      "LLM validation failed (attempt 3): 2 validation errors for PPTOutput",
+      "LLM validation failed (attempt 1): 1 validation error for PPTOutput",
+      "LLM validation failed (attempt 2): 2 validation errors for PPTOutput",
+      "LLM validation failed (attempt 3): 2 validation errors for PPTOutput",
+      "LLM validation failed (attempt 1): 1 validation error for PPTOutput",
+      "LLM validation failed (attempt 2): 1 validation error for PPTOutput",
+      "LLM validation failed (attempt 3): 1 validation error for PPTOutput",
+      "LLM validation failed (attempt 1): LLM response is empty after stripping reasoning tags. Original length: 0",
+      "Raw LLM response (first 1000 chars):",
+      "Parsed data: N/A",
+      "LLM validation failed (attempt 2): LLM response is empty after stripping reasoning tags. Original length: 0",
+      "Raw LLM response (first 1000 chars):",
+      "Parsed data: N/A",
+      "LLM validation failed (attempt 3): LLM response is empty after stripping reasoning tags. Original length: 0",
+      "Raw LLM response (first 1000 chars):",
+      "Parsed data: N/A"
+    ],
+    "slow_requests": [
+      "POST /chat \u2192 31.40s [200]",
+      "POST /chat \u2192 18.73s [200]",
+      "POST /chat \u2192 15.04s [200]",
+      "POST /chat \u2192 18.64s [200]",
+      "POST /chat \u2192 12.58s [200]",
+      "POST /chat \u2192 23.13s [200]",
+      "POST /chat \u2192 60.82s [200]",
+      "POST /flashcard \u2192 59.63s [200]",
+      "POST /chat \u2192 66.93s [200]",
+      "POST /ppt \u2192 11.31s [500]",
+      "POST /ppt \u2192 23.53s [500]",
+      "POST /ppt \u2192 12.73s [200]",
+      "POST /ppt \u2192 83.05s [500]",
+      "POST /ppt \u2192 50.89s [500]",
+      "POST /ppt \u2192 60.77s [200]",
+      "POST /ppt \u2192 49.03s [200]",
+      "POST /ppt \u2192 137.29s [200]",
+      "POST /presentation \u2192 89.88s [200]",
+      "POST /presentation \u2192 68.99s [200]",
+      "POST /presentation \u2192 16.19s [200]",
+      "POST /presentation \u2192 6.86s [200]",
+      "POST /presentation \u2192 8.74s [200]",
+      "POST /presentation \u2192 143.43s [200]",
+      "POST /chat \u2192 5.18s [200]",
+      "POST /chat \u2192 16.68s [200]",
+      "POST /chat \u2192 9.96s [200]",
+      "POST /presentation \u2192 65.35s [200]",
+      "POST /presentation \u2192 97.42s [200]",
+      "POST /chat \u2192 12.88s [200]",
+      "POST /presentation \u2192 89.01s [200]"
+    ],
+    "error_rate": 0.3450258769407705,
+    "avg_response_time_ms": 3333.2,
+    "status_codes": {
+      "200": 1604,
+      "404": 96,
+      "401": 16,
+      "204": 9,
+      "403": 7,
+      "500": 6,
+      "405": 1
+    }
+  },
+  "output_analysis": {
+    "podcast_files": [
+      {
+        "name": ".gitkeep",
+        "size_kb": 0.0
+      }
+    ],
+    "presentation_files": [
+      "slide_6.png",
+      "slide_4.png",
+      "slide_8.png",
+      "slide_5.png",
+      "slide_1.png",
+      "slide_7.png",
+      "slide_2.png",
+      "slide_3.png",
+      "slide_9.png",
+      "slide_6.png",
+      "slide_4.png",
+      "slide_5.png",
+      "slide_1.png",
+      "slide_2.png",
+      "slide_3.png",
+      "slide_6.png",
+      "slide_10.png",
+      "slide_20.png",
+      "slide_18.png",
+      "slide_4.png",
+      "slide_8.png",
+      "slide_17.png",
+      "slide_5.png",
+      "slide_1.png",
+      "slide_16.png",
+      "slide_7.png",
+      "slide_2.png",
+      "slide_15.png",
+      "slide_14.png",
+      "slide_13.png",
+      "slide_19.png",
+      "slide_3.png",
+      "slide_11.png",
+      "slide_12.png",
+      "slide_9.png",
+      "slide_6.png",
+      "slide_10.png",
+      "slide_4.png",
+      "slide_8.png",
+      "slide_5.png",
+      "slide_1.png",
+      "slide_7.png",
+      "slide_2.png",
+      "slide_3.png",
+      "slide_11.png",
+      "slide_9.png",
+      "slide_6.png",
+      "slide_10.png",
+      "slide_4.png",
+      "slide_8.png",
+      "slide_5.png",
+      "slide_1.png",
+      "slide_7.png",
+      "slide_2.png",
+      "slide_3.png",
+      "slide_11.png",
+      "slide_12.png",
+      "slide_9.png",
+      "slide_6.png",
+      "slide_10.png",
+      "slide_4.png",
+      "slide_8.png",
+      "slide_5.png",
+      "slide_1.png",
+      "slide_7.png",
+      "slide_2.png",
+      "slide_3.png",
+      "slide_11.png",
+      "slide_12.png",
+      "slide_9.png"
+    ],
+    "upload_files": [
+      "1. Pre-req.pdf",
+      "2. Introduction.pdf",
+      "4. IaaS.pdf",
+      "3. Web-Service and Cloud Computing.pdf",
+      "b4d605adec93410e90fde04dda64c92a_4. IaaS.pdf",
+      "41030d8020f142159df2bf770406aeb3_4. IaaS.pdf",
+      "a9f760fe404b4b1eac6485d0377a1b52_4. IaaS.pdf",
+      "bc9bbb610d1a4a7f8189ca6bf372cfca_blockchain Unit 3.pptx.pdf",
+      "e604a0eb59c24e06b6cdd2df12cd7749_2. Introduction.pdf",
+      "289734e8b95447fd872792662a044027_4. IaaS.pdf",
+      "8702cec5cf514d09ac0311ee064e4f8d_dataset2.csv",
+      "1bebb2a6c4b34adca4645f8fc24adaa8_blockchain unit 1.pptx.pdf",
+      "0c4b8d53bfa44ec088f28f1eaa300b38_4. IaaS.pdf",
+      "c8e0001041bd4b12957db07eed0cfb94_3. Web-Service and Cloud Computing.pdf",
+      "1472d8259a944a808da038f3912f9743_Unit_1_Introduction_Final.pdf",
+      "f22f0cbca602438087b2e98f5c1d952c_2. Network Models.pdf",
+      "a6f21b18c55e4201a72668d5a10f810d_4. IaaS.pdf",
+      "6847bf31a30f46dbb33a7aefe5a7ca1b_3. Web-Service and Cloud Computing.pdf",
+      "cce75081c8b04ec3a238a71843a6ce80_1. Pre-req.pdf",
+      "ffc538a208bc4a7eb6ebb7a0ca35ed98_3. Web-Service and Cloud Computing.pdf",
+      "79097ca46e34423bbba7c0ee9af66bba_4. IaaS.pdf",
+      "28d9954124d14b7aa04d76ece133aa10_2. Introduction.pdf",
+      "e23724882a1a4f45936ec30557891db9_blockchain Unit 2.pptx.pdf",
+      "85f48b463b5f49639964099a602e7eaf_zoo (1).csv",
+      "959c826c2df74167b0decdbbb3ca354e_2. Introduction.pdf",
+      "42a20b6f59bf45f990c4b852e33d6c66_1. Pre-req.pdf",
+      "472795d25b8942999102f45309a02858_blockchain Unit 2.pptx.pdf",
+      "27b12cc2d7554674830f5a9a92af79b5_blockchain unit 1.pptx.pdf",
+      "c676843519ab4262ab3fe7124ae7dd66_1. Introduction of Data Communication.pdf",
+      "9c2a1ec3fe3f466b850635d7889ac83d_2. Introduction.pdf",
+      "2b0647e269a345d3aa6f9b81a334eb50_Mall_Customers (1).csv",
+      "4b0d711450114af6850f136217cd69fb_4. IaaS.pdf",
+      "5a0fdd8c615c4b7cb60f2d235d0bcee6_4. IaaS.pdf",
+      "749933913b12490fb5fc0a3010764463_2. Introduction.pdf",
+      "97613019858140e9a1c8e69cf0517faf_1. Pre-req.pdf",
+      "6012dda73a254d2fbcc76931693bee04_1. Pre-req.pdf",
+      "5e13ad66959b400ab1dd93a77438631a_4. IaaS.pdf",
+      "3e019b8924f945b79f06bc8b4aa92161_blockchain unit 1.pptx.pdf",
+      "32abb68113f9491187c475e90de8c72c_blockchain Unit 2.pptx.pdf",
+      "f8b05ace20514500a61a01b0964d2885_4. IaaS.pdf",
+      "01810b7a29de4dbc82080b8f5be3bbff_1. Pre-req.pdf",
+      "ef47714de4534e22a2c07d5d9590e79e_4. IaaS.pdf",
+      "9f797a0718f744ecbda6b8782cabb7dc_blockchain Unit 3.pptx.pdf",
+      "690dfeaa8d37495d84b552fd38ea898d_4. IaaS.pdf",
+      "54e10a8bbc304a96a009ebd48716579e_blockchain Unit 2.pptx.pdf",
+      "9b10e7f0e4a745efaef062b270f49d70_blockchain unit 1.pptx.pdf",
+      "9b22c0af7a4040caa12d23ce175ab5c1_2. Introduction.pdf",
+      "3edd6fcaa80242fd9b69ec1db34eb79f_4. IaaS.pdf",
+      "07039dc03cc3479dac0c14990b1f2847_4. IaaS.pdf",
+      "fdfa0a9295d54579bbeb8fa5809136a5_4. IaaS.pdf",
+      "763be37368bf425b9ed539df3ebc5008_blockchain Unit 3.pptx.pdf",
+      "Unit 2.pdf",
+      "b611a780_Unit 5.pdf",
+      "Unit 1.pdf",
+      "1823c986_CC_UNIT_2.pdf",
+      "589af0d6_ALL_MERGED_NEED_TO_PRINT_merged.pdf",
+      "4ef8d61a03cd4e37a42581f97cf017ab_4. IaaS.pdf",
+      "1. Pre-req.pdf",
+      "httpswwwyoutubecomwatchvd2jy38vshxi.mp3",
+      "2. Introduction.pdf",
+      "4. IaaS.pdf",
+      "3. Web-Service and Cloud Computing.pdf",
+      "45a4e1b0_22012021022_BCT_Practical-10.pdf",
+      "cd9ece4c_Unit 1.pdf",
+      "de5a01fd_Unit 1.pdf",
+      "2e0b9c5d_Unit 2.pdf",
+      "8e9b8548_OS_Unit-1.pdf",
+      "cb04335c_Unit 2.pdf",
+      "06633533_22012021022_BCT_Practical-11.pdf",
+      "ef7b19b1_4. IaaS.pdf",
+      "6a9d0610_Unit 2.pdf",
+      "a554a1bc_2. Introduction.pdf",
+      "99ea7a53_3. Web-Service and Cloud Computing.pdf",
+      "8f4d131a_22012021022_BCT_Practical-1.pdf",
+      "22c9e5ca_22012021022_BCT_Practical-7.pdf",
+      "4f985bed_3. Web-Service and Cloud Computing.pdf",
+      "c99eded4_Unit 2.pdf",
+      "a3273f87_22012021022_BCT_Practical-3.pdf",
+      "c659fd25_Unit 2.pdf",
+      "b6993233_1. Pre-req.pdf",
+      "b3463598_22012021022_BCT_Practical-4-5-6.pdf",
+      "d6f346a1_Unit 2.pdf",
+      "ff4d1cf7_2. Introduction.pdf",
+      "fb28a451_22012021022_BCT_Practical-2.pdf",
+      "850a3e4b_4. IaaS.pdf",
+      "08570603_22012021022_BCT_Practical-8.pdf",
+      "b254eacb_22012021022_BCT_Practical-9.pdf",
+      "caf80c1b881946649e775feff5834886_OS_Unit-1.pdf",
+      "01604b8b53104919b8587a9137bbd467_blockchain unit 1.pptx.pdf",
+      "1e5db5f79fa74efa8654330c99146630_Unit 1.pdf",
+      "9728e9c52b3d4afdbbc94ad07a2e3b2f_4. IaaS.pdf",
+      "05886e707079462d96a99f0ca696f3f3_4. IaaS.pdf",
+      "d317809af88641d69fd797237e0b63f5_4. IaaS.pdf",
+      "93542a80570c414a8118aa86ad0d6c1d_4. IaaS.pdf",
+      "7ef58cbf96784f348b1d1ba5365222be_4. IaaS.pdf",
+      "153d23e7fae045a894ac6995baa04b0c_4. IaaS.pdf",
+      "3cc72498b98e4a89a2f287bdf5e3343a_4. IaaS.pdf",
+      "CH3 SCANNING and ENUMERATION.pdf",
+      "1. Pre-req.pdf",
+      "CH1 INTRODUCTION.pdf",
+      "2. Introduction.pdf",
+      "4. IaaS.pdf",
+      "CH2 FOOTPRINTING  RECONNAISSANCE.pdf",
+      "3. Web-Service and Cloud Computing.pdf"
+    ],
+    "material_texts": [
+      {
+        "name": "66051197-8894-4e7a-af4d-9eec06592e5b.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "c0a0abf0-0f3b-4cdd-92a2-eb130e034b25.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "1916db9f-a029-4eaf-b28f-e8d4f25c88a0.txt",
+        "size_kb": 14.0
+      },
+      {
+        "name": "9de687ea-4f4f-4100-9837-a536aa70f478.txt",
+        "size_kb": 51.6
+      },
+      {
+        "name": "f006362a-d234-4c7d-a496-a3857de2fb5c.txt",
+        "size_kb": 89.5
+      },
+      {
+        "name": "5c291f85-2d90-4bcf-b48d-759a39d495e3.txt",
+        "size_kb": 49.0
+      },
+      {
+        "name": "01d70f23-cf5c-42bd-95dd-6f9c111a1334.txt",
+        "size_kb": 6.7
+      },
+      {
+        "name": "5d0bc8bb-18d7-44ba-b93c-9a08da4741a0.txt",
+        "size_kb": 23.1
+      },
+      {
+        "name": "859a3134-901b-42f6-a573-f0ddefec2ce8.txt",
+        "size_kb": 21.9
+      },
+      {
+        "name": "2dc2cbb8-6423-4d1f-8c63-2260337a6d6d.txt",
+        "size_kb": 49.0
+      },
+      {
+        "name": "de216ad0-4898-4dc3-a462-3529b172d2ed.txt",
+        "size_kb": 42.0
+      },
+      {
+        "name": "c3721f81-76f1-40a2-9294-7c0edf3350f0.txt",
+        "size_kb": 0.1
+      },
+      {
+        "name": "81f57ac9-3cd0-491f-b278-60d05cc422c9.txt",
+        "size_kb": 14.4
+      },
+      {
+        "name": "601c2751-5022-4a7b-b7b9-4b45d6b39b60.txt",
+        "size_kb": 18.8
+      },
+      {
+        "name": "de27eef2-4d71-4938-8891-0db10dfde79a.txt",
+        "size_kb": 2.2
+      },
+      {
+        "name": "7dda779d-a794-451a-b4cb-a80b3d1576ce.txt",
+        "size_kb": 5.3
+      },
+      {
+        "name": "3eedc92e-1347-4359-aef4-5bdc8be3b1d5.txt",
+        "size_kb": 34.5
+      },
+      {
+        "name": "53beb071-99b2-48ae-8e27-2c13c0a0901d.txt",
+        "size_kb": 39.5
+      },
+      {
+        "name": "1da23b46-46bd-4004-b487-e0137fb50616.txt",
+        "size_kb": 23.1
+      },
+      {
+        "name": "4fcff675-3fee-4def-be39-752d85e488f4.txt",
+        "size_kb": 8.8
+      },
+      {
+        "name": "f3c77d3c-2357-4be2-a281-9b867170e01c.txt",
+        "size_kb": 37.6
+      },
+      {
+        "name": "09de8883-48a0-4285-876c-1b1170fc936c.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "6a6af7f6-f4c1-4944-81af-d97498743a08.txt",
+        "size_kb": 23.1
+      },
+      {
+        "name": "623439a4-5ea7-4f6b-988c-b70b1db4faa2.txt",
+        "size_kb": 0.2
+      },
+      {
+        "name": "9d6b5634-5392-4382-a258-0a1878e5b5f8.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "29990bc9-3150-4ab8-a699-f06d7fa7511c.txt",
+        "size_kb": 39.5
+      },
+      {
+        "name": "d117dc6d-82d9-4c17-8a06-1cb3eeef0126.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "48744ef9-c954-469c-8f5b-bf3dcd5e712f.txt",
+        "size_kb": 0.2
+      },
+      {
+        "name": "812a9414-8f1b-4774-a90d-864a7233a257.txt",
+        "size_kb": 39.5
+      },
+      {
+        "name": "d480c76f-6372-4065-ad9f-8ef8867de5b8.txt",
+        "size_kb": 0.5
+      },
+      {
+        "name": "12297641-4599-47bb-85fc-19ae465e1451.txt",
+        "size_kb": 208.0
+      },
+      {
+        "name": "3f04dbc3-46ec-47a6-9767-eba9d84da9c0.txt",
+        "size_kb": 0.3
+      },
+      {
+        "name": "5a9be4a1-4345-46a1-b3f7-e26e2bc8d607.txt",
+        "size_kb": 37.6
+      },
+      {
+        "name": "baccd8ca-1f41-41f9-83fc-ae012fa65a98.txt",
+        "size_kb": 37.6
+      },
+      {
+        "name": "8ba14c01-88f3-4f07-8c7b-8f39bfaaeaeb.txt",
+        "size_kb": 9.5
+      },
+      {
+        "name": "6e155825-9253-4dc5-9ad5-2e903290d705.txt",
+        "size_kb": 49.0
+      },
+      {
+        "name": "5e934c19-3380-4be7-b31a-eda9a84db0ea.txt",
+        "size_kb": 42.0
+      },
+      {
+        "name": "bc543cd3-b0c2-41dd-81d1-fc4b06142a84.txt",
+        "size_kb": 1357.6
+      },
+      {
+        "name": "e3cfa8ce-bdfb-4c21-b020-b5ce6b416496.txt",
+        "size_kb": 0.2
+      },
+      {
+        "name": "6e150f17-af39-42e4-bab8-d538bc53429e.txt",
+        "size_kb": 14.4
+      },
+      {
+        "name": "be1cf7b9-a928-4188-b6b6-e2d9ea7d6941.txt",
+        "size_kb": 18.8
+      },
+      {
+        "name": "17875585-2e69-496e-9e07-6ba746d62ccc.txt",
+        "size_kb": 52.6
+      },
+      {
+        "name": "74848436-9056-49c4-8315-5dfc8e5725cf.txt",
+        "size_kb": 38.6
+      },
+      {
+        "name": "13886f23-3c08-4f34-a4b2-84012e73c2ab.txt",
+        "size_kb": 37.6
+      },
+      {
+        "name": "e4470bc7-4bf8-4a3e-b581-e27aafe98a45.txt",
+        "size_kb": 0.2
+      },
+      {
+        "name": "8c307af2-fea4-44ee-8c62-cd87fadb55bc.txt",
+        "size_kb": 21.9
+      },
+      {
+        "name": "9ed163dd-9c44-4ae7-88cb-f27cb574fac2.txt",
+        "size_kb": 0.2
+      },
+      {
+        "name": "8502c96d-29de-49bd-acda-bab7b271cb08.txt",
+        "size_kb": 14.4
+      },
+      {
+        "name": "0897a5de-7789-48f6-95ba-0927d3f159fc.txt",
+        "size_kb": 16.8
+      },
+      {
+        "name": "9001a76f-6652-4bc6-b8fb-9fb21a821122.txt",
+        "size_kb": 23.1
+      },
+      {
+        "name": "99bd764a-653c-4694-9259-1f396faae03f.txt",
+        "size_kb": 0.2
+      },
+      {
+        "name": "339c6b92-267b-421f-83c5-e671b2fa757e.txt",
+        "size_kb": 5.4
+      },
+      {
+        "name": "2117f250-e20b-4b1c-9ddc-959f75272658.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "1f0da95f-99a4-4754-b3ba-ffc30d6c78c1.txt",
+        "size_kb": 7.3
+      },
+      {
+        "name": "55bbf764-a541-4b3c-8299-123ef635edb3.txt",
+        "size_kb": 14.4
+      },
+      {
+        "name": "d88528c0-6e57-4549-aebf-69c69cde35f9.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "c6d3ec9e-0f4d-4144-bef2-26c9587cb32b.txt",
+        "size_kb": 21.9
+      },
+      {
+        "name": "c0cbcd1d-53f9-4cd4-8f61-f9eef6571cc2.txt",
+        "size_kb": 42.0
+      },
+      {
+        "name": "ef60ccbe-bf72-4778-9414-ab2da86a36b0.txt",
+        "size_kb": 1357.6
+      },
+      {
+        "name": "fb93f4dc-2929-4459-92aa-ccaa388dd396.txt",
+        "size_kb": 99.3
+      },
+      {
+        "name": "6cd4325e-0a0e-4b98-9fa6-cfbf78c96b8e.txt",
+        "size_kb": 20.9
+      },
+      {
+        "name": "00de634d-3bce-40d7-80eb-8e4e6036661c.txt",
+        "size_kb": 18.8
+      },
+      {
+        "name": "f93d1aad-f634-4ba3-b4fc-f583500577bc.txt",
+        "size_kb": 52.6
+      },
+      {
+        "name": "92f97714-915e-454c-82f3-36df412c66f3.txt",
+        "size_kb": 39.5
+      },
+      {
+        "name": "8be42826-01be-4a42-a7c0-9ebf2684d091.txt",
+        "size_kb": 52.6
+      },
+      {
+        "name": "45065ed7-cab6-46cf-862d-005fe78f995a.txt",
+        "size_kb": 18.0
+      },
+      {
+        "name": "13b1b036-a51d-4a54-b3bb-0470c17e419e.txt",
+        "size_kb": 20.8
+      },
+      {
+        "name": "bb7ea4ac-1afb-4b59-9c9d-e459da4cf59b.txt",
+        "size_kb": 49.0
+      },
+      {
+        "name": "64303c3c-f321-4549-b16a-c87cd0b17cbb.txt",
+        "size_kb": 37.6
+      },
+      {
+        "name": "f01c92eb-79be-40e4-873c-f1c6e55c38d8.txt",
+        "size_kb": 208.0
+      }
+    ],
+    "issues": [
+      "Suspiciously small podcast file: .gitkeep (0.0 KB)",
+      "Empty material text: c3721f81-76f1-40a2-9294-7c0edf3350f0.txt"
+    ]
+  },
+  "verdict": "ISSUES",
+  "issues": [
+    "3 API test(s) failed",
+    "Many backend errors (102)",
+    "2 output issue(s)"
+  ]
+}

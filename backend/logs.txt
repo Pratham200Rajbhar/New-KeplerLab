@@ -1,0 +1,112 @@
+2026-02-25 14:37:42,155 app.db.prisma_client INFO Prisma client connected to database
+2026-02-25 14:37:42,155 main INFO Warming up embedding model (running in thread pool)…
+2026-02-25 14:37:42,734 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-25 14:37:42,737 main INFO Preloading reranker model (running in thread pool)…
+2026-02-25 14:37:44,429 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-25 14:37:48,616 app.services.rag.reranker INFO Enabled half-precision (FP16) for reranker
+2026-02-25 14:37:48,617 app.services.rag.reranker INFO Reranker loaded successfully in 4.39s
+2026-02-25 14:37:48,617 main INFO Reranker preloaded.
+2026-02-25 14:37:48,620 main INFO Background job processor task created.
+2026-02-25 14:37:48,620 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-25 14:37:53,555 app.routes.auth INFO Login attempt for email: pratham@gmail.com
+2026-02-25 14:37:53,824 app.routes.auth INFO User logged in successfully: 7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:37:53,825 main INFO POST /auth/login 200 0.28s
+2026-02-25 14:37:53,835 main INFO GET /auth/me 200 0.00s
+2026-02-25 14:37:53,871 performance INFO request_performance
+2026-02-25 14:37:53,871 main INFO GET /notebooks 200 0.01s
+2026-02-25 14:37:53,877 performance INFO request_performance
+2026-02-25 14:37:53,878 main INFO GET /notebooks 200 0.00s
+2026-02-25 14:37:54,614 app.services.ws_manager INFO WS connect: user=7c06288c-d5d3-4339-a753-4b1cf5a842b6  total_user_conns=1
+2026-02-25 14:37:54,614 app.routes.websocket_router INFO WS /ws/jobs/7c06288c-d5d3-4339-a753-4b1cf5a842b6 connected
+2026-02-25 14:37:54,626 app.services.ws_manager INFO WS connect: user=7c06288c-d5d3-4339-a753-4b1cf5a842b6  total_user_conns=2
+2026-02-25 14:37:54,626 app.routes.websocket_router INFO WS /ws/jobs/7c06288c-d5d3-4339-a753-4b1cf5a842b6 connected
+2026-02-25 14:38:32,351 app.routes.upload INFO Batch upload started: 1 files user=7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:38:32,355 app.services.notebook_service INFO Created notebook: b8cddf93-8a81-45a1-a3b3-0f926d753412 for user: 7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:38:32,355 app.routes.upload INFO Auto-created notebook 'Social_Network_Ads (1)' id=b8cddf93-8a81-45a1-a3b3-0f926d753412 for batch
+2026-02-25 14:38:32,356 app.routes.upload INFO Batch stream: 0.8ms  file=Social_Network_Ads (1).csv  size=10926 bytes
+2026-02-25 14:38:32,357 app.services.file_validator INFO File validation passed: Social_Network_Ads (1).csv → 1798723d66fb445e82acd0daea3aac01.csv (text/csv, 10926 bytes)
+2026-02-25 14:38:32,357 app.routes.upload INFO Validation passed: Social_Network_Ads (1).csv -> 1798723d66fb445e82acd0daea3aac01.csv (text/csv)
+2026-02-25 14:38:32,364 app.services.material_service INFO Created material record ed27ad66-283f-4f1e-8133-be7d73c24d38 (pending) for user 7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:38:32,370 app.services.job_service INFO Created background job ad6b37d6-29cb-4bf1-b097-5d7d6bee1131 type=material_processing for user=7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:38:32,371 main INFO POST /upload/batch 202 0.05s
+2026-02-25 14:38:32,373 app.services.worker INFO Processing job ad6b37d6-29cb-4bf1-b097-5d7d6bee1131 | material=ed27ad66-283f-4f1e-8133-be7d73c24d38 type=file user=7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:38:32,434 app.services.ws_manager INFO WS disconnect: user=7c06288c-d5d3-4339-a753-4b1cf5a842b6  remaining=1
+2026-02-25 14:38:32,435 app.services.text_processing.extractor INFO Extracting file: ./data/uploads/7c06288c-d5d3-4339-a753-4b1cf5a842b6/dba358f1c4814be2ac2e9fb612e2b178_Social_Network_Ads (1).csv  ext=csv  mime=text/csv  category=document
+2026-02-25 14:38:32,441 app.services.text_processing.extractor WARNING Parquet save failed for ./data/uploads/7c06288c-d5d3-4339-a753-4b1cf5a842b6/dba358f1c4814be2ac2e9fb612e2b178_Social_Network_Ads (1).csv: Unable to find a usable engine; tried using: 'pyarrow', 'fastparquet'.
+A suitable version of pyarrow or fastparquet is required for parquet support.
+Trying to import the above resulted in these errors:
+ - Missing optional dependency 'pyarrow'. pyarrow is required for parquet support. Use pip or conda to install pyarrow.
+ - Missing optional dependency 'fastparquet'. fastparquet is required for parquet support. Use pip or conda to install fastparquet.
+2026-02-25 14:38:32,466 app.services.material_service INFO PERF extraction: 30.6ms  material=ed27ad66-283f-4f1e-8133-be7d73c24d38  category=document
+2026-02-25 14:38:32,467 performance INFO request_performance
+2026-02-25 14:38:32,467 app.services.storage_service INFO Saved material text: ed27ad66-283f-4f1e-8133-be7d73c24d38 (1796 chars)
+2026-02-25 14:38:32,467 main INFO GET /materials 200 0.08s
+2026-02-25 14:38:32,468 main INFO GET /chat/sessions/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.08s
+2026-02-25 14:38:32,468 app.services.material_service INFO PERF save_text: 2.3ms  material=ed27ad66-283f-4f1e-8133-be7d73c24d38  chars=1796
+2026-02-25 14:38:32,468 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
+2026-02-25 14:38:32,469 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
+2026-02-25 14:38:32,469 app.services.text_processing.chunker INFO Created 4 chunks from 1 sections (filtered 0 low-quality)
+2026-02-25 14:38:32,470 app.services.material_service INFO PERF chunking: 1.4ms  chunks=4  material=ed27ad66-283f-4f1e-8133-be7d73c24d38
+2026-02-25 14:38:32,519 performance INFO request_performance
+2026-02-25 14:38:32,520 performance INFO request_performance
+2026-02-25 14:38:32,521 main INFO GET /chat/history/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.13s
+2026-02-25 14:38:32,522 main INFO GET /notebooks/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.11s
+2026-02-25 14:38:32,528 performance INFO request_performance
+2026-02-25 14:38:32,529 main INFO GET /notebooks/b8cddf93-8a81-45a1-a3b3-0f926d753412/content 200 0.14s
+2026-02-25 14:38:32,572 performance INFO request_performance
+2026-02-25 14:38:32,574 main INFO GET /materials 200 0.02s
+2026-02-25 14:38:32,575 main INFO GET /chat/sessions/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.02s
+2026-02-25 14:38:32,579 performance INFO request_performance
+2026-02-25 14:38:32,580 main INFO GET /chat/history/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.02s
+2026-02-25 14:38:32,583 performance INFO request_performance
+2026-02-25 14:38:32,584 main INFO GET /notebooks/b8cddf93-8a81-45a1-a3b3-0f926d753412/content 200 0.03s
+2026-02-25 14:38:32,590 app.services.rag.embedder INFO Stored 4 chunks successfully  material=ed27ad66-283f-4f1e-8133-be7d73c24d38  user=7c06288c-d5d3-4339-a753-4b1cf5a842b6
+2026-02-25 14:38:40,612 main INFO GET /materials 200 0.01s
+2026-02-25 14:38:47,231 app.services.material_service INFO PERF embedding+title (parallel): 14756.8ms  chunks=4  material=ed27ad66-283f-4f1e-8133-be7d73c24d38  title='Social Network Ads Dataset Statistics'
+2026-02-25 14:38:47,242 app.services.material_service INFO PERF _process_material total: 14776.5ms  material=ed27ad66-283f-4f1e-8133-be7d73c24d38
+2026-02-25 14:38:47,243 app.services.material_service INFO PERF process_material_by_id total: 14869.2ms  material=ed27ad66-283f-4f1e-8133-be7d73c24d38
+2026-02-25 14:38:47,248 main INFO GET /materials/ed27ad66-283f-4f1e-8133-be7d73c24d38/text 200 0.01s
+2026-02-25 14:38:47,250 app.services.worker INFO [WORKER] job_processing_time=14869.4ms  job=ad6b37d6-29cb-4bf1-b097-5d7d6bee1131  material=ed27ad66-283f-4f1e-8133-be7d73c24d38  status=completed
+2026-02-25 14:38:47,261 main INFO GET /materials 200 0.01s
+2026-02-25 14:38:51,957 main INFO GET /materials/ed27ad66-283f-4f1e-8133-be7d73c24d38/text 200 0.01s
+2026-02-25 14:39:00,737 performance INFO request_performance
+2026-02-25 14:39:00,737 main INFO POST /chat/sessions 200 0.02s
+2026-02-25 14:39:00,755 performance INFO request_performance
+2026-02-25 14:39:00,756 main INFO GET /chat/sessions/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.01s
+2026-02-25 14:39:00,759 performance INFO request_performance
+2026-02-25 14:39:00,759 main INFO GET /chat/history/b8cddf93-8a81-45a1-a3b3-0f926d753412 200 0.01s
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Registered tool: rag_tool
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Registered tool: quiz_tool
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Registered tool: flashcard_tool
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Registered tool: ppt_tool
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Registered tool: python_tool
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Registered tool: research_tool
+2026-02-25 14:39:00,775 app.services.agent.tools_registry INFO Initialized 6 tools: ['rag_tool', 'quiz_tool', 'flashcard_tool', 'ppt_tool', 'python_tool', 'research_tool']
+2026-02-25 14:39:00,825 app.services.agent.graph INFO Agent graph compiled successfully
+2026-02-25 14:39:00,825 performance INFO request_performance
+2026-02-25 14:39:00,848 main INFO POST /chat 200 0.09s
+2026-02-25 14:39:00,849 app.services.agent.intent INFO Detecting intent for message: give complete dataset...
+2026-02-25 14:39:00,851 app.services.agent.intent INFO Keyword intent: QUESTION (confidence=0.50)
+2026-02-25 14:39:20,411 app.services.agent.intent INFO [intent] LLM fallback: QUESTION (confidence=0.80)
+2026-02-25 14:39:20,412 app.services.agent.planner INFO Planning execution for intent: QUESTION
+2026-02-25 14:39:20,419 app.services.agent.planner INFO Plan: ['rag_tool', 'research_tool']
+2026-02-25 14:39:20,422 app.services.agent.router INFO [router] Executing | intent=QUESTION | step=1/2 | tool=rag_tool | iter=0 | desc='Search materials for answer'
+2026-02-25 14:39:20,422 app.services.agent.tools_registry INFO [rag_tool] START | user=7c06288c-d5d3-4339-a753-4b1cf5a842b6 | materials=['ed27ad66-283f-4f1e-8133-be7d73c24d38'] | query='give complete dataset'
+2026-02-25 14:39:20,438 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: give complete dataset...
+2026-02-25 14:39:20,563 app.services.rag.secure_retriever INFO Retrieved 4 valid chunks
+2026-02-25 14:39:21,188 app.services.rag.secure_retriever INFO Reranked to top 4 chunks
+2026-02-25 14:39:21,188 app.services.rag.context_formatter INFO Formatted 4 sources with citation metadata
+2026-02-25 14:39:57,481 app.services.agent.tools_registry INFO [rag_tool] OK | elapsed=37.06s | answer_len=1837 | context_len=2756
+2026-02-25 14:39:57,482 app.services.agent.router INFO [router] Result | tool=rag_tool | success=True | output='Based on your materials, I can show you the **structure and samples** of the `Social_Network_Ads.csv` dataset, though th' | iter=0
+2026-02-25 14:39:57,484 app.services.agent.reflection INFO [reflect] iter=1 | tool=rag_tool | intent=QUESTION | steps=1/2 | retries=0 | tokens=644
+2026-02-25 14:39:57,484 app.services.agent.reflection INFO [reflect] CONTINUE: next step 2/2
+2026-02-25 14:39:57,486 app.services.agent.router INFO [router] Skipping conditional step 'research_tool' — previous tool had results
+2026-02-25 14:39:57,487 app.services.agent.reflection INFO [reflect] iter=2 | tool=rag_tool | intent=QUESTION | steps=2/2 | retries=0 | tokens=644
+2026-02-25 14:39:57,487 app.services.agent.reflection INFO [reflect] RESPOND: all 2 plan step(s) complete
+2026-02-25 14:40:15,045 app.services.code_execution.executor INFO [afea1ff5] Executing code (267 chars)
+2026-02-25 14:40:15,124 main INFO POST /agent/execute 200 0.09s
+2026-02-25 14:40:15,861 app.services.code_execution.executor INFO [afea1ff5] Execution complete: exit=1, timeout=False, elapsed=0.73s, chart=no
+2026-02-25 14:41:02,206 app.routes.websocket_router INFO WS /ws/jobs/7c06288c-d5d3-4339-a753-4b1cf5a842b6 disconnected
+2026-02-25 14:41:02,206 app.services.ws_manager INFO WS disconnect: user=7c06288c-d5d3-4339-a753-4b1cf5a842b6  remaining=0
+2026-02-25 14:41:02,305 main INFO Background job processor stopped.
+2026-02-25 14:41:02,306 app.db.prisma_client INFO Prisma client disconnected from database
