@@ -131,21 +131,38 @@ async def get_usage_statistics(
         Dict with statistics
     """
     try:
-        where = {}
+        # Use aggregation via raw SQL instead of loading all records into memory
+        # to prevent OOM on large datasets
+        where_clauses = []
+        params = []
+        param_idx = 1
         
         if user_id:
-            where["userId"] = user_id
+            where_clauses.append(f'"userId" = ${param_idx}')
+            params.append(user_id)
+            param_idx += 1
+        if start_date:
+            where_clauses.append(f'"createdAt" >= ${param_idx}')
+            params.append(start_date)
+            param_idx += 1
+        if end_date:
+            where_clauses.append(f'"createdAt" <= ${param_idx}')
+            params.append(end_date)
+            param_idx += 1
         
-        if start_date or end_date:
-            where["createdAt"] = {}
-            if start_date:
-                where["createdAt"]["gte"] = start_date
-            if end_date:
-                where["createdAt"]["lte"] = end_date
+        where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
         
-        records = await prisma.apiusagelog.find_many(where=where)
+        result = await prisma.query_raw(
+            f'SELECT COUNT(*) as total_requests, '
+            f'COALESCE(SUM("contextTokenCount" + "responseTokenCount"), 0) as total_tokens, '
+            f'COALESCE(AVG("llmLatency"), 0) as avg_llm_latency, '
+            f'COALESCE(AVG("retrievalLatency"), 0) as avg_retrieval_latency, '
+            f'COALESCE(AVG("totalLatency"), 0) as avg_total_latency '
+            f'FROM "ApiUsageLog"{where_sql}',
+            *params,
+        )
         
-        if not records:
+        if not result:
             return {
                 "total_requests": 0,
                 "total_tokens": 0,
@@ -154,20 +171,13 @@ async def get_usage_statistics(
                 "avg_total_latency": 0.0,
             }
         
-        total_tokens = sum(
-            r.contextTokenCount + r.responseTokenCount for r in records
-        )
-        avg_llm = sum(r.llmLatency for r in records) / len(records)
-        avg_retrieval = sum(r.retrievalLatency for r in records) / len(records)
-        avg_total = sum(r.totalLatency for r in records) / len(records)
-        
+        row = result[0]
         return {
-            "total_requests": len(records),
-            "total_tokens": total_tokens,
-            "avg_llm_latency": round(avg_llm, 3),
-            "avg_retrieval_latency": round(avg_retrieval, 3),
-            "avg_total_latency": round(avg_total, 3),
-            "models_used": list(set(r.modelUsed for r in records)),
+            "total_requests": int(row.get("total_requests", 0)),
+            "total_tokens": int(row.get("total_tokens", 0)),
+            "avg_llm_latency": float(row.get("avg_llm_latency", 0)),
+            "avg_retrieval_latency": float(row.get("avg_retrieval_latency", 0)),
+            "avg_total_latency": float(row.get("avg_total_latency", 0)),
         }
         
     except Exception as e:

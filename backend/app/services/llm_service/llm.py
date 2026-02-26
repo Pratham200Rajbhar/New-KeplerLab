@@ -14,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+import functools
 import time
 from typing import Any, Dict, List, Optional
 import warnings
@@ -35,6 +36,10 @@ warnings.simplefilter("ignore", UserWarning)
 # ── Provider registry ─────────────────────────────────────────
 
 _PROVIDERS: Dict[str, Any] = {}
+
+# ── LLM instance cache (keyed on frozen kwargs) ───────────────
+_llm_cache: Dict[tuple, Any] = {}
+_LLM_CACHE_MAX = 16
 
 
 def _register_providers():
@@ -191,7 +196,17 @@ def get_llm(
         logger.warning(f"Unknown LLM_PROVIDER '{active_provider}', falling back to OLLAMA")
         builder = _PROVIDERS["OLLAMA"]
     
-    return builder(temperature=temp, top_p=p, max_tokens=tokens, **kwargs)
+    # Cache key: freeze all build params to reuse instances
+    cache_key = ("llm", active_provider, temp, p, tokens, tuple(sorted(kwargs.items())))
+    cached = _llm_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    
+    instance = builder(temperature=temp, top_p=p, max_tokens=tokens, **kwargs)
+    if len(_llm_cache) >= _LLM_CACHE_MAX:
+        _llm_cache.pop(next(iter(_llm_cache)))
+    _llm_cache[cache_key] = instance
+    return instance
 
 
 def get_llm_structured(
@@ -220,35 +235,58 @@ def get_llm_structured(
     p = top_p if top_p is not None else settings.LLM_TOP_P_STRUCTURED
     tokens = max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS
     
-    # Add top_k if not already specified and provider supports it
-    if "top_k" not in kwargs:
+    # Add top_k only for providers that support it (Google, Ollama)
+    active_provider = provider if provider else settings.LLM_PROVIDER
+    if "top_k" not in kwargs and active_provider in ("GOOGLE", "OLLAMA"):
         kwargs["top_k"] = settings.LLM_TOP_K
     
-    active_provider = provider if provider else settings.LLM_PROVIDER
-
     builder = _PROVIDERS.get(active_provider)
     if builder is None:
         logger.warning(f"Unknown LLM_PROVIDER '{active_provider}', falling back to OLLAMA")
         builder = _PROVIDERS["OLLAMA"]
     
-    return builder(temperature=temp, top_p=p, max_tokens=tokens, **kwargs)
+    # Cache key: freeze all build params to reuse instances
+    cache_key = ("structured", active_provider, temp, p, tokens, tuple(sorted(kwargs.items())))
+    cached = _llm_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    
+    instance = builder(temperature=temp, top_p=p, max_tokens=tokens, **kwargs)
+    if len(_llm_cache) >= _LLM_CACHE_MAX:
+        _llm_cache.pop(next(iter(_llm_cache)))
+    _llm_cache[cache_key] = instance
+    return instance
 
 
 # ── Custom OpenLM wrapper ─────────────────────────────────────
 
 
 class MyOpenLM(LLM):
-    """Custom LangChain wrapper for the MyOpenLM REST API."""
+    """Custom LangChain wrapper for the MyOpenLM REST API.
+    
+    Includes async support and retry on transient errors (500, 502, 429).
+    """
 
     api_url: str = settings.MYOPENLM_API_URL
     model_name: str = settings.MYOPENLM_MODEL
     temperature: float = 0.2
     max_tokens: int = 3000
-    _MAX_RETRIES: int = 3
+
+    # Transient HTTP codes that should trigger retry
+    _RETRYABLE_CODES = {429, 500, 502, 503, 504}
+    _MAX_RETRIES = 3
 
     @property
     def _llm_type(self) -> str:
         return "my_lm"
+
+    def _build_payload(self, prompt: str) -> dict:
+        return {
+            "message": prompt,
+            "model": self.model_name,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+        }
 
     def _call(
         self, prompt: str, stop: Optional[List[str]] = None, *args: Any, **kwargs: Any
@@ -259,12 +297,7 @@ class MyOpenLM(LLM):
             try:
                 resp = requests.post(
                     self.api_url,
-                    json={
-                        "message": prompt,
-                        "model": self.model_name,
-                        "temperature": self.temperature,
-                        "max_tokens": self.max_tokens,
-                    },
+                    json=self._build_payload(prompt),
                     headers={"Content-Type": "application/json"},
                     timeout=settings.LLM_TIMEOUT,
                 )
@@ -273,14 +306,64 @@ class MyOpenLM(LLM):
 
             except requests.exceptions.HTTPError as exc:
                 last_exc = exc
-                if resp.status_code == 500:
-                    logger.warning(f"LLM 500 — retry {attempt + 1}/{self._MAX_RETRIES}")
-                    time.sleep(2 ** attempt)
+                if resp.status_code in self._RETRYABLE_CODES:
+                    delay = 2 ** attempt
+                    logger.warning("LLM %d — retry %d/%d in %ds", resp.status_code, attempt + 1, self._MAX_RETRIES, delay)
+                    time.sleep(delay)
                     continue
                 raise
 
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+                last_exc = exc
+                delay = 2 ** attempt
+                logger.warning("LLM connection error — retry %d/%d in %ds: %s", attempt + 1, self._MAX_RETRIES, delay, exc)
+                time.sleep(delay)
+                continue
+
             except Exception as exc:
-                logger.error(f"LLM call error: {exc}")
+                logger.error("LLM call error: %s", exc)
+                raise
+
+        raise last_exc or Exception("LLM call failed after all retries")
+
+    async def _acall(
+        self, prompt: str, stop: Optional[List[str]] = None, *args: Any, **kwargs: Any
+    ) -> str:
+        """Async version using httpx for true non-blocking IO."""
+        import httpx
+        import asyncio
+
+        last_exc: Optional[Exception] = None
+
+        for attempt in range(self._MAX_RETRIES):
+            try:
+                async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT) as client:
+                    resp = await client.post(
+                        self.api_url,
+                        json=self._build_payload(prompt),
+                        headers={"Content-Type": "application/json"},
+                    )
+                    resp.raise_for_status()
+                    return resp.json()["data"]["response"]
+
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                if exc.response.status_code in self._RETRYABLE_CODES:
+                    delay = 2 ** attempt
+                    logger.warning("LLM %d — retry %d/%d in %ds", exc.response.status_code, attempt + 1, self._MAX_RETRIES, delay)
+                    await asyncio.sleep(delay)
+                    continue
+                raise
+
+            except (httpx.ConnectError, httpx.TimeoutException) as exc:
+                last_exc = exc
+                delay = 2 ** attempt
+                logger.warning("LLM connection error — retry %d/%d in %ds: %s", attempt + 1, self._MAX_RETRIES, delay, exc)
+                await asyncio.sleep(delay)
+                continue
+
+            except Exception as exc:
+                logger.error("LLM call error: %s", exc)
                 raise
 
         raise last_exc or Exception("LLM call failed after all retries")

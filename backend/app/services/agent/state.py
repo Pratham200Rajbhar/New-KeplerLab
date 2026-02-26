@@ -87,6 +87,21 @@ class AgentState(TypedDict, total=False):
     rag_context: str               # Retrieved context from RAG
     chat_history: str              # Formatted previous conversation
 
+    # ── Workspace & Generated Files ───────────────────────
+    workspace_files: List[Dict]    # [{id, filename, real_path, text_path, ext, type}]
+    generated_files: List[Dict]    # [{filename, path, download_url, size, type}]
+
+    # ── Code Execution Context ────────────────────────────
+    last_stdout: str               # stdout from last code execution
+    last_stderr: str               # stderr from last code execution
+    analysis_context: Dict         # dataset shape, columns, dtypes after profiling
+    code_vars: Dict[str, str]      # variable name → type from last execution
+
+    # ── Edit & Step Tracking ──────────────────────────────
+    edit_history: List[Dict]       # log of append/replace/delete ops
+    step_log: List[Dict]           # each step: {tool, label, status, time_taken, code, stdout, stderr}
+    repair_attempts: int           # current repair loop counter, default 0
+
 
 # ── Safety Limits ─────────────────────────────────────────
 MAX_AGENT_ITERATIONS = 7

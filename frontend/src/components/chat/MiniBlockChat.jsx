@@ -31,7 +31,8 @@ export default function MiniBlockChat({ blockId, onClose, action = 'ask', lang =
         } else {
             inputRef.current?.focus();
         }
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [action]);
 
     // Click outside → close
     useEffect(() => {

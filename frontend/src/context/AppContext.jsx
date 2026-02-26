@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 
 const AppContext = createContext(null);
 
@@ -63,16 +63,27 @@ export function AppProvider({ children }) {
         return message;
     }, []);
 
-    // Clear context when notebook changes
+    // Clear context when switching between notebooks (not on initial load)
+    const prevNotebookRef = useRef(undefined);
     useEffect(() => {
-        if (currentNotebook?.id) {
+        const prevId = prevNotebookRef.current;
+        const currId = currentNotebook?.id;
+        prevNotebookRef.current = currId;
+
+        // Skip the initial mount (prevId === undefined) — ChatPanel will load
+        // messages from the API. Only clear when actively switching notebooks.
+        if (prevId !== undefined && currId && prevId !== currId) {
             deselectAllSources();
             setCurrentMaterial(null);
             setMaterials([]);
             setMessages([]);
             setSessionId(null);
+            setFlashcards(null);
+            setQuiz(null);
+            setNotes([]);
+            setError(null);
         }
-    }, [currentNotebook?.id]);
+    }, [currentNotebook?.id, deselectAllSources]);
 
     // Clear chat
     const clearMessages = useCallback(() => {

@@ -20,6 +20,7 @@ langchain-huggingface==0.0.3
 langgraph>=0.2.0
 
 numpy==1.26.4
+pyarrow>=14.0.0          # parquet side-car for CSV/Excel data files
 # torch==2.2.2
 sentence-transformers==3.1.1
 huggingface_hub==0.24.6

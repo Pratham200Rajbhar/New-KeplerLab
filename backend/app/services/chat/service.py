@@ -120,8 +120,10 @@ async def save_conversation(
     user_message: str,
     assistant_answer: str,
     session_id: str = None,
+    agent_meta: dict = None,
 ) -> str:
     """Persist a user/assistant exchange.  Returns the assistant ChatMessage id."""
+    import json as _json
     from app.db.prisma_client import prisma
 
     assistant_msg_id = ""
@@ -137,6 +139,12 @@ async def save_conversation(
             }
             if session_id:
                 data["chatSessionId"] = session_id
+            # Persist agentMeta on assistant messages so history can reload it
+            if role == "assistant" and agent_meta:
+                try:
+                    data["agentMeta"] = _json.dumps(agent_meta)
+                except Exception:
+                    pass
 
             msg = await prisma.chatmessage.create(data=data)
             if role == "assistant":
@@ -146,12 +154,141 @@ async def save_conversation(
     return assistant_msg_id
 
 
+def _split_markdown_blocks(content: str) -> List[str]:
+    """Split markdown content into logical blocks, preserving structure.
+
+    Unlike a naive ``split("\\n\\n")``, this keeps fenced code blocks,
+    tables, blockquotes, and list runs intact so each block is valid
+    markdown that can be rendered independently.
+    """
+    import re
+
+    lines = content.split("\n")
+    blocks: List[str] = []
+    current: List[str] = []
+    in_fence = False
+    fence_marker = ""
+    in_table = False
+
+    def _flush():
+        text = "\n".join(current).strip()
+        if text:
+            blocks.append(text)
+        current.clear()
+
+    for line in lines:
+        stripped = line.strip()
+
+        # ── Fenced code block boundaries (``` or ~~~) ──
+        fence_match = re.match(r"^(`{3,}|~{3,})", stripped)
+        if fence_match:
+            if not in_fence:
+                # Starting a fence – flush anything before it
+                if current and not all(l.strip() == "" for l in current):
+                    _flush()
+                in_fence = True
+                fence_marker = fence_match.group(1)[0]
+                current.append(line)
+                continue
+            elif stripped.startswith(fence_marker) and len(stripped.replace(fence_marker[0], "")) == 0 or stripped == fence_marker * len(fence_match.group(1)):
+                # Closing fence – include and flush the whole block
+                current.append(line)
+                in_fence = False
+                fence_marker = ""
+                _flush()
+                continue
+
+        if in_fence:
+            current.append(line)
+            continue
+
+        # ── Tables: lines starting with | ──
+        if stripped.startswith("|") or re.match(r"^\|?[\s:]*-{3,}", stripped):
+            if not in_table and current:
+                _flush()
+            in_table = True
+            current.append(line)
+            continue
+        elif in_table:
+            # End of table
+            in_table = False
+            _flush()
+
+        # ── Blank line – potential block boundary ──
+        if stripped == "":
+            # Don't split inside lists (next non-blank line starts with - * or digit.)
+            # We'll just add the blank line and decide later
+            current.append(line)
+            continue
+
+        # ── Heading → always start a new block ──
+        if re.match(r"^#{1,6}\s", stripped):
+            if current and any(l.strip() for l in current):
+                _flush()
+            current.append(line)
+            continue
+
+        # ── Horizontal rule → flush before and after ──
+        if re.match(r"^[-*_]{3,}\s*$", stripped):
+            if current and any(l.strip() for l in current):
+                _flush()
+            current.append(line)
+            _flush()
+            continue
+
+        # ── Blockquote continuation ──
+        if stripped.startswith(">"):
+            if current and not any(l.strip().startswith(">") for l in current if l.strip()):
+                _flush()
+            current.append(line)
+            continue
+
+        # ── List items ──
+        is_list_item = bool(re.match(r"^(\s*[-*+]|\s*\d+[.)]) ", line))
+        is_continuation = bool(re.match(r"^\s{2,}", line)) and not is_list_item
+
+        if is_list_item or is_continuation:
+            # Keep list items together; only flush if previous block wasn't a list
+            prev_has_list = any(
+                re.match(r"^(\s*[-*+]|\s*\d+[.)]) ", l)
+                for l in current if l.strip()
+            )
+            if current and not prev_has_list and any(l.strip() for l in current):
+                _flush()
+            current.append(line)
+            continue
+
+        # ── Regular paragraph text ──
+        # If current block ends with blank lines (paragraph break), flush
+        if current:
+            trailing_blanks = 0
+            for l in reversed(current):
+                if l.strip() == "":
+                    trailing_blanks += 1
+                else:
+                    break
+            # Check if previous content was a different type (list / blockquote)
+            prev_is_list = any(re.match(r"^(\s*[-*+]|\s*\d+[.)]) ", l) for l in current if l.strip())
+            prev_is_quote = any(l.strip().startswith(">") for l in current if l.strip())
+            if trailing_blanks >= 1 and (prev_is_list or prev_is_quote):
+                _flush()
+            elif trailing_blanks >= 2:
+                _flush()
+
+        current.append(line)
+
+    # Flush remaining
+    _flush()
+
+    return blocks
+
+
 async def save_response_blocks(message_id: str, content: str) -> List[Dict]:
-    """Split *content* on double-newline and persist each block as a ResponseBlock."""
+    """Split *content* into markdown-aware blocks and persist each as a ResponseBlock."""
     from app.db.prisma_client import prisma
 
     created_blocks = []
-    blocks = [b.strip() for b in content.split("\n\n") if b.strip()]
+    blocks = _split_markdown_blocks(content)
     for idx, block_text in enumerate(blocks):
         try:
             block = await prisma.responseblock.create(
@@ -200,6 +337,7 @@ async def log_agent_execution(
 
 async def get_chat_history(notebook_id: str, user_id: str, session_id: str = None) -> List[Dict]:
     """Return serialised chat messages for *notebook_id* ordered oldest first."""
+    import json as _json
     from app.db.prisma_client import prisma
 
     try:
@@ -212,33 +350,52 @@ async def get_chat_history(notebook_id: str, user_id: str, session_id: str = Non
             order={"createdAt": "asc"},
             include={"responseBlocks": True}
         )
-        return [
-            {
+        result = []
+        for m in messages:
+            agent_meta_val = None
+            raw_meta = getattr(m, "agentMeta", None)
+            if raw_meta:
+                try:
+                    agent_meta_val = _json.loads(raw_meta)
+                except Exception:
+                    pass
+            result.append({
                 "id": str(m.id),
                 "role": m.role,
                 "content": m.content,
                 "created_at": m.createdAt.isoformat(),
+                "agent_meta": agent_meta_val,
                 "blocks": sorted(
                     [{"id": str(b.id), "index": b.blockIndex, "text": b.text}
                      for b in getattr(m, "responseBlocks", []) or []],
                     key=lambda x: x["index"]
                 ) if m.role == "assistant" else []
-            }
-            for m in messages
-        ]
+            })
+        return result
     except Exception as exc:
         logger.error("get_chat_history failed: %s", exc)
         return []
 
 
 async def clear_chat_history(notebook_id: str, user_id: str, session_id: str = None) -> None:
-    """Delete all ChatMessage rows for *notebook_id*."""
+    """Delete all ChatMessage rows (and their ResponseBlocks) for *notebook_id*."""
     from app.db.prisma_client import prisma
     try:
         where_clause = {"notebookId": notebook_id, "userId": user_id}
         if session_id:
             where_clause["chatSessionId"] = session_id
 
+        # Delete response blocks first (child records) to avoid orphans
+        messages = await prisma.chatmessage.find_many(
+            where=where_clause,
+            select={"id": True},
+        )
+        if messages:
+            msg_ids = [str(m.id) for m in messages]
+            await prisma.responseblock.delete_many(
+                where={"chatMessageId": {"in": msg_ids}}
+            )
+        
         await prisma.chatmessage.delete_many(where=where_clause)
     except Exception as exc:
         logger.error("clear_chat_history failed: %s", exc)
@@ -248,21 +405,33 @@ async def clear_chat_history(notebook_id: str, user_id: str, session_id: str = N
 
 
 async def get_chat_sessions(notebook_id: str, user_id: str) -> List[Dict]:
-    """Return all chat sessions for a notebook, including message content for searching."""
+    """Return all chat sessions for a notebook.
+    
+    Only loads message count and first message preview instead of full content
+    to avoid huge payloads for sessions with long conversations.
+    """
     from app.db.prisma_client import prisma
     try:
         sessions = await prisma.chatsession.find_many(
             where={"notebookId": notebook_id, "userId": user_id},
             order={"createdAt": "desc"},
-            include={"chatMessages": True}
+            include={
+                "chatMessages": {
+                    "take": 3,  # Only first 3 messages for preview
+                    "order_by": {"createdAt": "asc"},
+                }
+            }
         )
         return [
             {
-                "id": str(s.id), 
-                "title": s.title, 
+                "id": str(s.id),
+                "title": s.title,
+                "createdAt": s.createdAt.isoformat(),
                 "created_at": s.createdAt.isoformat(),
-                "messages_text": " ".join(m.content for m in getattr(s, "chatMessages", []) or [])
-            } 
+                "messages_text": " ".join(
+                    m.content[:200] for m in (getattr(s, "chatMessages", []) or [])[:3]
+                ),
+            }
             for s in sessions
         ]
     except Exception as exc:
@@ -284,9 +453,26 @@ async def create_chat_session(notebook_id: str, user_id: str, title: str = "New 
 
 
 async def delete_chat_session(session_id: str, user_id: str) -> bool:
-    """Delete a chat session."""
+    """Delete a chat session and cascade to messages and response blocks."""
     from app.db.prisma_client import prisma
     try:
+        # First delete response blocks for all messages in this session
+        messages = await prisma.chatmessage.find_many(
+            where={"chatSessionId": session_id, "userId": user_id},
+            select={"id": True},
+        )
+        if messages:
+            msg_ids = [str(m.id) for m in messages]
+            await prisma.responseblock.delete_many(
+                where={"chatMessageId": {"in": msg_ids}}
+            )
+        
+        # Delete messages
+        await prisma.chatmessage.delete_many(
+            where={"chatSessionId": session_id, "userId": user_id}
+        )
+        
+        # Delete session
         await prisma.chatsession.delete_many(
             where={"id": session_id, "userId": user_id}
         )

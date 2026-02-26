@@ -48,7 +48,7 @@ async def generate_podcast_audio_async(material_text: str) -> tuple[BytesIO, str
     Returns:
         tuple: (audio_buffer, title, dialogue_with_timing)
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None,
         partial(generate_podcast_audio, material_text),

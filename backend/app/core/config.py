@@ -7,18 +7,23 @@ Import the singleton ``settings`` instance throughout the app.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
-from typing import List, Optional
+from typing import List, Literal, Optional
 
-from dotenv import load_dotenv
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
-load_dotenv()
+# Resolve project root once — all relative paths resolve from here
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 class Settings(BaseSettings):
     """Application settings — validated from environment variables."""
+
+    # ── Environment ────────────────────────────────────────
+    ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    DEBUG: bool = False
 
     # ── Database ──────────────────────────────────────────
     DATABASE_URL: str = ""
@@ -33,7 +38,12 @@ class Settings(BaseSettings):
     # ── Output Directories ────────────────────────────────
     PODCAST_OUTPUT_DIR: str = "output/podcasts"
     PRESENTATIONS_OUTPUT_DIR: str = "output/presentations"
+    GENERATED_OUTPUT_DIR: str = "output/generated"
     TEMPLATES_DIR: str = "./templates"
+
+    # ── Code Execution ────────────────────────────────────
+    MAX_CODE_REPAIR_ATTEMPTS: int = 3
+    CODE_EXECUTION_TIMEOUT: int = 15
 
     # ── JWT / Auth ────────────────────────────────────────
     JWT_SECRET_KEY: str = ""
@@ -59,7 +69,7 @@ class Settings(BaseSettings):
         return v
 
     # ── LLM ───────────────────────────────────────────────
-    LLM_PROVIDER: str = "MYOPENLM"  # Fast AI provider for better performance
+    LLM_PROVIDER: str = "OLLAMA"  # Default local provider — override via .env (OLLAMA, GOOGLE, NVIDIA)
     OLLAMA_MODEL: str = "llama3"
     GOOGLE_MODEL: str = "models/gemini-2.5-flash"
     GOOGLE_API_KEY: str = ""
@@ -114,12 +124,16 @@ class Settings(BaseSettings):
     IMAGE_GENERATION_ENDPOINT: Optional[str] = None
 
     # ── External Search Service ───────────────────────────
-    SEARCH_SERVICE_URL: str = "http://159.89.166.91:8002"
+    SEARCH_SERVICE_URL: str = "http://localhost:8002"
 
     @field_validator("LLM_PROVIDER", mode="after")
     @classmethod
     def _uppercase_provider(cls, v: str) -> str:
-        return v.upper()
+        v = v.upper()
+        valid = {"MYOPENLM", "GOOGLE", "NVIDIA", "OLLAMA"}
+        if v not in valid:
+            raise ValueError(f"LLM_PROVIDER must be one of {valid}, got {v!r}")
+        return v
 
     @field_validator("JWT_SECRET_KEY", mode="after")
     @classmethod
@@ -130,6 +144,39 @@ class Settings(BaseSettings):
                 'Generate: python -c "import secrets; print(secrets.token_urlsafe(64))"'
             )
         return v
+
+    @field_validator("DATABASE_URL", mode="after")
+    @classmethod
+    def _validate_db_url(cls, v: str) -> str:
+        if not v:
+            raise ValueError(
+                "DATABASE_URL must be set. Example: postgresql://user:pass@localhost:5432/dbname"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def _resolve_paths_and_cross_validate(self):
+        """Resolve relative paths to absolute & cross-validate provider keys."""
+        # Resolve relative paths against project root
+        for attr in ("CHROMA_DIR", "UPLOAD_DIR", "MODELS_DIR", "TEMPLATES_DIR",
+                     "PODCAST_OUTPUT_DIR", "PRESENTATIONS_OUTPUT_DIR", "GENERATED_OUTPUT_DIR"):
+            val = getattr(self, attr)
+            if val and not os.path.isabs(val):
+                object.__setattr__(self, attr, os.path.join(_PROJECT_ROOT, val))
+
+        # Auto-derive COOKIE_SECURE from environment
+        if self.ENVIRONMENT == "production":
+            object.__setattr__(self, "COOKIE_SECURE", True)
+
+        # Warn if provider API key missing
+        import logging
+        _log = logging.getLogger("config")
+        if self.LLM_PROVIDER == "GOOGLE" and not self.GOOGLE_API_KEY:
+            _log.warning("LLM_PROVIDER is GOOGLE but GOOGLE_API_KEY is empty")
+        if self.LLM_PROVIDER == "NVIDIA" and not self.NVIDIA_API_KEY:
+            _log.warning("LLM_PROVIDER is NVIDIA but NVIDIA_API_KEY is empty")
+
+        return self
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 

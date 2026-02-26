@@ -15,6 +15,7 @@ re-processing the same material is idempotent.
 from typing import List, Optional
 import logging
 import time
+import threading
 
 from app.core.config import settings
 from app.db.chroma import get_collection
@@ -46,7 +47,7 @@ def warm_up_embeddings() -> None:
 def embed_and_store(
     chunks: List[dict],
     material_id: Optional[str] = None,
-    user_id: Optional[str] = None,
+    user_id: str = "",
     notebook_id: Optional[str] = None,
     filename: Optional[str] = None,
 ) -> None:
@@ -55,6 +56,8 @@ def embed_and_store(
     Each chunk dict must contain ``id`` and ``text`` keys.
     Tenant metadata (material_id, user_id, notebook_id) is attached for
     per-user filtering at query time.
+    
+    user_id is REQUIRED — embeddings without user_id break tenant isolation.
 
     Behaviour:
     - Uses ``collection.upsert()`` (idempotent) instead of ``add()`` so that
@@ -64,6 +67,10 @@ def embed_and_store(
     - A single bad batch is logged and skipped; other batches proceed.
     """
     if not chunks:
+        return
+    
+    if not user_id:
+        logger.error("embed_and_store called without user_id — skipping to prevent tenant isolation breach")
         return
 
     collection = get_collection()
@@ -98,8 +105,16 @@ def embed_and_store(
                 metas[i]["section_title"] = str(chunk["section_title"])[:200]
             if "chunk_index" in chunk:
                 metas[i]["chunk_index"] = str(chunk["chunk_index"])
+            # Structured data: embed only the summary but tag so the retriever
+            # can swap in the full dataset at query time.
+            if chunk.get("chunk_type") == "structured_summary":
+                metas[i]["is_structured"] = "true"
+            if "_raw_file_path" in chunk and chunk["_raw_file_path"]:
+                metas[i]["raw_file_path"] = str(chunk["_raw_file_path"])[:500]
 
         # Retry loop for transient ChromaDB / ONNX errors
+        # Note: time.sleep() is acceptable here because embed_and_store is called
+        # via run_in_executor from async code (worker.py), so it runs in a thread.
         last_exc = None
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
@@ -113,7 +128,8 @@ def embed_and_store(
                     "Batch upsert attempt %d/%d failed (start=%d): %s — retrying in %.1fs",
                     attempt, _MAX_RETRIES, start, exc, wait,
                 )
-                time.sleep(wait)
+                # Use threading.Event for interruptible sleep
+                threading.Event().wait(timeout=wait)
         else:
             failed_batches += 1
             logger.error(
@@ -142,10 +158,12 @@ def delete_material_embeddings(material_id: str, user_id: str) -> int:
 
     Returns the number of chunks deleted.  Safe to call if material has no
     chunks stored (returns 0).
+    
+    Raises:
+        RuntimeError: If the deletion fails (callers should handle this).
     """
     try:
         collection = get_collection()
-        # Query for IDs to delete
         results = collection.get(
             where={"$and": [{"material_id": material_id}, {"user_id": user_id}]},
             include=[],  # IDs only
@@ -160,4 +178,4 @@ def delete_material_embeddings(material_id: str, user_id: str) -> int:
         return len(ids_to_delete)
     except Exception as exc:
         logger.error("Failed to delete embeddings for material %s: %s", material_id, exc)
-        return 0
+        raise RuntimeError(f"Embedding deletion failed for material {material_id}") from exc

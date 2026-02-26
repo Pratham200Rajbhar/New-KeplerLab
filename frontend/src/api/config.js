@@ -25,6 +25,36 @@ function getAuthHeaders() {
 
 // ── API fetcher with auto-refresh on 401 ─────────────────
 
+// Mutex for concurrent 401 refresh — prevents multiple simultaneous
+// refresh attempts from rotating tokens out from under each other
+let _refreshPromise = null;
+
+async function _doRefresh() {
+  const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!refreshResponse.ok) {
+    _accessToken = null;
+    throw new Error('Refresh failed');
+  }
+
+  const tokens = await refreshResponse.json();
+  _accessToken = tokens.access_token;
+  return tokens.access_token;
+}
+
+function _refreshTokenOnce() {
+  if (!_refreshPromise) {
+    _refreshPromise = _doRefresh().finally(() => {
+      _refreshPromise = null;
+    });
+  }
+  return _refreshPromise;
+}
+
 export async function apiFetch(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -43,30 +73,24 @@ export async function apiFetch(endpoint, options = {}) {
   // Handle 401 Unauthorized — try silent refresh via cookie
   if (response.status === 401) {
     try {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const newToken = await _refreshTokenOnce();
 
-      if (refreshResponse.ok) {
-        const tokens = await refreshResponse.json();
-        _accessToken = tokens.access_token;
+      // Retry the original request with new token
+      config.headers['Authorization'] = `Bearer ${newToken}`;
+      const retryResponse = await fetch(url, config);
 
-        // Retry the original request with new token
-        config.headers['Authorization'] = `Bearer ${tokens.access_token}`;
-        const retryResponse = await fetch(url, config);
-
-        if (!retryResponse.ok) {
-          const error = await retryResponse.json().catch(() => ({ detail: 'Request failed' }));
-          throw new Error(error.detail || `HTTP ${retryResponse.status}`);
-        }
-        return retryResponse;
+      if (!retryResponse.ok) {
+        const error = await retryResponse.json().catch(() => ({ detail: 'Request failed' }));
+        throw new Error(error.detail || `HTTP ${retryResponse.status}`);
       }
+      return retryResponse;
     } catch {
-      // Refresh failed — session expired, reload to show login
+      // Refresh failed — session expired, redirect to login
       _accessToken = null;
-      window.location.reload();
+      if (window.location.pathname !== '/auth') {
+        window.location.href = '/auth';
+      }
+      throw new Error('Session expired');
     }
   }
 
@@ -97,19 +121,14 @@ export async function apiFetchFormData(endpoint, formData, method = 'POST') {
 
   if (response.status === 401) {
     try {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (refreshResponse.ok) {
-        const tokens = await refreshResponse.json();
-        _accessToken = tokens.access_token;
-        response = await fetch(url, buildConfig());
-      }
+      const newToken = await _refreshTokenOnce();
+      // Token refreshed — retry with new token
+      response = await fetch(url, buildConfig());
     } catch {
       _accessToken = null;
-      window.location.reload();
+      if (window.location.pathname !== '/auth') {
+        window.location.href = '/auth';
+      }
       throw new Error('Session expired');
     }
   }

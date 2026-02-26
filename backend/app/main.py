@@ -8,6 +8,7 @@ import logging.handlers
 import os
 import sys
 import time
+import uuid
 from contextlib import asynccontextmanager
 
 # ── Logging configuration (done once, before any app imports) ─
@@ -30,6 +31,7 @@ for _noisy in ("httpx", "httpcore", "uvicorn.access"):
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
@@ -73,7 +75,7 @@ async def lifespan(app: FastAPI):
     # 2. Warm up the embedding model AND reranker in a thread-pool executor so
     #    the first request does not stall for model-load time.
     #    Both calls are blocking/CPU-bound — must NOT run on the event loop.
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         from app.services.rag.embedder import warm_up_embeddings
         logger.info("Warming up embedding model (running in thread pool)…")
@@ -82,9 +84,9 @@ async def lifespan(app: FastAPI):
         logger.warning("Embedding warm-up failed (non-fatal, will retry on first use): %s", exc)
 
     try:
-        from app.services.rag.reranker import _get_reranker
+        from app.services.rag.reranker import get_reranker
         logger.info("Preloading reranker model (running in thread pool)…")
-        await loop.run_in_executor(None, _get_reranker)
+        await loop.run_in_executor(None, get_reranker)
         logger.info("Reranker preloaded.")
     except Exception as exc:
         logger.warning("Reranker preload failed (non-fatal, will load on first use): %s", exc)
@@ -93,6 +95,31 @@ async def lifespan(app: FastAPI):
     from app.services.worker import job_processor
     _job_processor_task = asyncio.create_task(job_processor(), name="job_processor")
     logger.info("Background job processor task created.")
+
+    # 4. Ensure sandbox packages are installed
+    try:
+        from app.services.code_execution.sandbox_env import ensure_packages
+        logger.info("Ensuring sandbox packages are installed…")
+        await ensure_packages()
+    except Exception as exc:
+        logger.warning("Sandbox package setup failed (non-fatal): %s", exc)
+
+    # 4b. Cleanup stale sandbox temp directories from previous crashes
+    try:
+        import glob
+        import shutil
+        stale_dirs = glob.glob("/tmp/kepler_sandbox_*") + glob.glob("/tmp/kepler_analysis_*")
+        if stale_dirs:
+            for d in stale_dirs:
+                shutil.rmtree(d, ignore_errors=True)
+            logger.info("Cleaned up %d stale sandbox temp directories", len(stale_dirs))
+    except Exception as exc:
+        logger.warning("Sandbox temp cleanup failed (non-fatal): %s", exc)
+
+    # 5. Create output directories (use resolved absolute paths from settings)
+    for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PODCAST_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR]:
+        os.makedirs(_dir, exist_ok=True)
+    logger.info("Output directories ensured.")
 
     yield
 
@@ -125,15 +152,18 @@ app.middleware("http")(rate_limit_middleware)
 
 @app.middleware("http")
 async def log_requests(request, call_next):
+    request_id = uuid.uuid4().hex[:8]
+    request.state.request_id = request_id
     start = time.time()
     try:
         response = await call_next(request)
         dt = time.time() - start
-        logger.info(f"{request.method} {request.url.path} {response.status_code} {dt:.2f}s")
+        logger.info("%s %s %s %.2fs [%s]", request.method, request.url.path, response.status_code, dt, request_id)
+        response.headers["X-Request-ID"] = request_id
         return response
     except Exception as e:
         dt = time.time() - start
-        logger.error(f"{request.method} {request.url.path} ERROR {type(e).__name__} {dt:.2f}s")
+        logger.error("%s %s ERROR %s %.2fs [%s]", request.method, request.url.path, type(e).__name__, dt, request_id)
         raise
 
 
@@ -145,6 +175,27 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+# Trusted host validation (prevents host-header attacks)
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.CORS_ORIGINS
+            if settings.CORS_ORIGINS and settings.CORS_ORIGINS != ["*"]
+            else ["*"],
+    )
+
+
+# Request body size limiter (100 MB default)
+_MAX_BODY_SIZE = 100 * 1024 * 1024
+
+
+@app.middleware("http")
+async def limit_request_body(request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > _MAX_BODY_SIZE:
+        return JSONResponse(status_code=413, content={"detail": "Request body too large"})
+    return await call_next(request)
 
 
 # ── Error handlers ────────────────────────────────────────
@@ -172,10 +223,11 @@ async def http_exception_handler(request, exc):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    logger.exception(f"Unhandled: {type(exc).__name__}")
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.exception("Unhandled %s [request_id=%s]", type(exc).__name__, request_id)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error"},
+        content={"detail": "Internal server error", "request_id": request_id},
         headers=_cors_headers(request.headers.get("origin")),
     )
 

@@ -16,6 +16,7 @@ export default function HomePage() {
     const [editName, setEditName] = useState('');
     const [editDescription, setEditDescription] = useState('');
     const [saving, setSaving] = useState(false);
+    const [deletingNotebook, setDeletingNotebook] = useState(null);
 
     const loadNotebooks = async () => {
         try {
@@ -34,7 +35,13 @@ export default function HomePage() {
     const handleDelete = async (notebookId, e) => {
         e?.stopPropagation();
         setActiveMenu(null);
-        if (!confirm('Delete this notebook and all its materials?')) return;
+        setDeletingNotebook(notebookId);
+    };
+
+    const confirmDelete = async () => {
+        const notebookId = deletingNotebook;
+        setDeletingNotebook(null);
+        if (!notebookId) return;
 
         try {
             await deleteNotebook(notebookId);
@@ -311,6 +318,27 @@ export default function HomePage() {
                             <button onClick={handleRename} disabled={saving || !editName.trim()} className="btn-primary">
                                 {saving ? 'Saving...' : 'Save'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingNotebook && (
+                <div className="modal-backdrop" onClick={() => setDeletingNotebook(null)}>
+                    <div className="modal w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+                        <div className="modal-body py-6 text-center">
+                            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <h3 className="text-base font-semibold text-text-primary mb-2">Delete notebook?</h3>
+                            <p className="text-sm text-text-secondary">This will permanently delete the notebook and all its materials.</p>
+                        </div>
+                        <div className="modal-footer justify-center gap-3">
+                            <button onClick={() => setDeletingNotebook(null)} className="btn-secondary">Cancel</button>
+                            <button onClick={confirmDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium transition-colors">Delete</button>
                         </div>
                     </div>
                 </div>

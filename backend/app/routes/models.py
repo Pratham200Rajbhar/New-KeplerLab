@@ -8,8 +8,8 @@ router = APIRouter(prefix="/models", tags=["models"])
 
 
 @router.get("/status")
-async def get_models_status():
-    """Get status of all required models (public, read-only)."""
+async def get_models_status(current_user=Depends(get_current_user)):
+    """Get status of all required models (requires authentication)."""
     info = model_manager.get_model_info()
     status_map = {}
     for model_id, cfg in info["required_models"].items():

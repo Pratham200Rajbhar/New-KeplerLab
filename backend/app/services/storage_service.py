@@ -10,6 +10,7 @@ Future: S3, MinIO, Azure Blob, etc.
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -17,8 +18,17 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Storage directory for material text files
-MATERIAL_TEXT_DIR = Path("data/material_text")
+# Storage directory for material text files — absolute path from settings
+MATERIAL_TEXT_DIR = Path(settings.UPLOAD_DIR).parent / "material_text"
+
+# UUID v4 pattern for material_id validation
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$", re.I)
+
+
+def _validate_material_id(material_id: str) -> None:
+    """Validate material_id is a safe UUID to prevent path traversal."""
+    if not material_id or not _UUID_RE.match(material_id):
+        raise ValueError(f"Invalid material_id format: {material_id!r}")
 
 
 def _ensure_storage_dir() -> None:
@@ -37,6 +47,7 @@ def save_material_text(material_id: str, text: str) -> bool:
         True if saved successfully, False otherwise
     """
     try:
+        _validate_material_id(material_id)
         _ensure_storage_dir()
         
         file_path = MATERIAL_TEXT_DIR / f"{material_id}.txt"
@@ -47,6 +58,9 @@ def save_material_text(material_id: str, text: str) -> bool:
         logger.info(f"Saved material text: {material_id} ({len(text)} chars)")
         return True
         
+    except ValueError as e:
+        logger.error(f"Invalid material_id: {e}")
+        return False
     except Exception as e:
         logger.error(f"Failed to save material text {material_id}: {e}")
         return False
@@ -62,6 +76,7 @@ def load_material_text(material_id: str) -> Optional[str]:
         Full text content, or None if not found
     """
     try:
+        _validate_material_id(material_id)
         file_path = MATERIAL_TEXT_DIR / f"{material_id}.txt"
         
         if not file_path.exists():
@@ -74,6 +89,9 @@ def load_material_text(material_id: str) -> Optional[str]:
         logger.debug(f"Loaded material text: {material_id} ({len(text)} chars)")
         return text
         
+    except ValueError as e:
+        logger.error(f"Invalid material_id: {e}")
+        return None
     except Exception as e:
         logger.error(f"Failed to load material text {material_id}: {e}")
         return None
@@ -89,6 +107,7 @@ def delete_material_text(material_id: str) -> bool:
         True if deleted successfully, False otherwise
     """
     try:
+        _validate_material_id(material_id)
         file_path = MATERIAL_TEXT_DIR / f"{material_id}.txt"
         
         if file_path.exists():
@@ -99,6 +118,9 @@ def delete_material_text(material_id: str) -> bool:
             logger.warning(f"Material text not found for deletion: {material_id}")
             return False
         
+    except ValueError as e:
+        logger.error(f"Invalid material_id: {e}")
+        return False
     except Exception as e:
         logger.error(f"Failed to delete material text {material_id}: {e}")
         return False
@@ -150,3 +172,24 @@ def get_storage_stats() -> dict:
     except Exception as e:
         logger.error(f"Failed to get storage stats: {e}")
         return {"file_count": 0, "total_size_mb": 0.0, "error": str(e)}
+
+
+def delete_uploaded_file(file_path: str) -> bool:
+    """Delete an uploaded file from disk.
+
+    Args:
+        file_path: Absolute path to the file.
+
+    Returns:
+        True if deleted, False otherwise.
+    """
+    try:
+        p = Path(file_path)
+        if p.exists() and p.is_file():
+            p.unlink()
+            logger.info("Deleted uploaded file: %s", file_path)
+            return True
+        return False
+    except Exception as e:
+        logger.error("Failed to delete uploaded file %s: %s", file_path, e)
+        return False

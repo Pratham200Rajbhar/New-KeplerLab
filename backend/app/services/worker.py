@@ -36,7 +36,7 @@ import asyncio
 import logging
 import time
 
-from app.db.prisma_client import prisma
+from app.db.prisma_client import get_prisma
 from app.services.job_service import fetch_next_pending_job
 from app.services.material_service import (
     process_material_by_id,
@@ -50,6 +50,41 @@ logger = logging.getLogger(__name__)
 _POLL_SECONDS: float = 2.0    # idle wait between queue checks
 _ERROR_BACKOFF: float = 5.0   # extra wait after an unexpected error
 MAX_CONCURRENT_JOBS: int = 5  # Maximum number of concurrent resource extractions
+_STUCK_JOB_TIMEOUT_MINUTES: int = 30  # Jobs processing longer than this are considered stuck
+
+
+# ── Stuck Job Recovery ──────────────────────────────────────────
+
+async def _recover_stuck_jobs() -> None:
+    """Reset jobs stuck in 'processing' state back to 'pending'.
+
+    Called once at startup. If the server crashed mid-processing, affected
+    jobs would remain in 'processing' forever since no worker will pick
+    them up (workers only claim 'pending' jobs).
+
+    Only resets jobs older than _STUCK_JOB_TIMEOUT_MINUTES to avoid
+    interfering with legitimately running jobs in multi-worker setups.
+    """
+    try:
+        result = await get_prisma().query_raw(
+            """
+            UPDATE background_jobs
+            SET    status     = 'pending',
+                   updated_at = NOW(),
+                   error      = 'Auto-reset: stuck in processing after server restart'
+            WHERE  status     = 'processing'
+              AND  updated_at < NOW() - INTERVAL '1 minute' * $1::int
+            RETURNING id
+            """,
+            _STUCK_JOB_TIMEOUT_MINUTES,
+        )
+        if result:
+            logger.warning(
+                "[WORKER] Recovered %d stuck job(s) → reset to pending: %s",
+                len(result), [r["id"] for r in result],
+            )
+    except Exception as exc:
+        logger.warning("[WORKER] Stuck job recovery failed (non-fatal): %s", exc)
 
 
 # ── Event-driven job queue notification ───────────────────────
@@ -89,6 +124,10 @@ async def job_processor() -> None:
     Runs until the process exits.
     """
     logger.info("Background job processor started (poll_interval=%.1fs, concurrent_limit=%d)", _POLL_SECONDS, MAX_CONCURRENT_JOBS)
+
+    # Recover jobs stuck from a previous crash
+    await _recover_stuck_jobs()
+
     active_tasks: set[asyncio.Task] = set()
 
     while True:
@@ -150,7 +189,7 @@ async def _process_job(job) -> None:
             job.id, payload,
         )
         await _fail_job(job.id, "Incomplete job payload: missing material_id or user_id")
-        return True
+        return
 
     logger.info(
         "Processing job %s | material=%s type=%s user=%s",
@@ -198,7 +237,7 @@ async def _process_job(job) -> None:
         else:
             raise ValueError(f"Unknown source_type: {source_type}")
         job_processing_time = (time.perf_counter() - _t_job) * 1000
-        await prisma.backgroundjob.update(
+        await get_prisma().backgroundjob.update(
             where={"id": job.id},
             data={"status": "completed"},
         )
@@ -222,7 +261,7 @@ async def _process_job(job) -> None:
 async def _fail_job(job_id: str, error: str) -> None:
     """Update job to ``failed`` status with the error message."""
     try:
-        await prisma.backgroundjob.update(
+        await get_prisma().backgroundjob.update(
             where={"id": job_id},
             data={"status": "failed", "error": error},
         )
@@ -245,7 +284,7 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
         return
 
     try:
-        notebook = await prisma.notebook.find_unique(where={"id": notebook_id})
+        notebook = await get_prisma().notebook.find_unique(where={"id": notebook_id})
         if notebook is None:
             return
 
@@ -256,7 +295,7 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
             return  # Already has a meaningful name — skip
 
         # Load the extracted text saved by the processing pipeline
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         from functools import partial
         text: str = await loop.run_in_executor(
             None, partial(load_material_text, material_id)
@@ -272,7 +311,7 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
         if not new_name or len(new_name) < 3 or new_name == current_name:
             return
 
-        await prisma.notebook.update(
+        await get_prisma().notebook.update(
             where={"id": notebook_id},
             data={"name": new_name},
         )

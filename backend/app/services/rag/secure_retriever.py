@@ -33,6 +33,50 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger("security.retrieval")
 
+
+def _expand_structured_chunks(
+    documents: List[str],
+    metadatas: List[dict],
+) -> List[str]:
+    """Replace summary placeholders for structured files with their full dataset.
+
+    When a chunk was ingested from a CSV/Excel file the embedder stores only a
+    compact schema summary in ChromaDB and tags it with ``is_structured: "true"``.
+    At retrieval time we swap the summary for the full content.
+
+    Safety: caps expanded text to 50,000 chars to prevent OOM with huge files.
+    """
+    from app.services.storage_service import load_material_text
+
+    _MAX_EXPANDED_CHARS = 50_000  # Safety cap for structured data expansion
+    expanded = list(documents)
+    for i, meta in enumerate(metadatas):
+        if str(meta.get("is_structured", "")).lower() != "true":
+            continue
+        material_id = meta.get("material_id")
+        if not material_id:
+            continue
+        try:
+            full_text = load_material_text(material_id)
+            if full_text:
+                if len(full_text) > _MAX_EXPANDED_CHARS:
+                    full_text = full_text[:_MAX_EXPANDED_CHARS] + "\n\n... [truncated — full dataset too large for context]"
+                    logger.warning(
+                        "Structured chunk truncated to %d chars for material=%s (original: %d)",
+                        _MAX_EXPANDED_CHARS, material_id, len(full_text),
+                    )
+                expanded[i] = full_text
+                logger.info(
+                    "Expanded structured chunk for material=%s (%d chars)",
+                    material_id, len(full_text),
+                )
+        except Exception as exc:
+            logger.warning(
+                "Could not load full structured text for material=%s: %s",
+                material_id, exc,
+            )
+    return expanded
+
 # ── Multi-source retrieval configuration ──────────────────────
 DEFAULT_PER_MATERIAL_K = 10      # Chunks to retrieve per material
 CROSS_DOC_PER_MATERIAL_K = 15    # Increased for cross-document queries
@@ -451,21 +495,17 @@ def secure_similarity_search_enhanced(
     ids = results.get("ids", [[]])[0]
     
     # ── Post-query validation ─────────────────────────────────
-    _validate_result_ownership(user_id, documents, metadatas, query)
-    
-    # Remove any empty documents from security filtering
-    valid_indices = [i for i, doc in enumerate(documents) if doc]
-    documents = [documents[i] for i in valid_indices]
-    embeddings = [embeddings[i] for i in valid_indices] if embeddings else []
-    metadatas = [metadatas[i] for i in valid_indices] if metadatas else []
-    ids = [ids[i] for i in valid_indices] if ids else []
+    _validate_result_ownership(user_id, documents, metadatas, query, ids=ids, embeddings=embeddings)
     
     if not documents:
         logger.warning("No valid documents after security filtering")
         return "No relevant context found." if return_formatted else []
     
     logger.info(f"Retrieved {len(documents)} valid chunks")
-    
+
+    # ── Expand structured chunks to full dataset ──────────────
+    documents = _expand_structured_chunks(documents, metadatas)
+
     # ── Step 2: Apply MMR for diversity ───────────────────────
     if use_mmr and len(documents) > settings.MMR_K and embeddings:
         try:
@@ -672,7 +712,7 @@ def _retrieve_multi_source(
         metas = results.get("metadatas", [[]])[0]
         ids = results.get("ids", [[]])[0]
 
-        _validate_result_ownership(user_id, docs, metas, query)
+        _validate_result_ownership(user_id, docs, metas, query, ids=ids)
 
         for i, doc in enumerate(docs):
             if doc and i < len(metas) and i < len(ids):
@@ -702,7 +742,10 @@ def _retrieve_multi_source(
         pass
     
     logger.info(f"Total retrieved: {len(all_documents)} chunks from {len(material_ids)} materials in {retrieval_time:.3f}s")
-    
+
+    # ── Expand structured chunks to full dataset ──────────────
+    all_documents = _expand_structured_chunks(all_documents, all_metadatas)
+
     # ── Step 2: Global reranking ──────────────────────────────
     reranking_start = time.time()
     chunk_scores = None
@@ -816,18 +859,36 @@ def _validate_result_ownership(
     documents: List[str],
     metadatas: List[dict],
     query: str,
+    ids: list | None = None,
+    embeddings: list | None = None,
 ) -> None:
-    """Log a warning if any returned document belongs to a different tenant."""
+    """Remove any documents belonging to a different tenant (CRITICAL SECURITY).
+    
+    Instead of blanking to empty string (which could leak downstream),
+    we collect leaked indices and remove them properly.
+    All parallel lists (documents, metadatas, ids, embeddings) are modified
+    in-place by removing leaked items to keep indices synchronized.
+    """
+    leaked_indices = []
     for idx, meta in enumerate(metadatas):
         doc_owner = meta.get("user_id")
         if doc_owner and doc_owner != user_id:
             security_logger.warning(
-                "CROSS-TENANT LEAK DETECTED | requested=%s got=%s "
+                "CROSS-TENANT LEAK BLOCKED | requested=%s got=%s "
                 "doc_index=%d query=%r",
                 user_id,
                 doc_owner,
                 idx,
                 query[:120],
             )
-            # Remove the leaked document from the result set in-place
-            documents[idx] = ""
+            leaked_indices.append(idx)
+    
+    # Remove leaked documents in reverse order to preserve indices
+    for idx in reversed(leaked_indices):
+        documents.pop(idx)
+        if idx < len(metadatas):
+            metadatas.pop(idx)
+        if ids is not None and idx < len(ids):
+            ids.pop(idx)
+        if embeddings is not None and idx < len(embeddings):
+            embeddings.pop(idx)

@@ -178,15 +178,17 @@ async def performance_monitoring_middleware(request: Request, call_next):
             user_id=user_id,
         )
     
-    # Add performance headers for debugging
-    metrics = get_performance_metrics()
-    response.headers["X-Response-Time"] = f"{total_time:.3f}s"
-    if metrics["retrieval_time"] > 0:
-        response.headers["X-Retrieval-Time"] = f"{metrics['retrieval_time']:.3f}s"
-    if metrics["reranking_time"] > 0:
-        response.headers["X-Reranking-Time"] = f"{metrics['reranking_time']:.3f}s"
-    if metrics["llm_time"] > 0:
-        response.headers["X-LLM-Time"] = f"{metrics['llm_time']:.3f}s"
+    # Only add performance headers in development (avoid leaking internals in prod)
+    from app.core.config import settings
+    if settings.ENVIRONMENT == "development":
+        metrics = get_performance_metrics()
+        response.headers["X-Response-Time"] = f"{total_time:.3f}s"
+        if metrics["retrieval_time"] > 0:
+            response.headers["X-Retrieval-Time"] = f"{metrics['retrieval_time']:.3f}s"
+        if metrics["reranking_time"] > 0:
+            response.headers["X-Reranking-Time"] = f"{metrics['reranking_time']:.3f}s"
+        if metrics["llm_time"] > 0:
+            response.headers["X-LLM-Time"] = f"{metrics['llm_time']:.3f}s"
     
     return response
 

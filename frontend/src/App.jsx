@@ -4,6 +4,7 @@ import './index.css';
 import { AppProvider, useApp } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import ErrorBoundary, { PanelErrorBoundary } from './components/ErrorBoundary';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ChatPanel from './components/ChatPanel';
@@ -65,7 +66,11 @@ function Workspace() {
           console.error('Failed to load notebook:', error);
           // TODO: Redirect to home or show error
         }
-      } else if (id === 'draft' && !currentNotebook?.isDraft) {
+      } else if (id === 'draft' && !currentNotebook?.isDraft && (!currentNotebook?.id || currentNotebook.id === 'draft')) {
+        // Only reset to draft when there is no real notebook loaded yet.
+        // Guard against the race where setCurrentNotebook(realId) fires before
+        // navigate('/notebook/realId') updates the URL: if a real notebook was
+        // just assigned, do NOT overwrite it back to the draft placeholder.
         setCurrentNotebook({ id: 'draft', name: 'New Notebook', isDraft: true });
         setDraftMode(true);
       }
@@ -86,9 +91,15 @@ function Workspace() {
     <div className="h-screen flex flex-col overflow-hidden bg-surface">
       <Header user={user} onBack={handleBack} />
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar />
-        <ChatPanel />
-        <StudioPanel />
+        <PanelErrorBoundary panelName="Sidebar">
+          <Sidebar />
+        </PanelErrorBoundary>
+        <PanelErrorBoundary panelName="Chat">
+          <ChatPanel />
+        </PanelErrorBoundary>
+        <PanelErrorBoundary panelName="Studio">
+          <StudioPanel />
+        </PanelErrorBoundary>
       </div>
     </div>
   );
@@ -129,7 +140,9 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
     </Router>

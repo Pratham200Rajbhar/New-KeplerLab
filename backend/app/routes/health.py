@@ -89,6 +89,15 @@ async def health_check():
     else:
         health_status["overall"] = "degraded"
         status_code = 200
+
+    # Add storage stats
+    try:
+        from app.services.storage_service import get_storage_stats
+        from app.db.chroma import get_collection_stats
+        health_status["storage"] = get_storage_stats()
+        health_status["chroma_stats"] = get_collection_stats()
+    except Exception as e:
+        logger.debug("Storage stats unavailable: %s", e)
     
     return JSONResponse(
         content=health_status,

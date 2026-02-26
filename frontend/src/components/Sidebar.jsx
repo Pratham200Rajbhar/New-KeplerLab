@@ -23,6 +23,7 @@ export default function Sidebar() {
         draftMode,
         setDraftMode,
         selectedSources,
+        setSelectedSources,
         toggleSourceSelection,
         selectAllSources,
         deselectAllSources,
@@ -61,9 +62,12 @@ export default function Sidebar() {
     const minWidth = 260; // Increased min width
     const maxWidth = 600;
 
-    const loadMaterials = async () => {
+    const [loadError, setLoadError] = useState(null);
+
+    const loadMaterials = useCallback(async (autoSelect = false) => {
         if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
             try {
+                setLoadError(null);
                 const loadedMaterials = await getMaterials(currentNotebook.id);
                 const formatted = loadedMaterials.map(m => ({
                     id: m.id,
@@ -74,52 +78,78 @@ export default function Sidebar() {
                     source_type: m.source_type,
                 }));
 
-                // Update specific materials if we already have them loaded to prevent full re-renders, 
-                // but just a simple state replace works for this scale.
                 setMaterials(formatted);
                 if (formatted.length > 0 && !currentMaterial) {
                     setCurrentMaterial(formatted[0]);
                 }
+                // Auto-select all completed materials on initial notebook load
+                // so the chat input is ready without requiring manual checkbox clicks.
+                // Uses additive semantics so manual deselections of OTHER sources are kept.
+                if (autoSelect) {
+                    const completedIds = formatted
+                        .filter(m => m.status === 'completed')
+                        .map(m => m.id);
+                    if (completedIds.length > 0) {
+                        setSelectedSources(prev => new Set([...prev, ...completedIds]));
+                    }
+                }
             } catch (error) {
                 console.error('Failed to load materials:', error);
+                setLoadError('Failed to load sources. Click to retry.');
             }
         }
-    };
+    }, [currentNotebook?.id, currentNotebook?.isDraft, draftMode, setMaterials, currentMaterial, setCurrentMaterial, setSelectedSources]);
 
-    // Initial load when notebook changes
+    // Initial load when notebook changes — auto-select all completed sources
+    // so the chat send button is immediately enabled.
+    // (AppContext already calls deselectAllSources() on notebook change, so
+    //  we don't need to do it again here.)
     useEffect(() => {
-        deselectAllSources();
-        loadMaterials();
-    }, [currentNotebook?.id]);
+        loadMaterials(true);
+    }, [currentNotebook?.id, loadMaterials]);
 
     // WebSocket: real-time material processing updates
     const handleWsMessage = useCallback((msg) => {
         if (msg.type === 'material_update' && msg.material_id) {
             setMaterials(prev => prev.map(m =>
                 m.id === msg.material_id
-                    ? { ...m, status: msg.status, ...(msg.error ? { error: msg.error } : {}) }
+                    ? {
+                        ...m,
+                        status: msg.status,
+                        ...(msg.title ? { title: msg.title } : {}),
+                        ...(msg.error ? { error: msg.error } : {}),
+                      }
                     : m
             ));
             // Reload full material list when a material completes to get chunk_count etc.
             if (msg.status === 'completed' || msg.status === 'failed') {
                 loadMaterials();
+                // Auto-add newly completed material to selection so the user
+                // can start chatting immediately after upload without any
+                // manual interaction. This only ADDs — never removes — so
+                // existing manual source selections are preserved.
+                if (msg.status === 'completed') {
+                    setSelectedSources(prev => new Set([...prev, msg.material_id]));
+                }
             }
         }
-    }, [currentNotebook?.id]);
+    }, [setMaterials, loadMaterials, setSelectedSources]);
 
     useMaterialUpdates(user?.id || null, handleWsMessage);
 
     // Fallback polling for pending/processing materials (in case WS drops)
+    // Pass autoSelect=true so that if the WebSocket missed a "completed" event the
+    // polling path still enables the send button by populating selectedSources.
     useEffect(() => {
         const hasProcessingMaterials = materials.some(m => m.status && !['completed', 'failed'].includes(m.status));
         if (!hasProcessingMaterials) return;
 
         const interval = setInterval(() => {
-            loadMaterials();
+            loadMaterials(true); // autoSelect=true — ensures completed materials are selected even when WS misses an event
         }, 8000); // Relaxed interval — WebSocket handles most updates
 
         return () => clearInterval(interval);
-    }, [materials, currentNotebook?.id]);
+    }, [materials, loadMaterials]);
 
     const handleMouseMove = useCallback((e) => {
         if (isResizing) {
@@ -459,6 +489,18 @@ export default function Sidebar() {
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                 >
+                    {/* Load error banner */}
+                    {loadError && (
+                        <button
+                            onClick={() => { setLoadError(null); loadMaterials(); }}
+                            className="w-full px-4 py-2 text-xs text-red-400 bg-red-500/10 hover:bg-red-500/15 transition-colors flex items-center gap-2"
+                        >
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3l9.66 16.59a1 1 0 01-.87 1.41H3.21a1 1 0 01-.87-1.41L12 3z" />
+                            </svg>
+                            {loadError}
+                        </button>
+                    )}
                     {materials.length > 0 ? (
                         <div className="p-2">
                             <div className="space-y-0.5">

@@ -109,12 +109,44 @@ async def chat_endpoint(
         from app.services.agent.graph import run_agent, run_agent_stream
         from app.services.agent.state import AgentState
 
+        # ── Build workspace_files from material records ────────────────
+        # Required by data_profiler and workspace_builder tools so they can
+        # locate the raw uploaded file (real_path) and extracted text (text_path).
+        import os
+        from app.db.prisma_client import prisma as _prisma
+
+        workspace_files = []
+        for mid in ids:
+            try:
+                mat = await _prisma.material.find_unique(where={"id": mid})
+                if not mat:
+                    continue
+                fname = mat.filename or ""
+                ext = os.path.splitext(fname)[1].lower()
+                meta: dict = {}
+                if mat.metadata:
+                    try:
+                        meta = json.loads(mat.metadata) if isinstance(mat.metadata, str) else mat.metadata
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                workspace_files.append({
+                    "id": mid,
+                    "filename": fname,
+                    "real_path": meta.get("upload_path", ""),
+                    "text_path": f"data/material_text/{mid}.txt",
+                    "ext": ext,
+                    "type": getattr(mat, "sourceType", None) or "file",
+                })
+            except Exception as _wf_err:
+                logger.warning("workspace_files: failed to load material %s: %s", mid, _wf_err)
+
         initial_state: AgentState = {
             "user_message": request.message,
             "user_id": str(current_user.id),
             "notebook_id": request.notebook_id,
             "material_ids": ids,
             "session_id": session_id,
+            "workspace_files": workspace_files,
             "intent": "",
             "intent_confidence": 0.0,
             "plan": [],
@@ -155,8 +187,10 @@ async def chat_endpoint(
                             except json.JSONDecodeError:
                                 pass
 
-                    # Persist messages to DB after streaming completes
-                    complete_answer = "".join(full_response)
+                    # Persist messages to DB after streaming completes.
+                    # For structured JSON responses (DATA_ANALYSIS), no token events
+                    # are emitted — use the response carried in the meta event instead.
+                    complete_answer = "".join(full_response) or agent_meta.get("response", "")
                     if complete_answer:
                         msg_id = await chat_service.save_conversation(
                             notebook_id=request.notebook_id,
@@ -164,6 +198,7 @@ async def chat_endpoint(
                             user_message=request.message,
                             assistant_answer=complete_answer,
                             session_id=session_id,
+                            agent_meta=agent_meta if agent_meta else None,
                         )
                         if msg_id:
                             blocks = await chat_service.save_response_blocks(msg_id, complete_answer)
@@ -288,8 +323,22 @@ async def block_followup(
     """Block-level mini chat — streams a focused LLM response for a single paragraph.
     
     Persists the full follow-up response as a new ResponseBlock after streaming.
+    Validates block ownership through the chat message's notebook → user chain.
     """
     try:
+        # Validate block ownership — ensure the block belongs to this user
+        from app.db.prisma_client import get_prisma
+        prisma = get_prisma()
+        parent_block = await prisma.responseblock.find_unique(
+            where={"id": request.block_id},
+            include={"chatMessage": {"include": {"notebook": True}}},
+        )
+        if not parent_block or not parent_block.chatMessage:
+            raise HTTPException(status_code=404, detail="Block not found")
+        notebook = parent_block.chatMessage.notebook
+        if not notebook or str(notebook.userId) != str(current_user.id):
+            raise HTTPException(status_code=403, detail="Access denied")
+
         async def generate():
             accumulated = []
             try:

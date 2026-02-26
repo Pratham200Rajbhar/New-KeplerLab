@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { apiConfig, getAccessToken } from '../api/config';
 
 /**
@@ -11,8 +11,9 @@ import { apiConfig, getAccessToken } from '../api/config';
  */
 export function useMaterialUpdates(userId, onMessage) {
   const wsRef = useRef(null);
-  const connectedRef = useRef(false);
+  const [connected, setConnected] = useState(false);
   const reconnectTimer = useRef(null);
+  const reconnectAttempts = useRef(0);
   const onMessageRef = useRef(onMessage);
 
   // Keep callback ref current without triggering reconnect
@@ -28,13 +29,18 @@ export function useMaterialUpdates(userId, onMessage) {
 
     // Derive WS URL from API base (http→ws, https→wss)
     const base = apiConfig.baseUrl.replace(/^http/, 'ws');
-    const url = `${base}/ws/jobs/${userId}?token=${encodeURIComponent(token)}`;
+    // Don't put token in URL (leaks to server logs, browser history, proxies)
+    // Send it as the first message after connection instead
+    const url = `${base}/ws/jobs/${userId}`;
 
     try {
       const ws = new WebSocket(url);
 
       ws.onopen = () => {
-        connectedRef.current = true;
+        // Authenticate via first message instead of query param
+        ws.send(JSON.stringify({ type: 'auth', token }));
+        setConnected(true);
+        reconnectAttempts.current = 0; // Reset on successful connect
       };
 
       ws.onmessage = (event) => {
@@ -55,10 +61,12 @@ export function useMaterialUpdates(userId, onMessage) {
       };
 
       ws.onclose = () => {
-        connectedRef.current = false;
+        setConnected(false);
         wsRef.current = null;
-        // Auto-reconnect after 5s (unless unmounted)
-        reconnectTimer.current = setTimeout(connect, 5000);
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        reconnectAttempts.current += 1;
+        reconnectTimer.current = setTimeout(connect, delay);
       };
 
       ws.onerror = () => {
@@ -68,7 +76,9 @@ export function useMaterialUpdates(userId, onMessage) {
       wsRef.current = ws;
     } catch {
       // WebSocket constructor can throw if URL is malformed
-      reconnectTimer.current = setTimeout(connect, 5000);
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+      reconnectAttempts.current += 1;
+      reconnectTimer.current = setTimeout(connect, delay);
     }
   }, [userId]);
 
@@ -82,9 +92,9 @@ export function useMaterialUpdates(userId, onMessage) {
         wsRef.current.close();
         wsRef.current = null;
       }
-      connectedRef.current = false;
+      setConnected(false);
     };
   }, [connect]);
 
-  return { connected: connectedRef.current };
+  return { connected };
 }

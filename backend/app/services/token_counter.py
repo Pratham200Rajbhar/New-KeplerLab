@@ -37,11 +37,19 @@ TOKEN_LIMITS = {
 DEFAULT_ENCODING = "cl100k_base"  # GPT-3.5/GPT-4 encoding
 
 
+# Cached tokenizer instance — avoid re-creating on every call
+_cached_tokenizer = None
+
+
 def _get_tokenizer(model_name: str = "default"):
-    """Get tokenizer for model."""
+    """Get tokenizer for model (cached)."""
+    global _cached_tokenizer
+    if _cached_tokenizer is not None:
+        return _cached_tokenizer
     try:
         # Use tiktoken for accurate counting (OpenAI-compatible)
-        return tiktoken.get_encoding(DEFAULT_ENCODING)
+        _cached_tokenizer = tiktoken.get_encoding(DEFAULT_ENCODING)
+        return _cached_tokenizer
     except Exception as e:
         logger.warning(f"Failed to load tokenizer: {e}, using fallback")
         return None
@@ -156,30 +164,17 @@ async def track_token_usage(
         usage_date = date.today()
     
     try:
-        # Try to update existing record
-        existing = await prisma.usertokenusage.find_first(
-            where={
-                "userId": user_id,
-                "date": usage_date,
-            }
+        # Atomic upsert via raw SQL to prevent race conditions
+        # ON CONFLICT DO UPDATE adds tokens atomically without read-then-write
+        await prisma.execute_raw(
+            'INSERT INTO "UserTokenUsage" ("id", "userId", "date", "tokensUsed") '
+            "VALUES (gen_random_uuid(), $1, $2, $3) "
+            'ON CONFLICT ("userId", "date") '
+            'DO UPDATE SET "tokensUsed" = "UserTokenUsage"."tokensUsed" + $3',
+            user_id,
+            usage_date,
+            tokens_used,
         )
-        
-        if existing:
-            await prisma.usertokenusage.update(
-                where={"id": existing.id},
-                data={
-                    "tokensUsed": existing.tokensUsed + tokens_used,
-                }
-            )
-        else:
-            # Create new record
-            await prisma.usertokenusage.create(
-                data={
-                    "userId": user_id,
-                    "date": usage_date,
-                    "tokensUsed": tokens_used,
-                }
-            )
         
         logger.debug(f"Tracked {tokens_used} tokens for user {user_id}")
         

@@ -19,24 +19,28 @@ logger = logging.getLogger(__name__)
 
 
 def _count_tokens(text: str) -> int:
-    """Rough token count estimation (1 token ≈ 4 characters)."""
-    return len(text) // 4
+    """Token count estimation using tiktoken if available, else heuristic.
+    
+    Falls back to ~1 token per 3.5 chars (more accurate than /4 for mixed content).
+    """
+    try:
+        import tiktoken
+        _enc = tiktoken.get_encoding("cl100k_base")
+        return len(_enc.encode(text))
+    except Exception:
+        # More accurate heuristic: 1 token ≈ 3.5 chars for mixed content
+        return max(1, int(len(text) / 3.5))
 
 
 def _normalize_score(score: float) -> float:
-    """Normalize a reranker score to [0, 1].
+    """Normalize a reranker score to [0, 1] using sigmoid.
 
-    Cross-encoder models (e.g. BAAI/bge-reranker-large) return raw logits
-    that are NOT bounded to [0, 1].  Comparing those raw values against
-    ``settings.MIN_SIMILARITY_SCORE`` (0.3) is meaningless and incorrectly
-    discards chunks with logit ≈ 0.2 (which still represent high relevance).
-
-    Strategy:
-    - If the score is already in [0, 1] (e.g. fallback 1.0) keep it as-is.
-    - Otherwise apply sigmoid to map unbounded logits into (0, 1).
+    Cross-encoder models return raw logits that are unbounded.
+    Always apply sigmoid to ensure consistent normalization —
+    this avoids the discontinuity at the [0,1] boundary where
+    a score of 0.01 would be treated differently from -0.01.
     """
-    if 0.0 <= score <= 1.0:
-        return score
+    # Always apply sigmoid for consistent normalization of cross-encoder logits
     return 1.0 / (1.0 + math.exp(-score))
 
 

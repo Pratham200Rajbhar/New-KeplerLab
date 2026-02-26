@@ -315,40 +315,66 @@
   }
 
   /* ==================== CHAT ==================== */
-  .message {
-    @apply flex items-start py-6 sm:py-8 w-full;
+
+  /* ── Message containers ─────────────────────────── */
+  .chat-msg {
+    @apply w-full;
   }
 
-  .message-content {
-    @apply flex-1 min-w-0;
+  .chat-msg + .chat-msg {
+    border-top: 1px solid var(--border-light, rgba(0,0,0,0.04));
   }
 
-  .message-user .message-content {
-    @apply flex-none w-auto max-w-[85%] sm:max-w-[75%] flex flex-col items-end;
+  .dark .chat-msg + .chat-msg {
+    border-top-color: rgba(255,255,255,0.04);
   }
 
-  .message-ai .message-content {
-    @apply flex-1 w-full;
-  }
-
-  .message-bubble {
-    @apply text-base leading-relaxed;
-  }
-
-  .message-ai .message-bubble {
-    background: transparent;
-    border: none;
-    padding: 0;
-    color: var(--text-primary);
-  }
-
-  .message-user .message-bubble {
-    @apply px-5 sm:px-6 py-3.5 sm:py-4 rounded-3xl inline-block;
-    background: var(--surface-overlay);
-    border: 1px solid var(--border-light);
-    color: var(--text-primary);
+  /* ── User message ────────────────────────────────── */
+  .user-bubble {
+    @apply px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl inline-block;
+    background: var(--accent);
+    color: #fff;
     border-bottom-right-radius: 6px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  .dark .user-bubble {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+
+  /* ── AI avatar ───────────────────────────────────── */
+  .ai-avatar {
+    @apply w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0;
+    background: var(--surface-overlay);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .ai-avatar.streaming-pulse {
+    animation: avatarPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes avatarPulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--accent-muted); }
+    50% { box-shadow: 0 0 0 4px var(--accent-muted); border-color: var(--accent); }
+  }
+
+  /* ── AI action bar (copy / thumbs) ───────────────── */
+  .ai-action-bar {
+    @apply flex items-center gap-0.5;
+  }
+
+  /* ── Streaming cursor ────────────────────────────── */
+  .streaming-cursor {
+    @apply inline-block w-[3px] h-[1.1em] ml-0.5 align-text-bottom;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: cursorBlink 0.8s steps(2) infinite;
+  }
+
+  @keyframes cursorBlink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
   }
 
   /* Citations */
@@ -969,17 +995,28 @@
 
   /* ==================== MARKDOWN CONTENT ==================== */
   .markdown-content {
-    @apply text-sm leading-relaxed;
+    @apply text-[15px] leading-[1.75];
     color: var(--text-primary);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Ensure markdown content children don't overflow */
+  .markdown-content > *:first-child {
+    margin-top: 0 !important;
+  }
+
+  .markdown-content > *:last-child {
+    margin-bottom: 0 !important;
   }
 
   .md-heading {
-    @apply font-semibold flex items-center gap-2;
+    @apply font-semibold;
     color: var(--text-primary);
   }
 
   .md-h1 {
-    @apply text-[1.35rem] mt-8 mb-5 pb-3 font-semibold leading-tight tracking-tight relative;
+    @apply text-xl mt-6 mb-4 pb-2.5 font-bold leading-tight tracking-tight relative;
     color: var(--text-primary);
   }
   .md-h1::after {
@@ -987,10 +1024,10 @@
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 40px;
-    height: 3px;
+    width: 32px;
+    height: 2px;
     background: var(--accent);
-    border-radius: 2px;
+    border-radius: 1px;
   }
 
   .md-h1:first-child {
@@ -998,12 +1035,12 @@
   }
 
   .md-h2 {
-    @apply text-lg mt-7 mb-4 font-semibold tracking-wide;
+    @apply text-[17px] mt-6 mb-3 font-semibold;
     color: var(--text-primary);
   }
 
   .md-h3 {
-    @apply text-base mt-5 mb-3 font-medium;
+    @apply text-[15px] mt-5 mb-2.5 font-semibold;
     color: var(--text-primary);
   }
 
@@ -1017,7 +1054,7 @@
   }
 
   .md-paragraph {
-    @apply mb-3 leading-relaxed;
+    @apply mb-3 leading-[1.75];
     color: var(--text-secondary);
   }
 
@@ -1026,7 +1063,7 @@
   }
 
   .md-list {
-    @apply mb-4 space-y-2 pl-1;
+    @apply mb-4 space-y-1.5 pl-1;
   }
 
   .md-ul {
@@ -1039,14 +1076,14 @@
   }
 
   .md-list-item {
-    @apply relative pl-6 leading-relaxed;
+    @apply relative pl-6 leading-[1.75];
     color: var(--text-secondary);
   }
 
   .md-ul>.md-list-item::before {
     content: '';
-    @apply absolute left-0 top-2 w-1.5 h-1.5 rounded-full;
-    background: var(--accent);
+    @apply absolute left-0 top-[0.65em] w-1.5 h-1.5 rounded-full;
+    background: var(--text-muted);
   }
 
   .md-ol>.md-list-item {
@@ -1054,17 +1091,14 @@
   }
 
   .md-ol>.md-list-item::before {
-    content: counter(list-counter);
-    @apply absolute left-0 top-0 w-5 h-5 flex items-center justify-center text-xs font-semibold rounded-md;
-    background: var(--accent-subtle);
-    color: var(--accent);
-    border: 1px solid var(--accent-muted);
+    content: counter(list-counter) ".";
+    @apply absolute left-0 top-0 text-sm font-medium;
+    color: var(--text-muted);
   }
 
   .md-code-block-wrapper {
     @apply my-4 rounded-xl overflow-hidden;
     border: 1px solid var(--border);
-    background: var(--surface-sunken);
   }
 
   .md-code-header {
@@ -1075,7 +1109,7 @@
 
   .md-code-language {
     @apply text-xs font-medium uppercase tracking-wider;
-    color: var(--accent);
+    color: var(--text-muted);
   }
 
   .copy-code-btn {
@@ -1090,62 +1124,44 @@
   }
 
   .md-inline-code {
-    @apply px-1.5 py-0.5 rounded-md text-xs font-mono;
-    background: var(--accent-subtle);
-    color: var(--accent);
-    border: 1px solid var(--accent-muted);
+    @apply px-1.5 py-0.5 rounded-md text-[13px] font-mono;
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
   }
 
   .md-blockquote {
-    @apply my-5 p-5 rounded-xl flex gap-3.5 shadow-sm;
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
+    @apply my-4 py-3 px-4 rounded-lg;
     border-left: 3px solid var(--accent);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .md-blockquote::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, var(--accent-subtle) 0%, transparent 100%);
-    pointer-events: none;
-  }
-
-  .md-blockquote-icon {
-    @apply text-lg flex-shrink-0 relative z-10;
+    background: var(--surface-raised);
   }
 
   .md-blockquote-content {
-    @apply flex-1 relative z-10;
+    @apply flex-1;
   }
 
   .md-blockquote-content p {
-    @apply mb-0 text-[14.5px] leading-relaxed;
+    @apply mb-0 leading-relaxed;
     color: var(--text-secondary);
   }
 
   .md-link {
-    @apply inline-flex items-center font-medium transition-all duration-200;
+    @apply inline-flex items-center font-medium transition-colors duration-150;
     color: var(--accent);
-    text-decoration: none;
-    background: linear-gradient(90deg, var(--accent), var(--accent)) no-repeat;
-    background-size: 0% 1px;
-    background-position: left bottom;
+    text-decoration: underline;
+    text-decoration-color: var(--accent-muted);
+    text-underline-offset: 2px;
   }
 
   .md-link:hover {
     color: var(--accent-dark);
-    background-size: 100% 1px;
+    text-decoration-color: var(--accent);
   }
 
   .md-table-wrapper {
-    @apply my-4 rounded-xl overflow-hidden;
+    @apply my-4 rounded-xl overflow-x-auto;
     border: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch;
   }
 
   .md-table {
@@ -1154,34 +1170,30 @@
   }
 
   .md-thead {
-    background: var(--accent-subtle);
+    background: var(--surface-raised);
   }
 
   .md-th {
-    @apply px-4 py-3 text-left font-semibold;
-    color: var(--accent);
-    border-bottom: 1px solid var(--accent-muted);
+    @apply px-4 py-2.5 text-left font-semibold text-xs uppercase tracking-wider;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
   }
 
   .md-tbody .md-tr {
-    @apply transition-colors duration-150;
+    @apply transition-colors duration-100;
     border-bottom: 1px solid var(--border-light);
   }
 
+  .md-tbody .md-tr:last-child {
+    border-bottom: none;
+  }
+
   .md-tbody .md-tr:hover {
-    background: var(--accent-subtle);
-  }
-
-  .md-tbody .md-tr:nth-child(even) {
-    background: var(--surface);
-  }
-
-  .md-tbody .md-tr:nth-child(even):hover {
-    background: var(--accent-subtle);
+    background: var(--surface-raised);
   }
 
   .md-td {
-    @apply px-4 py-3;
+    @apply px-4 py-2.5;
     color: var(--text-secondary);
   }
 
@@ -1218,6 +1230,141 @@
   .md-image-caption {
     @apply mt-2 text-xs text-center;
     color: var(--text-muted);
+  }
+
+  /* ── Task lists (GFM checkboxes) ─────────────────── */
+  .md-task-list {
+    list-style: none !important;
+    padding-left: 0 !important;
+  }
+
+  .md-task-item {
+    @apply flex items-start gap-2 pl-0;
+  }
+
+  .md-task-item::before {
+    display: none !important;
+  }
+
+  .md-task-checkbox {
+    @apply mt-1.5 w-4 h-4 rounded border-2 flex-shrink-0 cursor-default appearance-none;
+    border-color: var(--border);
+    background: var(--surface-overlay);
+    transition: all 0.15s ease;
+  }
+
+  .md-task-checkbox:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* ── Details / Summary (collapsible) ─────────────── */
+  .md-details {
+    @apply my-3 rounded-xl overflow-hidden;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+  }
+
+  .md-summary {
+    @apply px-4 py-2.5 text-sm font-medium cursor-pointer select-none;
+    color: var(--text-primary);
+    list-style: none;
+  }
+
+  .md-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .md-summary::before {
+    content: '▸';
+    @apply mr-2 inline-block transition-transform duration-200;
+    color: var(--text-muted);
+  }
+
+  .md-details[open] > .md-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .md-details > :not(summary) {
+    @apply px-4 pb-3;
+  }
+
+  /* ── Heading improvements ────────────────────────── */
+  .md-h5 {
+    @apply text-sm mt-4 mb-2 font-semibold;
+    color: var(--text-primary);
+  }
+
+  .md-h6 {
+    @apply text-xs mt-3 mb-1.5 font-semibold uppercase tracking-widest;
+    color: var(--text-muted);
+  }
+
+  /* ── Nested lists ────────────────────────────────── */
+  .md-list .md-list {
+    @apply mt-1 mb-0;
+  }
+
+  .md-ul .md-ul > .md-list-item::before {
+    @apply rounded-none w-1.5 h-[2px];
+    border-radius: 1px;
+  }
+
+  .md-ol .md-ol {
+    counter-reset: list-counter;
+  }
+
+  /* ── Superscript / subscript ─────────────────────── */
+  .md-sup {
+    @apply text-xs align-super;
+    color: var(--accent);
+  }
+
+  .md-sub {
+    @apply text-xs align-sub;
+    color: var(--text-muted);
+  }
+
+  /* ── KaTeX math overrides ────────────────────────── */
+  .markdown-content .katex-display {
+    @apply my-4 overflow-x-auto py-2;
+  }
+
+  .markdown-content .katex {
+    font-size: 1.05em;
+    color: var(--text-primary);
+  }
+
+  .markdown-content .katex-display > .katex {
+    font-size: 1.15em;
+  }
+
+  /* ── Overflow handling for code and tables ────────── */
+  .markdown-content pre {
+    @apply overflow-x-auto;
+  }
+
+  /* ── Paragraph spacing inside lists ──────────────── */
+  .md-list-item > .md-paragraph {
+    @apply mb-1;
+  }
+
+  .md-list-item > .md-paragraph:last-child {
+    @apply mb-0;
+  }
+
+  /* ── Blockquote nested elements ──────────────────── */
+  .md-blockquote .md-blockquote {
+    @apply ml-2 my-2;
+    border-left-color: var(--text-muted);
+  }
+
+  .md-blockquote .md-code-block-wrapper {
+    @apply my-2;
   }
 
   /* ==================== AUTH PAGES ==================== */

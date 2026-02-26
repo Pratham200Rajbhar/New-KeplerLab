@@ -7,15 +7,16 @@ counters.
 Limits:
 - Chat endpoints: 30 requests per minute per user
 - Generation endpoints (flashcard, quiz, PPT, podcast): 5 requests per minute per user
+- Auth endpoints (login/signup): 10 requests per minute per IP (brute-force protection)
 """
 
 from __future__ import annotations
 
+import asyncio
 import time
 import logging
 from typing import Dict, Tuple
 from collections import defaultdict
-from threading import Lock
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 
@@ -24,12 +25,13 @@ logger = logging.getLogger(__name__)
 # Rate limit configurations
 CHAT_LIMIT = 30  # requests per minute
 GENERATION_LIMIT = 5  # requests per minute
+AUTH_LIMIT = 10  # requests per minute per IP
 WINDOW_SECONDS = 60  # 1 minute window
 
 # In-memory storage for request counts
 # Format: {user_id: [(timestamp, endpoint_type), ...]}
 _request_history: Dict[str, list] = defaultdict(list)
-_lock = Lock()
+_lock = asyncio.Lock()  # asyncio.Lock instead of threading.Lock for async context
 
 
 class RateLimitExceeded(HTTPException):
@@ -67,6 +69,9 @@ def _clean_old_requests(user_id: str, current_time: float) -> None:
         (ts, endpoint) for ts, endpoint in _request_history[user_id]
         if ts > cutoff_time
     ]
+    # Evict empty entries to prevent unbounded memory growth
+    if not _request_history[user_id]:
+        del _request_history[user_id]
 
 
 def _get_request_count(user_id: str, endpoint_type: str, current_time: float) -> int:
@@ -98,12 +103,12 @@ def _add_request(user_id: str, endpoint_type: str, current_time: float) -> None:
     _request_history[user_id].append((current_time, endpoint_type))
 
 
-def check_rate_limit(user_id: str, endpoint_type: str) -> None:
+async def check_rate_limit(user_id: str, endpoint_type: str) -> None:
     """Check if user has exceeded rate limit for endpoint type.
     
     Args:
         user_id: User identifier
-        endpoint_type: "chat" or "generation"
+        endpoint_type: "chat" or "generation" or "auth"
     
     Raises:
         RateLimitExceeded: If rate limit is exceeded
@@ -112,14 +117,19 @@ def check_rate_limit(user_id: str, endpoint_type: str) -> None:
         # Allow unauthenticated requests (they'll fail auth later)
         return
     
-    with _lock:
+    async with _lock:
         current_time = time.time()
         
         # Clean old requests
         _clean_old_requests(user_id, current_time)
         
         # Get limit for endpoint type
-        limit = CHAT_LIMIT if endpoint_type == "chat" else GENERATION_LIMIT
+        if endpoint_type == "chat":
+            limit = CHAT_LIMIT
+        elif endpoint_type == "auth":
+            limit = AUTH_LIMIT
+        else:
+            limit = GENERATION_LIMIT
         
         # Count recent requests
         request_count = _get_request_count(user_id, endpoint_type, current_time)
@@ -147,7 +157,7 @@ def check_rate_limit(user_id: str, endpoint_type: str) -> None:
         )
 
 
-def get_rate_limit_info(user_id: str, endpoint_type: str) -> Dict[str, int]:
+async def get_rate_limit_info(user_id: str, endpoint_type: str) -> Dict[str, int]:
     """Get current rate limit status for a user.
     
     Args:
@@ -164,7 +174,7 @@ def get_rate_limit_info(user_id: str, endpoint_type: str) -> Dict[str, int]:
             "reset_in": 0,
         }
     
-    with _lock:
+    async with _lock:
         current_time = time.time()
         _clean_old_requests(user_id, current_time)
         
@@ -193,6 +203,8 @@ async def rate_limit_middleware(request: Request, call_next):
     """FastAPI middleware for rate limiting.
     
     Automatically checks rate limits based on endpoint path.
+    Extracts user_id from JWT Authorization header for per-user limits.
+    Applies IP-based brute-force protection on auth endpoints.
     Adds rate limit headers to responses.
     
     Args:
@@ -202,26 +214,42 @@ async def rate_limit_middleware(request: Request, call_next):
     Returns:
         Response with rate limit headers
     """
-    # Skip rate limiting for health checks and auth endpoints
-    if request.url.path in ["/health", "/api/auth/login", "/api/auth/register", "/api/auth/refresh"]:
+    # Skip rate limiting for health checks
+    if request.url.path in ["/health"]:
         return await call_next(request)
     
     # Determine endpoint type from path
     endpoint_type = None
-    if "/chat" in request.url.path:
+    if any(x in request.url.path for x in ["/auth/login", "/auth/signup", "/auth/register"]):
+        endpoint_type = "auth"
+    elif "/chat" in request.url.path:
         endpoint_type = "chat"
     elif any(x in request.url.path for x in ["/flashcard", "/quiz", "/ppt", "/podcast"]):
         endpoint_type = "generation"
     
     # Only apply rate limiting to known endpoints
     if endpoint_type:
-        # Extract user_id from request state (set by auth middleware)
-        user_id = getattr(request.state, "user_id", None)
+        if endpoint_type == "auth":
+            # Use client IP for auth rate limiting (brute-force protection)
+            client_ip = request.client.host if request.client else "unknown"
+            rate_key = f"ip:{client_ip}"
+        else:
+            # Extract user_id from Authorization header JWT
+            rate_key = None
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.startswith("Bearer "):
+                try:
+                    from app.services.auth.security import decode_token
+                    payload = decode_token(auth_header[7:])
+                    if payload:
+                        rate_key = payload.get("sub") or payload.get("user_id")
+                except Exception:
+                    pass
         
-        if user_id:
+        if rate_key:
             try:
                 # Check rate limit before processing request
-                check_rate_limit(user_id, endpoint_type)
+                await check_rate_limit(rate_key, endpoint_type)
             except RateLimitExceeded as e:
                 return JSONResponse(
                     status_code=e.status_code,
@@ -231,14 +259,5 @@ async def rate_limit_middleware(request: Request, call_next):
     
     # Process request
     response = await call_next(request)
-    
-    # Add rate limit headers to response
-    if endpoint_type and hasattr(request.state, "user_id"):
-        user_id = request.state.user_id
-        if user_id:
-            info = get_rate_limit_info(user_id, endpoint_type)
-            response.headers["X-RateLimit-Limit"] = str(info["limit"])
-            response.headers["X-RateLimit-Remaining"] = str(info["remaining"])
-            response.headers["X-RateLimit-Reset"] = str(info["reset_in"])
     
     return response

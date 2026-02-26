@@ -10,11 +10,13 @@ export function AuthProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const refreshTimerRef = useRef(null);
+    const accessTokenRef = useRef(null);
     const isInitializingRef = useRef(false); // Prevent duplicate init calls
 
-    // Keep config.js in sync with current access token
+    // Keep config.js and ref in sync with current access token
     useEffect(() => {
         syncTokenToApi(accessToken);
+        accessTokenRef.current = accessToken;
     }, [accessToken]);
 
     // Schedule silent token refresh before expiry (every 13 min for 15 min token)
@@ -99,7 +101,8 @@ export function AuthProvider({ children }) {
 
     const logout = useCallback(async () => {
         try {
-            await apiLogout(accessToken);
+            // Use ref to avoid stale closure capturing old accessToken
+            await apiLogout(accessTokenRef.current);
         } catch {
             // Ignore logout errors
         }
@@ -108,7 +111,7 @@ export function AuthProvider({ children }) {
         }
         setAccessToken(null);
         setUser(null);
-    }, [accessToken]);
+    }, []);
 
     const value = {
         user,

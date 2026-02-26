@@ -327,6 +327,13 @@ async def python_tool(
         import json
         from app.services.llm_service.llm import get_llm
 
+        # Emit code_generating event so the frontend shows "Generating code…"
+        try:
+            from langchain_core.callbacks import adispatch_custom_event
+            await adispatch_custom_event("code_generating", {"tool": "python_tool", "status": "generating"})
+        except Exception:
+            pass
+
         # ── Incorporate previous RAG context if tool chaining (DATA_ANALYSIS) ──
         previous_context = kwargs.get("previous_context", "")
 
@@ -412,6 +419,14 @@ async def python_tool(
                 tokens_used=0,
             )
 
+        # Callback for when code generation is complete — emit the generated code immediately
+        async def on_code_generated(code: str):
+            try:
+                from langchain_core.callbacks import adispatch_custom_event
+                await adispatch_custom_event("code_generated", {"code": code})
+            except Exception:
+                pass
+
         result = await generate_and_execute(
             user_query=query,
             csv_files=validated_csv,
@@ -419,6 +434,7 @@ async def python_tool(
             timeout=15,
             on_stdout_line=on_stdout,
             additional_context=previous_context,
+            on_code_generated=on_code_generated,
         )
 
         elapsed = time.time() - t0
@@ -613,6 +629,14 @@ def initialize_tools():
     logger.info(f"Initialized {len(_TOOLS)} tools: {list_tools()}")
 
 
-# Auto-initialize on import
-initialize_tools()
+# Lazy initialization — called on first graph build, NOT on module import.
+_tools_initialized = False
+
+
+def ensure_tools_initialized():
+    """Initialize tools once, on first call.  Safe to call multiple times."""
+    global _tools_initialized
+    if not _tools_initialized:
+        initialize_tools()
+        _tools_initialized = True
 

@@ -11,10 +11,22 @@ from typing import Any, Dict, List
 
 from app.services.agent.state import AgentState
 from app.services.agent.intent import (
-    QUESTION, DATA_ANALYSIS, RESEARCH, CODE_EXECUTION, CONTENT_GENERATION,
+    QUESTION, DATA_ANALYSIS, RESEARCH, CODE_EXECUTION,
+    FILE_GENERATION, CONTENT_GENERATION,
 )
 
 logger = logging.getLogger(__name__)
+
+# Structured file extensions — these must bypass RAG and be loaded directly.
+_STRUCTURED_EXTS = frozenset({".csv", ".xlsx", ".xls", ".tsv", ".ods"})
+
+
+def _get_structured_workspace_files(workspace_files: List[Dict]) -> List[Dict]:
+    """Return only the structured data files (CSV / Excel / TSV / ODS) from workspace_files."""
+    return [
+        f for f in workspace_files
+        if f.get("ext", "").lower() in _STRUCTURED_EXTS
+    ]
 
 
 async def _get_completed_material_ids(material_ids: List[str]) -> List[str]:
@@ -61,6 +73,50 @@ def _resolve_content_generation_plan(message: str) -> List[Dict[str, Any]]:
 
     # Default: use RAG for general content generation
     return [{"tool": "rag_tool", "description": "Generate requested content from materials"}]
+
+
+def _resolve_file_generation_plan(message: str) -> List[Dict[str, Any]]:
+    """Determine file generation plan based on requested file type."""
+    msg_lower = message.lower()
+
+    if any(kw in msg_lower for kw in ["chart", "graph", "plot", "diagram", "visuali"]):
+        return [
+            {"tool": "file_generator", "description": "Generate chart/visualization"},
+        ]
+
+    if any(kw in msg_lower for kw in ["word", "docx", "document", "report"]):
+        return [
+            {"tool": "file_generator", "description": "Generate Word document"},
+        ]
+
+    if any(kw in msg_lower for kw in ["excel", "xlsx", "spreadsheet"]):
+        return [
+            {"tool": "file_generator", "description": "Generate Excel spreadsheet"},
+        ]
+
+    if any(kw in msg_lower for kw in ["pdf"]):
+        return [
+            {"tool": "file_generator", "description": "Generate PDF document"},
+        ]
+
+    if any(kw in msg_lower for kw in ["csv"]):
+        return [
+            {"tool": "file_generator", "description": "Generate CSV file"},
+        ]
+
+    # Default: generic file generation
+    return [
+        {"tool": "file_generator", "description": "Generate requested file"},
+    ]
+
+
+def _check_edit_intent(message: str, generated_files: List[Dict]) -> bool:
+    """Check if user wants to edit an existing generated file."""
+    if not generated_files:
+        return False
+    msg_lower = message.lower()
+    edit_keywords = ["add", "update", "fix", "modify", "change", "edit", "replace", "append", "delete", "remove"]
+    return any(kw in msg_lower for kw in edit_keywords)
 
 
 async def plan_execution(state: AgentState) -> AgentState:
@@ -117,14 +173,53 @@ async def plan_execution(state: AgentState) -> AgentState:
         })
 
     elif intent == DATA_ANALYSIS:
-        plan = [
-            {"tool": "rag_tool", "description": "Get data context from materials"},
-            {
-                "tool": "python_tool",
-                "description": "Run data analysis with pandas",
-                "uses_previous_output": True,  # tool chaining flag
-            },
-        ]
+        workspace_files = state.get("workspace_files", [])
+        structured_files = _get_structured_workspace_files(workspace_files)
+        if structured_files:
+            # Structured files must be loaded directly from their real path —
+            # never via RAG retrieval (which would give fragmented row chunks).
+            direct_paths = [f.get("real_path", "") for f in structured_files if f.get("real_path")]
+            plan = [
+                {
+                    "tool": "data_profiler",
+                    "description": "Profile structured dataset directly from file path",
+                    "skip_rag": True,
+                    "direct_file_paths": direct_paths,
+                },
+                {
+                    "tool": "python_tool",
+                    "description": "Analyse data using pd.read_csv() / pd.read_excel() on the real file path",
+                    "uses_previous_output": True,
+                    "skip_rag": True,
+                },
+            ]
+        else:
+            plan = [
+                {"tool": "data_profiler", "description": "Profile dataset structure"},
+                {
+                    "tool": "python_tool",
+                    "description": "Run data analysis with pandas",
+                    "uses_previous_output": True,
+                },
+            ]
+
+    elif intent == FILE_GENERATION:
+        generated_files = state.get("generated_files", [])
+        workspace_files = state.get("workspace_files", [])
+        structured_files = _get_structured_workspace_files(workspace_files)
+        if _check_edit_intent(message, generated_files):
+            # Edit existing file
+            plan = [
+                {"tool": "file_generator", "description": "Edit existing generated file"},
+            ]
+        else:
+            plan = _resolve_file_generation_plan(message)
+            # Tag all steps to bypass RAG when structured source files are present
+            if structured_files:
+                direct_paths = [f.get("real_path", "") for f in structured_files if f.get("real_path")]
+                for step in plan:
+                    step["skip_rag"] = True
+                    step.setdefault("direct_file_paths", direct_paths)
 
     elif intent == RESEARCH:
         plan = [

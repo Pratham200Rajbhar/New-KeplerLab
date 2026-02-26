@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import asyncio
 from pathlib import Path
 from typing import Dict
 
@@ -37,13 +38,16 @@ class ModelManager:
         """Validate all required models; download missing ones.
 
         Returns mapping of model_id → success.
+        Runs blocking model operations in a thread executor to avoid
+        blocking the async event loop during multi-GB downloads.
         """
         logger.info("Starting model validation …")
         results: Dict[str, bool] = {}
+        loop = asyncio.get_running_loop()
 
         for model_id, cfg in self.required_models.items():
             try:
-                ok = self._ensure_model(cfg)
+                ok = await loop.run_in_executor(None, self._ensure_model, cfg)
                 results[model_id] = ok
                 logger.info(f"Model {model_id}: {'ready' if ok else 'FAILED'}")
             except Exception as e:

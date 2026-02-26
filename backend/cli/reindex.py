@@ -135,7 +135,7 @@ async def _reindex(
                 # 4. Update Prisma record
                 await prisma.material.update(
                     where={"id": mid},
-                    data={"chunkCount": str(len(chunks))},
+                    data={"chunkCount": len(chunks)},
                 )
 
                 logger.info(

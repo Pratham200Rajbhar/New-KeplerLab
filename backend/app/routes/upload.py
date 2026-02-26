@@ -75,7 +75,7 @@ async def _validate_upload_file(file: UploadFile, temp_path: str) -> Optional[JS
     Returns an error response on failure, or ``None`` if validation passes.
     """
     file_size = os.path.getsize(temp_path)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     try:
         # python-magic reads a few hundred header bytes — sync I/O offloaded
@@ -153,7 +153,7 @@ async def upload_file(
         # 1 MiB chunks → never loads full file into memory, never blocks
         # the event loop. This delegates chunk writing to a thread-pool.
         _t_write = time.perf_counter()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
             temp_path = tmp.name
             while chunk := await file.read(1024 * 1024):
@@ -182,7 +182,9 @@ async def upload_file(
         # ── 3. Move to permanent storage with UUID-safe name ──────────────
         user_upload_dir = os.path.join(UPLOAD_DIR, str(current_user.id))
         os.makedirs(user_upload_dir, exist_ok=True)
-        unique_name = f"{uuid.uuid4().hex}_{file.filename}"
+        # Sanitize filename to prevent path traversal — strip directory components
+        safe_original_name = os.path.basename(file.filename or "upload")
+        unique_name = f"{uuid.uuid4().hex}_{safe_original_name}"
         final_path = os.path.join(user_upload_dir, unique_name)
         shutil.move(temp_path, final_path)
         temp_path = None
@@ -280,7 +282,7 @@ async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_
         
         # ── Thread-pool offloaded file writing ──
         # Prevent large files from blocking the main async loop
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
             temp_path = tmp.name

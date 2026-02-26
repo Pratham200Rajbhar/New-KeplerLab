@@ -76,32 +76,49 @@ async def ws_jobs(
     """WebSocket channel for material-processing job updates.
 
     The caller must be the owner of *user_id* (or an admin).
-    Events pushed on this channel:
-
-    .. code-block:: json
-
-        {
-            "type": "material_update",
-            "material_id": "<uuid>",
-            "status": "processing|ocr_running|transcribing|embedding|completed|failed",
-            "error": "<msg>"   // only when status == "failed"
-        }
+    
+    Authentication supports two modes:
+    1. Query param: ?token=<jwt> (legacy, less secure)
+    2. First-message: {"type": "auth", "token": "<jwt>"} (preferred)
     """
-    # Authenticate
-    caller_id = await _authenticate(token)
+    # Try query param auth first
+    caller_id = await _authenticate(token) if token else None
+    
     if caller_id is None:
+        # Accept first to allow first-message auth
         await websocket.accept()
-        await websocket.send_text(_close_msg(4001, "Unauthorized: invalid or missing token"))
-        await websocket.close(code=4001)
-        return
+        try:
+            # Wait for auth message with 10s timeout
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
+            msg = json.loads(raw)
+            if msg.get("type") == "auth" and msg.get("token"):
+                caller_id = await _authenticate(msg["token"])
+        except (asyncio.TimeoutError, json.JSONDecodeError, Exception):
+            pass
+        
+        if caller_id is None:
+            await websocket.send_text(_close_msg(4001, "Unauthorized: invalid or missing token"))
+            await websocket.close(code=4001)
+            return
+        
+        if caller_id != user_id:
+            await websocket.send_text(_close_msg(4003, "Forbidden: token user_id mismatch"))
+            await websocket.close(code=4003)
+            return
+    else:
+        # Query-param auth succeeded — validate user match before accepting
+        if caller_id != user_id:
+            await websocket.accept()
+            await websocket.send_text(_close_msg(4003, "Forbidden: token user_id mismatch"))
+            await websocket.close(code=4003)
+            return
 
-    if caller_id != user_id:
-        await websocket.accept()
-        await websocket.send_text(_close_msg(4003, "Forbidden: token user_id mismatch"))
-        await websocket.close(code=4003)
-        return
-
-    await ws_manager.connect_user(user_id, websocket)
+    # If not yet accepted (query-param auth path), connect_user will accept
+    if websocket.client_state != WebSocketState.CONNECTED:
+        await ws_manager.connect_user(user_id, websocket)
+    else:
+        # Already accepted (first-message auth path) — register directly
+        ws_manager._user_connections[user_id].append(websocket)
     logger.info("WS /ws/jobs/%s connected", user_id)
 
     # Send initial handshake

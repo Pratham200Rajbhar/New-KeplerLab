@@ -333,10 +333,18 @@ export default function StudioPanel() {
         }
     };
 
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // item to delete
+
     const handleHistoryDelete = async (item, e) => {
         e.stopPropagation();
         setActiveHistoryMenu(null);
-        if (!currentNotebook || !confirm('Are you sure you want to delete this generated content?')) return;
+        setShowDeleteConfirm(item);
+    };
+
+    const confirmHistoryDelete = async () => {
+        const item = showDeleteConfirm;
+        if (!currentNotebook || !item) return;
+        setShowDeleteConfirm(null);
 
         try {
             await deleteGeneratedContent(currentNotebook.id, item.id);
@@ -361,13 +369,20 @@ export default function StudioPanel() {
             }
         } catch (err) {
             console.error('Failed to delete content:', err);
+            setActionError('Failed to delete content. Please try again.');
+            setTimeout(() => setActionError(null), 5000);
         }
     };
 
-    const handleHistoryShare = (e) => {
+    const handleHistoryShare = async (item, e) => {
         e.stopPropagation();
         setActiveHistoryMenu(null);
-        alert('Link copied to clipboard (Mock)');
+        try {
+            const contentStr = JSON.stringify(item.data, null, 2);
+            await navigator.clipboard.writeText(contentStr);
+        } catch {
+            // clipboard API not available — silent fallback
+        }
     };
 
     const handleHistoryDownload = (item, e) => {
@@ -481,6 +496,22 @@ export default function StudioPanel() {
 
     return (
         <>
+            {/* Delete Confirmation Dialog */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)}>
+                    <div className="bg-[#1C1E26] border border-[#3A3F4B] rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-base font-semibold text-white mb-2">Delete content?</h3>
+                        <p className="text-sm text-gray-400 mb-5">
+                            "{showDeleteConfirm.title || showDeleteConfirm.content_type}" will be permanently deleted.
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm rounded-lg text-gray-300 hover:bg-[#2A2D35] transition-colors">Cancel</button>
+                            <button onClick={confirmHistoryDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* History Item Rename Modal - Rendered outside sidebar */}
             <HistoryRenameModal
                 isOpen={showRenameHistoryModal}
@@ -692,7 +723,7 @@ export default function StudioPanel() {
                                                                 Export
                                                             </button>
                                                             <button
-                                                                onClick={handleHistoryShare}
+                                                                onClick={(e) => handleHistoryShare(item, e)}
                                                                 className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-glass-light flex items-center gap-2 transition-colors"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

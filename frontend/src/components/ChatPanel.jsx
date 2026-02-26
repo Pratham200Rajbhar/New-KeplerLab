@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { streamChat, getChatHistory, streamResearch, getSuggestions, getChatSessions, createChatSession, deleteChatSession } from '../api/chat';
 import ChatMessage from './ChatMessage';
+import { MarkdownRenderer, sanitizeStreamingMarkdown } from './ChatMessage';
 import SuggestionDropdown from './chat/SuggestionDropdown';
 import ResearchProgress from './chat/ResearchProgress';
+import AgentThinkingBar from './chat/AgentThinkingBar';
+import AgentActionBlock from './chat/AgentActionBlock';
 import Modal from './Modal';
 
 const QUICK_ACTIONS = [
@@ -38,11 +42,13 @@ async function readSSEStream(response, callbacks = {}) {
         for (const part of parts) {
             const lines = part.split('\n');
             let eventName = '';
-            let dataStr = '';
+            let dataLines = [];
             for (const line of lines) {
                 if (line.startsWith('event: ')) eventName = line.slice(7).trim();
-                else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
+                else if (line.startsWith('data: ')) dataLines.push(line.slice(6));
+                else if (line.startsWith('data:')) dataLines.push(line.slice(5));
             }
+            const dataStr = dataLines.join('\n').trim();
             if (!eventName || !dataStr) continue;
             try {
                 const payload = JSON.parse(dataStr);
@@ -66,21 +72,46 @@ export default function ChatPanel() {
         materials,
     } = useApp();
 
-    const effectiveIds = Array.from(selectedSources);
+    const effectiveIds = Array.from(selectedSources).filter(id => {
+        const mat = materials.find(m => m.id === id);
+        return mat && mat.status === 'completed';
+    });
     const hasSource = effectiveIds.length > 0;
+    // True when the user has selected sources but they are still being processed
+    const isSourceProcessing = !hasSource && selectedSources.size > 0;
 
     const [inputValue, setInputValue] = useState('');
     const [streamingContent, setStreamingContent] = useState('');
     const [streamingId] = useState(() => `streaming-${Date.now()}`);
     const [agentStepLabel, setAgentStepLabel] = useState('');
 
+    // Agent thinking state
+    const [isThinking, setIsThinking] = useState(false);
+    const [thinkingStep, setThinkingStep] = useState('');
+    const [stepLog, setStepLog] = useState([]);
+    const [currentStepNum, setCurrentStepNum] = useState(0);
+    const [pendingFiles, setPendingFiles] = useState([]);
+    const [isRepair, setIsRepair] = useState(false);
+    const [repairCount, setRepairCount] = useState(0);
+
     const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
 
+    // Live streaming step log (shown before commit)
+    const [liveStepLog, setLiveStepLog] = useState([]);
+
     // Sessions state
     const [sessions, setSessions] = useState([]);
-    const [currentSessionId, setCurrentSessionId] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentSessionId = searchParams.get('session') || null;
+    const setCurrentSessionId = useCallback((id) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (id) { next.set('session', id); } else { next.delete('session'); }
+            return next;
+        }, { replace: true });
+    }, [setSearchParams]);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historySearchTerm, setHistorySearchTerm] = useState('');
 
@@ -93,6 +124,13 @@ export default function ChatPanel() {
     const textareaRef = useRef(null);
     const isChattingRef = useRef(false);
     const abortControllerRef = useRef(null);
+
+    // Abort any in-flight stream on unmount
+    useEffect(() => {
+        return () => {
+            abortControllerRef.current?.abort();
+        };
+    }, []);
 
     useEffect(() => {
         isChattingRef.current = loading.chat || researchMode;
@@ -107,28 +145,37 @@ export default function ChatPanel() {
                     const newSessions = sessionsData.sessions || [];
                     setSessions(newSessions);
 
-                    if (!currentSessionId && newSessions.length > 0) {
+                    // Validate URL session param, fallback to first session if stale or missing
+                    const urlSession = searchParams.get('session');
+                    const isValid = urlSession && newSessions.some(s => s.id === urlSession);
+                    if (!isValid && newSessions.length > 0) {
                         setCurrentSessionId(newSessions[0].id);
+                    } else if (!isValid) {
+                        setCurrentSessionId(null);
                     }
                 } catch (error) {
                     console.error('Failed to load initial sessions:', error);
                 }
             } else {
                 setSessions([]);
-                setCurrentSessionId(null);
+                // Don't clear session ID from URL when notebook simply isn't loaded yet.
+                // The session param in the URL should survive so that when the notebook
+                // finishes loading we can restore the exact session the user was viewing.
             }
         };
         loadHistory();
-    }, [currentNotebook?.id, draftMode]);
+    }, [currentNotebook?.id, draftMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load messages when currentSessionId or notebook changes
     useEffect(() => {
-        const loadMessages = async () => {
+        let cancelled = false;
+
+        const loadMessages = async (attempt = 0) => {
             if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
                 try {
                     const history = await getChatHistory(currentNotebook.id, currentSessionId);
                     // Prevent overwriting the optimistic UI if we are in the middle of sending a message
-                    if (isChattingRef.current) return;
+                    if (cancelled || isChattingRef.current) return;
 
                     if (history && history.length > 0) {
                         const loadedMessages = history.map(msg => ({
@@ -137,6 +184,7 @@ export default function ChatPanel() {
                             content: msg.content,
                             timestamp: new Date(msg.created_at),
                             blocks: msg.blocks || [],
+                            agentMeta: msg.agent_meta || null,
                         }));
                         setMessages(loadedMessages);
                     } else {
@@ -144,13 +192,22 @@ export default function ChatPanel() {
                     }
                 } catch (error) {
                     console.error('Failed to load chat history:', error);
-                    if (!isChattingRef.current) setMessages([]);
+                    // Retry once after a short delay (handles token refresh race)
+                    if (attempt < 1 && !cancelled) {
+                        setTimeout(() => { if (!cancelled) loadMessages(attempt + 1); }, 800);
+                        return;
+                    }
+                    if (!isChattingRef.current && !cancelled) setMessages([]);
                 }
+            } else if (!currentNotebook?.id) {
+                // No notebook loaded yet — don't clear; wait for notebook to arrive.
             } else {
                 setMessages([]);
             }
         };
         loadMessages();
+
+        return () => { cancelled = true; };
     }, [currentNotebook?.id, currentSessionId, draftMode, setMessages]);
 
     useEffect(() => {
@@ -227,6 +284,14 @@ export default function ChatPanel() {
         setLoadingState('chat', true);
         setStreamingContent('');
         setAgentStepLabel('');
+        setIsThinking(true);
+        setThinkingStep('');
+        setStepLog([]);
+        setLiveStepLog([]);
+        setCurrentStepNum(0);
+        setPendingFiles([]);
+        setIsRepair(false);
+        setRepairCount(0);
 
         const ac = new AbortController();
         abortControllerRef.current = ac;
@@ -235,6 +300,8 @@ export default function ChatPanel() {
         let agentMeta = null;
         let messageBlocks = [];
         let committedMsgId = null;
+        let localStepLog = [];
+        let localPendingFiles = [];
 
         try {
             let sessionIdToUse = currentSessionId;
@@ -262,7 +329,132 @@ export default function ChatPanel() {
                     setStreamingContent(accumulated);
                 },
                 step: (payload) => {
-                    setAgentStepLabel(payload.tool || 'Thinking');
+                    const TOOL_STEP_LABELS = {
+                        rag_tool:       'Searching materials…',
+                        research_tool:  'Researching online…',
+                        python_tool:    'Running Python…',
+                        data_profiler:  'Profiling dataset…',
+                        quiz_tool:      'Generating quiz…',
+                        flashcard_tool: 'Creating flashcards…',
+                        ppt_tool:       'Building slides…',
+                        file_generator: 'Generating file…',
+                    };
+                    const raw = payload.tool || payload.label || '';
+                    const label = TOOL_STEP_LABELS[raw] || payload.label || raw || 'Thinking…';
+                    setAgentStepLabel(label);
+                    setThinkingStep(label);
+                    setCurrentStepNum(prev => prev + 1);
+                    // Add a "running" entry to the live step log
+                    setLiveStepLog(prev => {
+                        // Update last entry if it was running, or add a new running entry
+                        const updated = prev.map(s => s.status === 'running' ? { ...s, status: 'success' } : s);
+                        return [...updated, { tool: raw, label: TOOL_STEP_LABELS[raw] || raw, status: 'running' }];
+                    });
+                },
+                step_done: (payload) => {
+                    const stepEntry = payload.step || { tool: payload.tool, status: payload.status };
+                    localStepLog.push(stepEntry);
+                    setStepLog(prev => [...prev, stepEntry]);
+                    // Update liveStepLog: replace the last running entry with the completed step,
+                    // and merge any live stdout/code that arrived during streaming
+                    setLiveStepLog(prev => {
+                        const lastRunningIdx = prev.findLastIndex(s => s.status === 'running');
+                        if (lastRunningIdx === -1) {
+                            return [...prev, stepEntry];
+                        }
+                        const updated = [...prev];
+                        // Merge: keep live stdout/code if step_done didn't include them
+                        const liveStep = updated[lastRunningIdx];
+                        updated[lastRunningIdx] = {
+                            ...stepEntry,
+                            code: stepEntry.code || liveStep.code || '',
+                            stdout: stepEntry.stdout || liveStep.stdout || '',
+                        };
+                        return updated;
+                    });
+                    // Also update localStepLog with code from live step
+                    setLiveStepLog(prev => {
+                        const last = prev[prev.length - 1];
+                        if (last && last.code && localStepLog.length > 0) {
+                            localStepLog[localStepLog.length - 1].code = last.code;
+                        }
+                        if (last && last.stdout && localStepLog.length > 0 && !localStepLog[localStepLog.length - 1].stdout) {
+                            localStepLog[localStepLog.length - 1].stdout = last.stdout;
+                        }
+                        return prev;
+                    });
+                },
+                code_written: (payload) => {
+                    // Update liveStepLog: inject code into the running step immediately
+                    setLiveStepLog(prev => {
+                        if (prev.length === 0) return prev;
+                        const updated = [...prev];
+                        // Find the last running or most recent step
+                        const runningIdx = updated.findLastIndex(s => s.status === 'running');
+                        const targetIdx = runningIdx !== -1 ? runningIdx : updated.length - 1;
+                        updated[targetIdx] = { ...updated[targetIdx], code: payload.code };
+                        return updated;
+                    });
+                },
+                code_generating: (_payload) => {
+                    // Code is being generated by LLM — update the thinking step
+                    setThinkingStep('Generating code…');
+                    setLiveStepLog(prev => {
+                        if (prev.length === 0) return prev;
+                        const updated = [...prev];
+                        const runningIdx = updated.findLastIndex(s => s.status === 'running');
+                        if (runningIdx !== -1) {
+                            updated[runningIdx] = { ...updated[runningIdx], label: 'Generating code…' };
+                        }
+                        return updated;
+                    });
+                },
+                code_stdout: (payload) => {
+                    // Live stdout line from python execution — append to running step
+                    const line = payload.line || '';
+                    setLiveStepLog(prev => {
+                        if (prev.length === 0) return prev;
+                        const updated = [...prev];
+                        const runningIdx = updated.findLastIndex(s => s.status === 'running');
+                        const targetIdx = runningIdx !== -1 ? runningIdx : updated.length - 1;
+                        const existing = updated[targetIdx].stdout || '';
+                        updated[targetIdx] = {
+                            ...updated[targetIdx],
+                            stdout: existing ? existing + '\n' + line : line,
+                            label: 'Running Python…',
+                        };
+                        return updated;
+                    });
+                },
+                stdout: (_payload) => {
+                    // Batch stdout arrives with step_done — also update the live log
+                    const output = _payload.output || '';
+                    if (output) {
+                        setLiveStepLog(prev => {
+                            if (prev.length === 0) return prev;
+                            const updated = [...prev];
+                            // Find the step that just completed
+                            const lastIdx = updated.length - 1;
+                            if (!updated[lastIdx].stdout) {
+                                updated[lastIdx] = { ...updated[lastIdx], stdout: output };
+                            }
+                            return updated;
+                        });
+                    }
+                },
+                repair_attempt: (payload) => {
+                    const count = payload.attempt || 1;
+                    setIsRepair(true);
+                    setRepairCount(count);
+                    setThinkingStep(`Fixing error — attempt ${count}`);
+                },
+                repair_success: (payload) => {
+                    setIsRepair(false);
+                    setThinkingStep('Fix applied, re-running…');
+                },
+                file_ready: (payload) => {
+                    localPendingFiles.push(payload);
+                    setPendingFiles(prev => [...prev, payload]);
                 },
                 meta: (payload) => {
                     agentMeta = payload;
@@ -270,26 +462,36 @@ export default function ChatPanel() {
                 blocks: (payload) => {
                     messageBlocks = payload.blocks || [];
                 },
-                done: () => {
+                done: (payload) => {
                     const finalContent = accumulated || (agentMeta && agentMeta.response) || '';
+                    const elapsedTime = payload.elapsed || 0;
                     if (finalContent) {
-                        // Add message with full metadata
+                        // Add message with full metadata including step_log and generated_files
                         const newMsg = {
                             id: `ai-${Date.now()}`,
                             role: 'assistant',
                             content: finalContent,
-                            agentMeta,
+                            agentMeta: {
+                                ...(agentMeta || {}),
+                                step_log: localStepLog.length > 0 ? localStepLog : (agentMeta?.step_log || []),
+                                generated_files: localPendingFiles.length > 0 ? localPendingFiles : (agentMeta?.generated_files || []),
+                                total_time: elapsedTime,
+                            },
                             blocks: messageBlocks,
                         };
                         setMessages(prev => [...prev, newMsg]);
                         committedMsgId = newMsg.id;
                     }
                     setStreamingContent('');
+                    setIsThinking(false);
+                    setLiveStepLog([]);
                     accumulated = '';
                 },
                 error: (payload) => {
                     addMessage('assistant', `I encountered an error: ${payload.error || 'Streaming error'}`);
                     setStreamingContent('');
+                    setIsThinking(false);
+                    setLiveStepLog([]);
                     accumulated = '';
                 },
             });
@@ -321,9 +523,13 @@ export default function ChatPanel() {
                 addMessage('assistant', `I encountered an error: ${error.message}`);
             }
             setStreamingContent('');
+            setLiveStepLog([]);
         } finally {
             setLoadingState('chat', false);
             setAgentStepLabel('');
+            setIsThinking(false);
+            setIsRepair(false);
+            setRepairCount(0);
             abortControllerRef.current = null;
         }
     };
@@ -415,6 +621,7 @@ export default function ChatPanel() {
             }
         } finally {
             setLoadingState('chat', false);
+            setResearchMode(false); // ensure research mode is always cleared on exit
             abortControllerRef.current = null;
         }
     };
@@ -459,7 +666,7 @@ export default function ChatPanel() {
     };
 
     const isLoading = loading.chat;
-    const showTypingIndicator = isLoading && !streamingContent && !researchMode;
+    const showTypingIndicator = isLoading && !streamingContent && !researchMode && liveStepLog.length === 0;
 
     // Search and Grouping Logic for Chat History
     const filteredSessions = sessions.filter(s => {
@@ -650,14 +857,39 @@ export default function ChatPanel() {
             </Modal>
 
             {/* Header */}
-            <div className="panel-header border-b border-border bg-surface flex justify-between items-center px-4 py-3 shrink-0">
-                <span className="panel-title font-medium text-text-primary text-sm flex-1">Chat</span>
-                <div className="flex items-center gap-2">
+            <div className="panel-header border-b border-border bg-surface flex justify-between items-center px-4 py-2.5 shrink-0 gap-3">
+                {/* Left — title + session name */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="font-semibold text-text-primary text-sm">Chat</span>
+                    {sessions.find(s => s.id === currentSessionId)?.title && (
+                        <span className="text-xs text-text-muted bg-surface-overlay px-2 py-0.5 rounded-full truncate max-w-[140px]">
+                            {sessions.find(s => s.id === currentSessionId)?.title}
+                        </span>
+                    )}
+                </div>
+
+                {/* Right — source badge + buttons */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Source pill */}
+                    {hasSource && (
+                        <div className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-status-success/10 text-status-success border border-status-success/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-status-success" />
+                            {selectedSources.size > 1 ? `${selectedSources.size} sources` : '1 source'}
+                        </div>
+                    )}
+                    {/* Processing pill — shown when selected source is still indexing */}
+                    {isSourceProcessing && (
+                        <div className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                            Indexing…
+                        </div>
+                    )}
                     <button
                         onClick={() => setIsHistoryModalOpen(true)}
-                        className="btn-secondary py-1.5 px-3 flex items-center gap-2 text-sm"
+                        className="btn-secondary py-1.5 px-2.5 flex items-center gap-1.5 text-xs"
+                        title="Chat history"
                     >
-                        <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         History
@@ -667,7 +899,7 @@ export default function ChatPanel() {
                         className="btn-icon p-1.5 rounded-lg hover:bg-surface-overlay text-text-muted transition-all"
                         title="New Chat"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                     </button>
@@ -714,6 +946,18 @@ export default function ChatPanel() {
                                         ))}
                                     </div>
                                 </>
+                            ) : isSourceProcessing ? (
+                                <>
+                                    <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center mx-auto mb-6">
+                                        <svg className="w-8 h-8 text-accent animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-2xl font-semibold text-text-primary mb-3">Processing your source…</h2>
+                                    <p className="text-text-secondary">
+                                        Hold tight while we index your file. Chat will unlock automatically when it's ready.
+                                    </p>
+                                </>
                             ) : (
                                 <>
                                     <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center mx-auto mb-6">
@@ -731,7 +975,7 @@ export default function ChatPanel() {
                     </div>
                 ) : (
                     <div className="max-w-4xl w-full mx-auto px-4 py-8 sm:px-6 md:px-8">
-                        {messages.map((msg) => (
+                        {messages.map((msg, idx) => (
                             <ChatMessage
                                 key={msg.id}
                                 message={msg}
@@ -749,31 +993,49 @@ export default function ChatPanel() {
                         )}
 
                         {/* Live streaming bubble */}
-                        {streamingContent && (
-                            <ChatMessage
-                                key={streamingId}
-                                message={{ id: streamingId, role: 'assistant', content: streamingContent }}
-                                notebookId={currentNotebook?.id}
-                            />
+                        {(streamingContent || (isThinking && liveStepLog.length > 0)) && (
+                            <div className="chat-msg chat-msg-ai group py-5">
+                                <div className="flex gap-3 w-full">
+                                    <div className="ai-avatar flex-shrink-0 mt-0.5 streaming-pulse">
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        {liveStepLog.length > 0 && (
+                                            <AgentActionBlock
+                                                stepLog={liveStepLog}
+                                                toolsUsed={[]}
+                                                totalTime={0}
+                                                isStreaming={true}
+                                            />
+                                        )}
+                                        {streamingContent && (
+                                            <div className="markdown-content">
+                                                <MarkdownRenderer content={sanitizeStreamingMarkdown(streamingContent)} />
+                                                <span className="streaming-cursor" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
                         {/* Typing indicator with agent step label */}
                         {showTypingIndicator && (
-                            <div className="message mb-4 animate-fade-in">
-                                <div className="message-content w-full">
-                                    <div className="flex items-center gap-3">
-                                        <div className="message-bubble glass inline-block px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="typing-indicator">
-                                                    <span /><span /><span />
-                                                </div>
-                                                {agentStepLabel && (
-                                                    <span className="text-xs text-text-muted ml-1">{agentStepLabel}...</span>
-                                                )}
-                                            </div>
+                            <div className="chat-msg chat-msg-ai py-5 animate-fade-in">
+                                <div className="flex gap-3 w-full">
+                                    <div className="ai-avatar flex-shrink-0 mt-0.5 streaming-pulse">
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                    </div>
+                                    <div className="flex items-center gap-2 py-1">
+                                        <div className="typing-indicator">
+                                            <span /><span /><span />
                                         </div>
                                         {agentStepLabel && (
-                                            <span className="text-xs text-text-muted italic">Planning</span>
+                                            <span className="text-xs text-text-muted">{agentStepLabel}</span>
                                         )}
                                     </div>
                                 </div>
@@ -787,6 +1049,18 @@ export default function ChatPanel() {
             {/* Input Area */}
             <div className="p-4 sm:p-6 flex justify-center w-full z-10 sticky bottom-0 bg-gradient-to-t from-surface-100 via-surface-100 to-transparent pt-12">
                 <div className="max-w-4xl w-full relative">
+                    {/* Agent Thinking Bar — live step progress */}
+                    {isThinking && (
+                        <AgentThinkingBar
+                            isActive={isThinking}
+                            currentStep={thinkingStep}
+                            stepNumber={currentStepNum}
+                            totalSteps={0}
+                            isRepair={isRepair}
+                            repairCount={repairCount}
+                        />
+                    )}
+
                     {/* Suggestion Dropdown */}
                     {hasSource && currentNotebook?.id && !currentNotebook.isDraft && showSuggestions && (
                         <SuggestionDropdown
@@ -806,8 +1080,8 @@ export default function ChatPanel() {
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder={hasSource
-                                ? (selectedSources.size > 1 ? `Ask about ${selectedSources.size} selected sources...` : 'Ask about your source...')
-                                : 'Select a source to start...'}
+                                ? (isLoading ? 'AI is thinking…' : selectedSources.size > 1 ? `Ask about ${selectedSources.size} sources…` : 'Ask anything about your source…')
+                                : isSourceProcessing ? 'Processing source, please wait…' : 'Select a source to start…'}
                             disabled={!hasSource || isLoading}
                             className="flex-1 bg-transparent text-[15px] sm:text-base text-text-primary placeholder-text-muted resize-none outline-none min-h-[48px] max-h-[200px] py-3.5 px-4 leading-relaxed"
                             rows={1}
@@ -855,7 +1129,7 @@ export default function ChatPanel() {
                             ) : (
                             <button
                                 onClick={() => handleSend()}
-                                disabled={!inputValue.trim() || !hasSource || isLoading}
+                                disabled={!inputValue.trim() || !hasSource || isLoading || !currentNotebook?.id || !!currentNotebook?.isDraft}
                                 className="btn-icon bg-accent text-white disabled:opacity-40 disabled:bg-surface-overlay disabled:text-text-muted rounded-[10px] w-9 h-9 flex items-center justify-center transition-all ml-1"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -865,9 +1139,20 @@ export default function ChatPanel() {
                             )}
                         </div>
                     </div>
-                    <p className="text-center text-xs text-text-muted mt-3 font-medium">
-                        Press 🔬 to deep research.
-                    </p>
+                    {/* Footer hint */}
+                    <div className="flex items-center justify-center gap-3 mt-2">
+                        <p className="text-xs text-text-muted">
+                            <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border/50 font-mono text-[10px]">Enter</kbd> send
+                            &nbsp;·&nbsp;
+                            <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border/50 font-mono text-[10px]">⇧ Enter</kbd> new line
+                            &nbsp;·&nbsp; 🔬 deep research
+                        </p>
+                        {inputValue.length > 0 && (
+                            <span className={`text-xs tabular-nums ${ inputValue.length > 1800 ? 'text-status-error' : 'text-text-muted' }`}>
+                                {inputValue.length}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         </main>

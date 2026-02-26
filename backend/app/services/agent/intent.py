@@ -20,6 +20,7 @@ QUESTION = "QUESTION"
 DATA_ANALYSIS = "DATA_ANALYSIS"
 RESEARCH = "RESEARCH"
 CODE_EXECUTION = "CODE_EXECUTION"
+FILE_GENERATION = "FILE_GENERATION"
 CONTENT_GENERATION = "CONTENT_GENERATION"
 
 # ── Intent Hierarchy — order matters, checked top to bottom ──
@@ -30,9 +31,12 @@ _INTENT_RULES = [
         r"\b(csv|excel|xlsx|spreadsheet|dataframe|df\b|column|row|average|mean|sum|count|aggregate|trend|chart|plot|graph|visuali[sz]e|pandas|numpy|calculate|compute)\b",
         r"\bwhat (is|are|was|were) the (total|average|max|min|count|sum)\b",
         r"\bhow many\b.*(row|record|entry|entries)\b",
-        r"\bshow me (a |the )?(chart|graph|plot|table)\b",
+        r"\bshow me (a |the )?(chart|graph|plot|table|barplot|histogram|boxplot)\b",
         r"\b(analyze|analyse)\s+(this|the|my)?\s*(data|csv|file|table|spreadsheet)\b",
         r"\b(explain|describe|tell me about)\s+(the\s+)?(data|table|spreadsheet|columns?)\b",
+        r"\b(distribution|correlation|heatmap|scatter|barplot|histogram|boxplot|violin|outlier|statistics|trend|compare\s+columns?)\b",
+        r"\b(preprocess|preprocessing|clean\s+data|data\s+cleaning|feature\s+engineering|missing\s+values?|null\s+values?)\b",
+        r"\b(bar\s+chart|pie\s+chart|line\s+chart|bar\s+plot|box\s+plot|violin\s+plot)\b",
     ], 0.90),
     # CODE_EXECUTION — explicit code requests
     (CODE_EXECUTION, [
@@ -45,6 +49,14 @@ _INTENT_RULES = [
         r"\b(research|investigate|deep\s*dive|find\s*out\s*about|search\s+the\s+web|look\s+up\s+online|latest|current|news\s+about)\b",
         r"\b(comprehensive|thorough|detailed)\s+(analysis|research|study|report)\b",
     ], 0.90),
+    # FILE_GENERATION — file creation requests (before CONTENT_GENERATION)
+    (FILE_GENERATION, [
+        r"\b(create|generate|make|build|produce|export|save)\s+(a\s+|the\s+)?(csv|word|excel|pdf|spreadsheet|document|diagram|chart|graph)\b",
+        r"\b(write|create)\s+(a\s+)?report\b",
+        r"\b(export|save)\s+as\s+(file|csv|excel|pdf|word|xlsx|docx)\b",
+        r"\b(draw|make|create|generate)\s+(a\s+)?(graph|chart|diagram|plot)\b",
+        r"\b(create|generate)\s+(a\s+)?spreadsheet\b",
+    ], 0.92),
     # CONTENT_GENERATION — explicit creation requests only
     (CONTENT_GENERATION, [
         r"\b(make|create|generate|build|produce)\s+(me\s+)?(a\s+|some\s+)?(quiz|flashcard|flash\s*card|presentation|slides|ppt|podcast)\b",
@@ -61,7 +73,7 @@ async def _llm_classify(message: str) -> Dict[str, Any]:
     Only called when keyword rules are ambiguous.  Returns same shape as
     ``_keyword_classify``.
     """
-    _INTENT_LIST = ", ".join([QUESTION, DATA_ANALYSIS, RESEARCH, CODE_EXECUTION, CONTENT_GENERATION])
+    _INTENT_LIST = ", ".join([QUESTION, DATA_ANALYSIS, RESEARCH, CODE_EXECUTION, FILE_GENERATION, CONTENT_GENERATION])
     prompt = (
         f"Classify the following user message into exactly one intent.\n"
         f"Intents: {_INTENT_LIST}\n"
@@ -70,6 +82,7 @@ async def _llm_classify(message: str) -> Dict[str, Any]:
         f"- DATA_ANALYSIS: asks to analyze, chart, or compute over data/tables/CSV\n"
         f"- RESEARCH: asks to search the web or research external topics\n"
         f"- CODE_EXECUTION: asks to write or run code\n"
+        f"- FILE_GENERATION: asks to create/export a file (CSV, Word, Excel, PDF, chart, diagram)\n"
         f"- CONTENT_GENERATION: asks to create quiz, flashcards, presentation, or podcast\n"
         f"\nMessage: \"{message}\"\n"
         f"Reply with ONLY the intent name, nothing else."
@@ -78,7 +91,7 @@ async def _llm_classify(message: str) -> Dict[str, Any]:
     response = await llm.ainvoke(prompt)
     raw = (getattr(response, "content", None) or str(response)).strip().upper()
     # Normalise — pick whichever known intent appears first in the response
-    for intent in [DATA_ANALYSIS, CODE_EXECUTION, RESEARCH, CONTENT_GENERATION, QUESTION]:
+    for intent in [DATA_ANALYSIS, CODE_EXECUTION, FILE_GENERATION, RESEARCH, CONTENT_GENERATION, QUESTION]:
         if intent in raw:
             return {"intent": intent, "confidence": 0.80}
     return {"intent": QUESTION, "confidence": 0.60}

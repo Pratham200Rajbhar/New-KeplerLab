@@ -5,14 +5,60 @@ Ties together security validation → code sanitization → sandbox execution �
 
 from __future__ import annotations
 
+import ast
 import logging
 import uuid
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.services.code_execution.security import validate_code, sanitize_code
 from app.services.code_execution.sandbox import run_in_sandbox, ExecutionResult
+from app.services.code_execution.sandbox_env import SKIP_PACKAGES, install_package_if_missing_async
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_imports(code: str) -> List[str]:
+    """Parse *code* with ast and return top-level package names.
+
+    Handles both ``import X`` and ``from X import Y`` forms.
+    Returns only the root package (e.g. ``matplotlib`` for
+    ``from matplotlib.pyplot import …``).
+    """
+    packages: List[str] = []
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return packages
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".")[0]
+                if root not in packages:
+                    packages.append(root)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                root = node.module.split(".")[0]
+                if root not in packages:
+                    packages.append(root)
+    return packages
+
+
+def _ensure_imports(code: str) -> None:
+    """Auto-install every non-stdlib package imported by *code*.
+    
+    NOTE: This is synchronous — use _ensure_imports_async from async contexts.
+    """
+    from app.services.code_execution.sandbox_env import install_package_if_missing
+    for pkg in _extract_imports(code):
+        if pkg not in SKIP_PACKAGES:
+            install_package_if_missing(pkg)
+
+
+async def _ensure_imports_async(code: str) -> None:
+    """Async version: auto-install non-stdlib packages without blocking the event loop."""
+    for pkg in _extract_imports(code):
+        if pkg not in SKIP_PACKAGES:
+            await install_package_if_missing_async(pkg)
 
 
 async def execute_code(
@@ -63,7 +109,9 @@ async def execute_code(
     # Step 2: Sanitize
     sanitized = sanitize_code(code)
 
-    # Step 3 is skipped since on_stdout_line is passed directly
+    # Step 3: Auto-install any missing packages referenced by imports (async-safe)
+    await _ensure_imports_async(sanitized)
+
     # Step 4: Execute in sandbox
     result: ExecutionResult = await run_in_sandbox(
         code=sanitized,
@@ -105,6 +153,7 @@ async def generate_and_execute(
     timeout: int = 15,
     on_stdout_line: Optional[Callable[[str], Awaitable[None]]] = None,
     additional_context: str = "",
+    on_code_generated: Optional[Callable[[str], Awaitable[None]]] = None,
 ) -> Dict[str, Any]:
     """Generate Python code from a natural language query, then execute it.
 
@@ -116,6 +165,7 @@ async def generate_and_execute(
         parquet_files: List of dicts with 'name' and 'path' for pre-built parquet files
         timeout: Execution timeout
         on_stdout_line: Optional callback for live stdout streaming.
+        on_code_generated: Optional callback invoked with the generated code before execution.
     """
     from app.services.llm_service.llm import get_llm
     import tempfile
@@ -173,6 +223,15 @@ Rules:
 - For parquet files use pd.read_parquet("filename.parquet")
 - For CSV files use pd.read_csv("filename.csv")
 
+SECURITY — FORBIDDEN (will cause instant rejection):
+- NEVER use subprocess, shutil, socket, requests, urllib, httpx, aiohttp
+- NEVER use os.system(), os.popen(), os.exec*(), os.spawn*(), os.kill()
+- NEVER use os.environ, os.getenv(), os.listdir(), os.walk(), os.makedirs()
+- NEVER use eval(), exec(), __import__(), compile()
+- NEVER use multiprocessing, threading, signal, ctypes, pickle
+- You CAN use os.path.join(), os.path.exists(), os.path.basename()
+- You CAN use: pandas, numpy, scipy, sklearn, matplotlib, seaborn, math, json, csv, re
+
 Respond with ONLY the Python code, no markdown, no explanations:"""
 
     try:
@@ -191,6 +250,13 @@ Respond with ONLY the Python code, no markdown, no explanations:"""
             generated_code = "\n".join(lines)
 
         logger.info(f"Generated {len(generated_code)} chars of code")
+
+        # Notify caller about generated code (for live streaming to UI)
+        if on_code_generated:
+            try:
+                await on_code_generated(generated_code)
+            except Exception as _cb_err:
+                logger.debug("on_code_generated callback error: %s", _cb_err)
 
         # Create temporary working directory and mount data files
         work_dir = None

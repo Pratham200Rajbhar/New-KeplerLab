@@ -19,8 +19,14 @@ logger = logging.getLogger(__name__)
 
 # Regex patterns that should never appear in user code
 _FORBIDDEN_PATTERNS: List[Tuple[str, str]] = [
-    # System access
+    # System access — dangerous os operations (os.path is safe and allowed)
     (r'\bos\s*\.\s*(system|popen|exec[lv]?[pe]?|spawn|kill|remove|unlink|rmdir|makedirs|rename)', "OS system calls are forbidden"),
+    (r'\bos\s*\.\s*(environ|getenv|putenv|unsetenv)', "Accessing environment variables is forbidden"),
+    (r'\bos\s*\.\s*(chdir|fchdir|chroot)', "Changing directories is forbidden"),
+    (r'\bos\s*\.\s*(listdir|scandir|walk)', "Directory listing is forbidden"),
+    (r'\bos\s*\.\s*(chmod|chown|lchown|chflags)', "Changing file permissions is forbidden"),
+    (r'\bos\s*\.\s*(link|symlink|readlink)', "Creating links is forbidden"),
+    (r'\bos\s*\.\s*(fork|wait|waitpid|_exit)', "Process control is forbidden"),
     (r'\bsubprocess\b', "subprocess module is forbidden"),
     (r'\bshutil\b', "shutil module is forbidden"),
     (r'\bsys\s*\.\s*(exit|_exit)', "sys.exit is forbidden"),
@@ -36,7 +42,8 @@ _FORBIDDEN_PATTERNS: List[Tuple[str, str]] = [
 
     # File system write
     (r'open\s*\([^)]*[\'"][wa]\+?[\'"]', "Writing files is forbidden"),
-    (r'\bPathlib\b.*\.(write|mkdir|unlink|rmdir)', "File system writes via pathlib are forbidden"),
+    (r'\bpathlib\b.*\.(write_text|write_bytes|mkdir|unlink|rmdir)', "File system writes via pathlib are forbidden"),
+    (r'\bPath\s*\(.*\)\s*\.\s*(write_text|write_bytes|mkdir|unlink|rmdir)', "File system writes via Path are forbidden"),
 
     # Network access
     (r'\bsocket\b', "socket module is forbidden"),
@@ -65,16 +72,21 @@ _ALLOWED_MODULES = {
     "decimal", "fractions", "textwrap", "typing",
     # IO (read-only)
     "io", "StringIO", "BytesIO",
+    # os — allowed for os.path operations; dangerous os.* calls
+    # are caught by regex patterns in _FORBIDDEN_PATTERNS above
+    "os", "os.path",
 }
 
 # Modules explicitly blocked
 _BLOCKED_MODULES = {
-    "os", "sys", "subprocess", "shutil", "socket", "requests",
+    "sys", "subprocess", "shutil", "socket", "requests",
     "urllib", "http", "ftplib", "smtplib", "telnetlib",
     "ctypes", "multiprocessing", "threading", "signal",
     "pickle", "shelve", "dbm", "sqlite3", "importlib",
     "code", "codeop", "compileall", "py_compile",
     "webbrowser", "antigravity",
+    # Note: 'os' is NOT blocked — os.path is commonly needed.
+    # Dangerous os.* calls are caught by _FORBIDDEN_PATTERNS regex.
 }
 
 

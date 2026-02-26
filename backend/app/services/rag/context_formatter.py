@@ -8,12 +8,15 @@ comparison in LLM responses.
 from __future__ import annotations
 
 import logging
+from collections import OrderedDict
 from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-# In-process cache: material_id → filename (populated by material_service after ingestion)
-_material_name_cache: Dict[str, str] = {}
+# In-process LRU cache: material_id → filename (populated by material_service after ingestion)
+# Bounded to prevent unbounded memory growth
+_CACHE_MAX_SIZE = 2000
+_material_name_cache: OrderedDict[str, str] = OrderedDict()
 
 
 def _get_material_name_sync(material_id: str) -> str:
@@ -24,7 +27,20 @@ def _get_material_name_sync(material_id: str) -> str:
     will be cold; in that case ``format_context_with_citations`` falls back to
     the abbreviated UUID.
     """
-    return _material_name_cache.get(material_id, "")
+    if material_id in _material_name_cache:
+        # Move to end (most recently used)
+        _material_name_cache.move_to_end(material_id)
+        return _material_name_cache[material_id]
+    return ""
+
+
+def set_material_name(material_id: str, filename: str) -> None:
+    """Cache a material_id → filename mapping (bounded LRU)."""
+    _material_name_cache[material_id] = filename
+    _material_name_cache.move_to_end(material_id)
+    # Evict oldest entries if over limit
+    while len(_material_name_cache) > _CACHE_MAX_SIZE:
+        _material_name_cache.popitem(last=False)
 
 
 def format_context_with_citations(

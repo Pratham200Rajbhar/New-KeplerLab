@@ -22,11 +22,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import traceback
 from functools import partial
 from typing import List, Optional
 
+from app.core.config import settings
 from app.db.prisma_client import prisma
 from app.core.utils import sanitize_null_bytes
 from app.services.rag.embedder import embed_and_store
@@ -37,6 +39,9 @@ from app.services.storage_service import (
     delete_material_text,
     get_material_summary,
 )
+
+# File extensions that should bypass chunking and be passed raw to the LLM
+_STRUCTURED_SOURCE_TYPES = frozenset({"csv", "excel", "xlsx", "xls", "tsv", "ods"})
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +87,89 @@ async def _fail_material(material_id: str, reason: str, user_id: Optional[str] =
     await _set_status(material_id, "failed", user_id=user_id, error=reason)
 
 
+# ── Structured data helpers ───────────────────────────────────
+
+def _make_structured_summary_chunk(raw_file_path: str, fallback_text: str) -> tuple:
+    """Build a (full_data_string, [summary_chunk]) pair for CSV/Excel files.
+
+    Returns
+    -------
+    full_data_string:
+        ``df.to_string()`` of every sheet — saved to ``data/material_text/``
+        so the LLM receives the *complete* dataset on retrieval.
+    summary_chunks:
+        A single-element list containing a chunk whose ``text`` is a compact
+        schema header (column names + dtypes + shape + first 5 rows) suitable
+        for semantic indexing.  The chunk is tagged ``chunk_type=structured_summary``
+        and ``is_structured=true`` so the retriever knows to swap in the full
+        data at query time.
+    """
+    import uuid
+    import pandas as pd
+    from pathlib import Path
+
+    full_text = fallback_text
+    summary_text = fallback_text
+
+    try:
+        if not raw_file_path:
+            raise ValueError("No raw_file_path available")
+
+        ext = Path(raw_file_path).suffix.lower()
+        stem = Path(raw_file_path).stem
+
+        if ext == ".csv":
+            df = pd.read_csv(raw_file_path, encoding_errors="replace")
+            sheets: dict = {"data": df}
+        elif ext in (".xlsx", ".xls"):
+            sheets = pd.read_excel(raw_file_path, sheet_name=None)
+            if not isinstance(sheets, dict):
+                sheets = {"Sheet1": sheets}
+        elif ext == ".ods":
+            sheets = pd.read_excel(raw_file_path, engine="odf", sheet_name=None)
+            if not isinstance(sheets, dict):
+                sheets = {"Sheet1": sheets}
+        elif ext == ".tsv":
+            df = pd.read_csv(raw_file_path, sep="\t", encoding_errors="replace")
+            sheets = {"data": df}
+        else:
+            raise ValueError(f"Unsupported structured extension: {ext}")
+
+        full_parts: list = []
+        summary_parts: list = []
+        for sheet_name, df in sheets.items():
+            label = f"Sheet: {sheet_name}" if len(sheets) > 1 else stem
+            full_parts.append(f"=== {label} ===\n{df.to_string()}")
+            summary_parts.append(
+                f"=== {label} ===\n"
+                f"Shape: {df.shape[0]} rows × {df.shape[1]} columns\n"
+                f"Columns: {', '.join(str(c) for c in df.columns)}\n"
+                f"Column types: {', '.join(f'{c}: {t}' for c, t in df.dtypes.items())}\n"
+                f"\nFirst 5 rows:\n{df.head(5).to_string()}"
+            )
+
+        full_text = "\n\n".join(full_parts)
+        summary_text = "\n\n".join(summary_parts)
+
+    except Exception as exc:
+        logger.warning(
+            "Structured fast-path read failed for %s: %s — using extractor text as fallback",
+            raw_file_path, exc,
+        )
+
+    chunk = {
+        "id": str(uuid.uuid4()),
+        "text": summary_text,
+        "section_title": "Structured Data Summary",
+        "chunk_type": "structured_summary",
+        "chunk_index": 0,
+        "total_chunks": 1,
+        # Internal keys (stripped before ChromaDB storage):
+        "_raw_file_path": raw_file_path,
+    }
+    return full_text, [chunk]
+
+
 # ── Internal pipeline helper ──────────────────────────────────
 
 
@@ -118,7 +206,32 @@ async def _process_material(
             return None
 
         _t_total = time.perf_counter()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
+
+        # ── Structured data short-circuit (CSV / Excel / TSV / ODS) ──────────
+        # Bypass RecursiveCharacterTextSplitter entirely.  Instead:
+        #   • Re-read the raw file with pandas and store the FULL df.to_string()
+        #     so the LLM receives the complete dataset on context retrieval.
+        #   • Create exactly ONE summary chunk (schema + first 5 rows) for
+        #     semantic indexing — row-by-row chunking destroys tabular structure.
+        _pre_computed_chunks = None
+        if source_type in _STRUCTURED_SOURCE_TYPES:
+            raw_path = (extraction_metadata or {}).get("upload_path", "")
+            from functools import partial as _partial
+            full_data, _pre_computed_chunks = await loop.run_in_executor(
+                None,
+                _partial(_make_structured_summary_chunk, raw_path, text),
+            )
+            text = full_data  # save the full df.to_string() to material_text/
+            if extraction_metadata is None:
+                extraction_metadata = {}
+            extraction_metadata.setdefault("raw_file_path", raw_path)
+            extraction_metadata["is_structured"] = True
+            logger.info(
+                "Structured fast-path: skipping chunker, 1 summary chunk  "
+                "material=%s  raw_path=%s",
+                material_id, raw_path,
+            )
 
         # ── Save full text to file storage (I/O — offloaded to thread pool) ──
         try:
@@ -135,10 +248,14 @@ async def _process_material(
 
         # ── Chunking (CPU-bound — offloaded to thread pool) ───────────────────
         _t0 = time.perf_counter()
-        chunks = await loop.run_in_executor(
-            None,
-            partial(chunk_text, text, True, source_type),  # semantic chunking ON
-        )
+        if _pre_computed_chunks is not None:
+            # Structured file: pre-computed single summary chunk — skip splitter
+            chunks = _pre_computed_chunks
+        else:
+            chunks = await loop.run_in_executor(
+                None,
+                partial(chunk_text, text, True, source_type),  # semantic chunking ON
+            )
         logger.info(
             "PERF chunking: %.1fms  chunks=%d  material=%s",
             (time.perf_counter() - _t0) * 1000, len(chunks), material_id,
@@ -184,37 +301,34 @@ async def _process_material(
                 ),
             )
 
-        async def _gen_title() -> str:
-            if title:
-                return title
-            try:
-                from app.services.notebook_name_generator import generate_material_title
-                return await loop.run_in_executor(
-                    None,
-                    partial(generate_material_title, text[:2000], _title_filename),
-                )
-            except Exception as e:
-                logger.warning("AI title generation failed for material %s: %s", material_id, e)
-                return _title_filename.rsplit(".", 1)[0][:60] if _title_filename else "Untitled Material"
-
-        embed_result, final_title = await asyncio.gather(
-            _embed(),
-            _gen_title(),
-            return_exceptions=False,
-        )
+        # ── Critical path: embedding only — complete immediately ─────────────
+        # Title generation is decoupled into a background task so the material
+        # becomes "completed" as soon as the vectors are stored, letting users
+        # start chatting without waiting for the LLM title call (which can
+        # take 10–90 seconds on local inference backends).
+        await _embed()
 
         embed_ms = (time.perf_counter() - _t0) * 1000
         logger.info(
-            "PERF embedding+title (parallel): %.1fms  chunks=%d  material=%s  title='%s'",
-            embed_ms, len(chunks), material_id, final_title,
+            "PERF embedding: %.1fms  chunks=%d  material=%s",
+            embed_ms, len(chunks), material_id,
         )
 
+        # Fast placeholder title derived from filename (no LLM needed).
+        fast_title: str
+        if title:
+            fast_title = title
+        elif _title_filename:
+            fast_title = _title_filename.rsplit(".", 1)[0][:60]
+        else:
+            fast_title = "Untitled Material"
+
         update_data: dict = {
-            "originalText": summary,  # Store only summary
-            "chunkCount": str(len(chunks)),
+            "originalText": sanitize_null_bytes(summary),  # Store only summary
+            "chunkCount": len(chunks),
             "status": "completed",
             "error": None,          # clear any previous error
-            "title": final_title,
+            "title": sanitize_null_bytes(fast_title),
         }
 
         # Store extraction metadata as JSON string (sanitize for null bytes)
@@ -222,10 +336,6 @@ async def _process_material(
             import json
             sanitized_meta = sanitize_null_bytes(extraction_metadata)
             update_data["metadata"] = json.dumps(sanitized_meta)
-
-        # Final sanitization for Postgres safety
-        update_data["originalText"] = sanitize_null_bytes(update_data["originalText"])
-        update_data["title"] = sanitize_null_bytes(update_data["title"])
 
         result = await prisma.material.update(
             where={"id": material_id},
@@ -235,17 +345,60 @@ async def _process_material(
         # show human-readable names immediately after processing completes.
         if filename:
             try:
-                from app.services.rag.context_formatter import _material_name_cache
-                _material_name_cache[material_id] = filename
+                from app.services.rag.context_formatter import set_material_name
+                set_material_name(material_id, filename)
             except Exception:
                 pass
-        # Push completed event via WebSocket
+        # Push completed event via WebSocket IMMEDIATELY — user can now chat.
         if user_id:
             await _emit_material_ws(user_id, material_id, "completed", chunk_count=len(chunks))
+
         logger.info(
-            "PERF _process_material total: %.1fms  material=%s",
+            "PERF _process_material total (critical path): %.1fms  material=%s",
             (time.perf_counter() - _t_total) * 1000, material_id,
         )
+
+        # ── Background task: AI title generation (non-blocking) ───────────────
+        # Runs after "completed" is emitted so the UI doesn't wait for it.
+        # On completion it updates the DB and re-emits a WS event so the
+        # sidebar refreshes the displayed title.
+        if not title:
+            _bg_text = text[:2000]
+            _bg_filename = _title_filename
+            _bg_material_id = material_id
+            _bg_user_id = user_id
+
+            async def _background_title_update() -> None:
+                try:
+                    from app.services.notebook_name_generator import generate_material_title
+                    ai_title = await loop.run_in_executor(
+                        None,
+                        partial(generate_material_title, _bg_text, _bg_filename),
+                    )
+                    ai_title = sanitize_null_bytes(str(ai_title)[:60])
+                    await prisma.material.update(
+                        where={"id": _bg_material_id},
+                        data={"title": ai_title},
+                    )
+                    logger.info(
+                        "Background AI title updated: material=%s  title='%s'",
+                        _bg_material_id, ai_title,
+                    )
+                    # Re-emit completed so the sidebar calls loadMaterials()
+                    # and shows the new title without a page refresh.
+                    if _bg_user_id:
+                        await _emit_material_ws(
+                            _bg_user_id, _bg_material_id, "completed",
+                            title=ai_title,
+                        )
+                except Exception as bg_exc:
+                    logger.warning(
+                        "Background title generation failed for material %s: %s",
+                        _bg_material_id, bg_exc,
+                    )
+
+            asyncio.create_task(_background_title_update())
+
         return result
 
     except Exception as exc:
@@ -297,6 +450,7 @@ async def process_material(
 
         # Extract metadata from result
         extraction_metadata = result.get("metadata", {})
+        extraction_metadata["upload_path"] = file_path
         
         return await _process_material(
             material.id,
@@ -305,7 +459,7 @@ async def process_material(
             nid,
             filename=filename,
             extraction_metadata=extraction_metadata,
-            source_type=extraction_metadata.get("source_type", "prose"),
+            source_type=result.get("source_type") or extraction_metadata.get("source_type", "prose"),
         ) or material
 
     except Exception as exc:
@@ -367,7 +521,7 @@ async def process_material_by_id(
     """
     uid = str(user_id)
     nid = str(notebook_id) if notebook_id and notebook_id != "draft" else None
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     _t_total = time.perf_counter()
 
     try:
@@ -402,6 +556,9 @@ async def process_material_by_id(
             return
 
         extraction_metadata = result.get("metadata", {})
+        # Persist the original upload path so downstream tools (data_profiler,
+        # workspace_builder) can locate the raw file without re-deriving the path.
+        extraction_metadata["upload_path"] = file_path
         await _process_material(
             material_id,
             result["text"],
@@ -409,7 +566,9 @@ async def process_material_by_id(
             nid,
             filename=filename,
             extraction_metadata=extraction_metadata,
-            source_type=extraction_metadata.get("source_type", "prose"),
+            # source_type lives at the top level of the extraction result, NOT
+            # inside result["metadata"], so we must read it from result directly.
+            source_type=result.get("source_type") or extraction_metadata.get("source_type", "prose"),
         )
         logger.info(
             "PERF process_material_by_id total: %.1fms  material=%s",
@@ -463,7 +622,7 @@ async def process_url_material_by_id(
 
         from app.services.text_processing.extractor import EnhancedTextExtractor
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
             partial(EnhancedTextExtractor().extract_text, url, source_type=source_type),
@@ -594,9 +753,10 @@ async def get_material_text(material_id: str, user_id: str) -> Optional[str]:
         logger.warning(f"Material {material_id} not found or unauthorized for user {user_id}")
         return None
     
-    # Load from storage
+    # Load from storage (sync I/O → thread pool)
     try:
-        text = load_material_text(material_id)
+        loop = asyncio.get_running_loop()
+        text = await loop.run_in_executor(None, load_material_text, material_id)
         return text
     except FileNotFoundError:
         logger.error(f"Full text file not found for material {material_id}")
@@ -636,21 +796,53 @@ async def update_material(
 
 
 async def delete_material(material_id: str, user_id) -> bool:
-    """Delete material record and clean up file storage."""
+    """Delete material record and clean up ALL associated storage.
+
+    Cleanup order: ChromaDB vectors → file storage → upload file → DB record.
+    Storage is cleaned BEFORE the DB record is deleted so that on partial
+    failure the reference is still intact and cleanup can be retried.
+    """
     material = await get_material_for_user(material_id, user_id)
     if not material:
         return False
-    
-    # Delete from database
-    await prisma.material.delete(where={"id": material.id})
-    
-    # Clean up file storage
+
+    loop = asyncio.get_running_loop()
+
+    # 1. Delete ChromaDB embeddings (sync → thread pool)
     try:
-        delete_material_text(material_id)
-        logger.info(f"Cleaned up file storage for material {material_id}")
-    except FileNotFoundError:
-        logger.warning(f"No file storage found for material {material_id}")
+        from app.db.chroma import get_collection
+        collection = get_collection()
+        await loop.run_in_executor(
+            None, lambda: collection.delete(where={"material_id": str(material_id)})
+        )
+        logger.info("Deleted ChromaDB embeddings for material %s", material_id)
     except Exception as e:
-        logger.error(f"Failed to delete file storage for material {material_id}: {e}")
-    
+        logger.warning("Failed to delete ChromaDB embeddings for material %s: %s", material_id, e)
+
+    # 2. Delete extracted text file (sync → thread pool)
+    try:
+        await loop.run_in_executor(None, delete_material_text, material_id)
+        logger.info("Deleted text storage for material %s", material_id)
+    except Exception as e:
+        logger.warning("Failed to delete text storage for material %s: %s", material_id, e)
+
+    # 3. Delete original uploaded file on disk
+    try:
+        if material.filename:
+            import glob
+            upload_dir = os.path.join(settings.UPLOAD_DIR, str(user_id))
+            pattern = os.path.join(upload_dir, f"*_{material.filename}")
+            # Also try exact match with material_id prefix
+            pattern2 = os.path.join(upload_dir, f"{material_id}_*")
+            for p in (pattern, pattern2):
+                for fpath in glob.glob(p):
+                    if os.path.isfile(fpath):
+                        os.remove(fpath)
+                        logger.info("Deleted upload file: %s", fpath)
+    except Exception as e:
+        logger.warning("Failed to delete upload file for material %s: %s", material_id, e)
+
+    # 4. Delete from database LAST (so reference exists for retry on earlier failures)
+    await prisma.material.delete(where={"id": material.id})
+    logger.info("Deleted material record %s", material_id)
     return True

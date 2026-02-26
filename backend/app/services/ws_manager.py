@@ -37,6 +37,8 @@ class ConnectionManager:
     safe here; no extra locking is required.
     """
 
+    MAX_CONNECTIONS_PER_USER = 10  # Prevent DoS via excessive WS connections
+
     def __init__(self) -> None:
         # user_id  → list of active WebSocket objects
         self._user_connections: Dict[str, List[WebSocket]] = defaultdict(list)
@@ -44,7 +46,20 @@ class ConnectionManager:
     # ── Connection lifecycle ───────────────────────────────────────
 
     async def connect_user(self, user_id: str, ws: WebSocket) -> None:
-        """Accept and register a user-scoped WebSocket."""
+        """Accept and register a user-scoped WebSocket.
+        
+        Rejects connections exceeding MAX_CONNECTIONS_PER_USER.
+        """
+        current_count = len(self._user_connections.get(user_id, []))
+        if current_count >= self.MAX_CONNECTIONS_PER_USER:
+            await ws.accept()
+            await ws.send_text('{"type":"error","reason":"Too many connections"}')
+            await ws.close(code=4008)
+            logger.warning(
+                "WS rejected: user=%s exceeded max connections (%d)",
+                user_id, self.MAX_CONNECTIONS_PER_USER,
+            )
+            return
         await ws.accept()
         self._user_connections[user_id].append(ws)
         logger.info(

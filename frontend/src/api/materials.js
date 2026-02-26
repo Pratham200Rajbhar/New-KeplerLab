@@ -1,4 +1,4 @@
-import { apiJson, apiFetchFormData, apiConfig } from './config';
+import { apiJson, apiFetch, apiFetchFormData, apiConfig } from './config';
 
 // ── Upload limits (configurable via backend) ─────────────────────
 const DEFAULT_MAX_UPLOAD_SIZE_MB = 25;
@@ -108,10 +108,7 @@ export async function uploadText(text, title, notebookId = null, autoCreateNoteb
 }
 
 export async function getSupportedFormats() {
-  const response = await fetch(`${apiConfig.baseUrl}/upload/supported-formats`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch supported formats');
-  }
+  const response = await apiFetch('/upload/supported-formats');
   const data = await response.json();
   // Cache max upload size from backend
   if (data.max_upload_size_mb) {

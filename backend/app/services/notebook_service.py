@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional
 
@@ -63,8 +64,45 @@ async def delete_notebook(notebook_id: str, user_id: str) -> bool:
     if not notebook:
         return False
 
+    # Clean up related data before deleting notebook
+    try:
+        # Delete generated content
+        await prisma.generatedcontent.delete_many(
+            where={"notebookId": str(notebook_id), "userId": str(user_id)}
+        )
+    except Exception as e:
+        logger.warning(f"Failed to delete generated content for notebook {notebook_id}: {e}")
+
+    try:
+        # Delete associated materials and their text files
+        materials = await prisma.material.find_many(
+            where={"notebookId": str(notebook_id), "userId": str(user_id)}
+        )
+        for mat in materials:
+            # Delete material text file from storage (sync I/O → thread pool)
+            try:
+                from app.services.storage_service import delete_material_text
+                await asyncio.to_thread(delete_material_text, str(mat.id))
+            except Exception:
+                pass
+            # Delete embeddings from ChromaDB (run sync call in thread pool)
+            try:
+                from app.db.chroma import get_collection
+                collection = get_collection()
+                await asyncio.to_thread(
+                    collection.delete, where={"material_id": str(mat.id)}
+                )
+            except Exception as chroma_exc:
+                logger.warning("Failed to delete ChromaDB embeddings for material %s: %s", mat.id, chroma_exc)
+        # Delete material records
+        await prisma.material.delete_many(
+            where={"notebookId": str(notebook_id), "userId": str(user_id)}
+        )
+    except Exception as e:
+        logger.warning(f"Failed to delete materials for notebook {notebook_id}: {e}")
+
     await prisma.notebook.delete(where={"id": str(notebook_id)})
-    logger.info(f"Deleted notebook: {notebook_id}")
+    logger.info(f"Deleted notebook and associated data: {notebook_id}")
     return True
 
 

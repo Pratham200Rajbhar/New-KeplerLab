@@ -5,10 +5,12 @@ import socket
 from urllib.parse import urlparse, quote
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from typing import Optional
 import logging
+
+from app.services.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -110,12 +112,16 @@ def _detect_file_type(url: str) -> dict:
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 @router.get("/proxy")
-async def proxy_webpage(url: str = Query(..., description="URL to proxy")):
+async def proxy_webpage(
+    url: str = Query(..., description="URL to proxy"),
+    current_user=Depends(get_current_user),
+):
     """
     Fetches a webpage and strips headers that prevent iframe embedding.
+    Requires authentication. Only HTTPS URLs are allowed (SSRF protection).
     """
-    if not url.startswith("http://") and not url.startswith("https://"):
-        url = "https://" + url
+    # Validate URL — enforce HTTPS and block private networks
+    url = _validate_url(url)
 
     try:
         headers = {
