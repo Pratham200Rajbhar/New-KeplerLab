@@ -445,7 +445,12 @@ async def python_tool(
             if success:
                 llm = get_llm(mode="chat")  # factual explanation
                 prompt = (
-                    "Analyze this output and provide a brief, professional summary of the findings:\n\n"
+                    "Analyze this output and provide a well-structured, professional summary of the findings.\n\n"
+                    "Format your response in clean Markdown with:\n"
+                    "- A bold **Executive Summary** opening line (1-2 sentences)\n"
+                    "- **Key Findings** as a bullet list with bold labels for each point\n"
+                    "- A brief **Strategic Implications** paragraph at the end\n\n"
+                    "Use line breaks between sections for readability. Keep it concise but insightful.\n\n"
                     f"Query: {query}\n\nOutput:\n{result.get('stdout', '')}"
                 )
                 try:

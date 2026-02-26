@@ -499,13 +499,13 @@ export default function StudioPanel() {
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)}>
-                    <div className="bg-[#1C1E26] border border-[#3A3F4B] rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-base font-semibold text-white mb-2">Delete content?</h3>
-                        <p className="text-sm text-gray-400 mb-5">
+                    <div className="bg-surface-raised border border-border rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-base font-semibold text-text-primary mb-2">Delete content?</h3>
+                        <p className="text-sm text-text-secondary mb-5">
                             "{showDeleteConfirm.title || showDeleteConfirm.content_type}" will be permanently deleted.
                         </p>
                         <div className="flex justify-end gap-2">
-                            <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm rounded-lg text-gray-300 hover:bg-[#2A2D35] transition-colors">Cancel</button>
+                            <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm rounded-lg text-text-secondary hover:bg-bg-secondary transition-colors">Cancel</button>
                             <button onClick={confirmHistoryDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium transition-colors">Delete</button>
                         </div>
                     </div>
@@ -1436,6 +1436,11 @@ function InlineFlashcardsView({ data }) {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
+            // Only handle keyboard shortcuts when no input/textarea is focused
+            const tag = document.activeElement?.tagName?.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable) {
+                return;
+            }
             if (e.key === 'ArrowRight') next();
             if (e.key === 'ArrowLeft') prev();
             if (e.key === ' ') { e.preventDefault(); handleFlip(); }
@@ -1830,6 +1835,11 @@ function InlineQuizView({ data }) {
 function HistoryRenameModal({ isOpen, onClose, itemName, newTitle, setNewTitle, onSave }) {
     if (!isOpen) return null;
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(e);
+    };
+
     return (
         <div className="modal-backdrop" onClick={onClose}>
             <div className="modal w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
@@ -1841,7 +1851,7 @@ function HistoryRenameModal({ isOpen, onClose, itemName, newTitle, setNewTitle, 
                         </svg>
                     </button>
                 </div>
-                <form onSubmit={onSave} className="modal-body space-y-4">
+                <form onSubmit={handleSubmit} className="modal-body space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-text-secondary mb-2 whitespace-nowrap overflow-hidden text-ellipsis">
                             Name for {itemName}
@@ -1856,13 +1866,13 @@ function HistoryRenameModal({ isOpen, onClose, itemName, newTitle, setNewTitle, 
                             required
                         />
                     </div>
+                    <div className="modal-footer">
+                        <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+                        <button type="submit" disabled={!newTitle.trim()} className="btn-primary">
+                            Save
+                        </button>
+                    </div>
                 </form>
-                <div className="modal-footer">
-                    <button onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button onClick={onSave} disabled={!newTitle.trim()} className="btn-primary">
-                        Save
-                    </button>
-                </div>
             </div>
         </div>
     );

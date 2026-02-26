@@ -39,6 +39,13 @@ _FORBIDDEN_PATTERNS: List[Tuple[str, str]] = [
     (r'\bgetattr\s*\(.*,\s*[\'"]__', "Accessing dunder attributes via getattr is forbidden"),
     (r'\bglobals\s*\(\)', "globals() is forbidden"),
     (r'\blocals\s*\(\)', "locals() is forbidden"),
+    (r'\bdelattr\s*\(', "delattr() is forbidden"),
+    (r'\bsetattr\s*\(.*,\s*[\'"]__', "Setting dunder attributes via setattr is forbidden"),
+    (r'\b__builtins__\b', "Accessing __builtins__ is forbidden"),
+    (r'\b__subclasses__\b', "Accessing __subclasses__ is forbidden"),
+    (r'\b__bases__\b', "Accessing __bases__ is forbidden"),
+    (r'\b__class__\s*\.\s*__mro__', "Accessing __mro__ is forbidden"),
+    (r'\bbreakpoint\s*\(', "breakpoint() is forbidden"),
 
     # File system write
     (r'open\s*\([^)]*[\'"][wa]\+?[\'"]', "Writing files is forbidden"),
@@ -156,6 +163,14 @@ def _check_ast(tree: ast.AST, violations: List[str], warnings: List[str]):
                 module = node.module.split(".")[0]
                 if module in _BLOCKED_MODULES:
                     violations.append(f"Importing from '{node.module}' is forbidden")
+
+        # Check for builtins-based __import__ calls: builtins.__import__, __builtins__.__import__
+        elif isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr == '__import__':
+                violations.append("Dynamic __import__ via attribute access is forbidden")
+            elif isinstance(func, ast.Name) and func.id in ('exec', 'eval', 'compile', '__import__', 'breakpoint'):
+                violations.append(f"Calling {func.id}() is forbidden")
 
         # Check for infinite loops (basic heuristic)
         elif isinstance(node, ast.While):

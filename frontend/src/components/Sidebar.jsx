@@ -8,6 +8,7 @@ import SourceItem from './SourceItem';
 import UploadDialog from './UploadDialog';
 import WebSearchDialog from './WebSearchDialog';
 import { MarkdownRenderer } from './ChatMessage';
+import DocumentPreview from './chat/DocumentPreview';
 
 export default function Sidebar() {
     const {
@@ -34,6 +35,7 @@ export default function Sidebar() {
     const [showTextModal, setShowTextModal] = useState(false);
     const [modalText, setModalText] = useState('');
     const [modalFilename, setModalFilename] = useState('');
+    const [modalSourceFilename, setModalSourceFilename] = useState('');
     const [modalLoading, setModalLoading] = useState(false);
     const [showUploadDialog, setShowUploadDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -319,6 +321,7 @@ export default function Sidebar() {
 
     const handleSeeText = async (source) => {
         setModalFilename(source.title || source.filename);
+        setModalSourceFilename(source.filename || '');
         setModalText('');
         setModalLoading(true);
         setShowTextModal(true);
@@ -326,6 +329,10 @@ export default function Sidebar() {
         try {
             const response = await getMaterialText(source.id);
             setModalText(response.text);
+            // Use filename from API if available (more reliable)
+            if (response.filename) {
+                setModalSourceFilename(response.filename);
+            }
         } catch (error) {
             console.error('Failed to fetch text:', error);
             setModalText('Error: Failed to load material text.');
@@ -367,14 +374,18 @@ export default function Sidebar() {
     return (
         <>
             <aside
-                className="h-full overflow-hidden flex flex-col relative border-r border-[#3A3F4B] bg-[#1C1E26] text-gray-200"
+                className="h-full overflow-hidden flex flex-col relative border-r border-border bg-surface text-text-primary"
                 style={{ width: `${width}px`, minWidth: `${minWidth}px` }}
             >
                 {/* Header */}
-                <div className="panel-header py-4 px-4 border-b border-[#3A3F4B]">
+                <div className="panel-header py-4 px-4 border-b border-border">
                     <div className="flex justify-between items-center w-full">
-                        <span className="text-white font-semibold text-[15px]">Sources</span>
-                        <button className="text-gray-400 hover:text-white transition-colors">
+                        <span className="text-text-primary font-semibold text-[15px]">Sources</span>
+                        <button
+                            className="text-text-muted hover:text-text-primary transition-colors"
+                            onClick={() => alert('Source settings coming soon!')}
+                            aria-label="Source settings"
+                        >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -384,9 +395,9 @@ export default function Sidebar() {
                 </div>
 
                 {/* Add Source Button & Search Block */}
-                <div className="p-4 border-b border-[#2A2D35] space-y-5">
+                <div className="p-4 border-b border-border space-y-5">
                     <button
-                        className="w-full py-2.5 px-4 rounded-full border border-[#4A4E58] hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-[14px] text-[#E5E7EB] font-medium"
+                        className="w-full py-2.5 px-4 rounded-full border border-border hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-[14px] text-text-secondary font-medium"
                         onClick={() => setShowUploadDialog(true)}
                         disabled={loading.upload}
                     >
@@ -399,18 +410,18 @@ export default function Sidebar() {
                     </button>
 
                     {/* Unique Premium Search Box */}
-                    <div className="p-3 bg-gradient-to-b from-[#2A2D35] to-[#1C1E26] border border-[#3A3F4B]/80 rounded-[18px] space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.2)] relative overflow-hidden">
+                    <div className="p-3 bg-gradient-to-b from-surface-raised to-surface border border-border/80 rounded-[18px] space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.2)] relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none transform translate-x-10 -translate-y-10"></div>
 
                         {/* Search Input */}
-                        <div className="flex items-center gap-2.5 px-3 py-2 bg-[#1C1E26]/80 rounded-xl border border-[#3A3F4B]/50 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all relative z-10">
+                        <div className="flex items-center gap-2.5 px-3 py-2 bg-surface/80 rounded-xl border border-border/50 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all relative z-10">
                             <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             <input
                                 type="text"
                                 placeholder="Search the web for sources..."
-                                className="bg-transparent text-[13px] w-full outline-none text-gray-200 placeholder:text-gray-500 font-medium"
+                                className="bg-transparent text-[13px] w-full outline-none text-text-primary placeholder:text-gray-500 font-medium"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={handleSearchSubmit}
@@ -421,18 +432,18 @@ export default function Sidebar() {
                         <div className="flex items-center justify-between relative z-10">
                             <div className="flex flex-col relative w-[160px]">
                                 <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                                    <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg className="w-3 h-3 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
                                 <select
                                     value={selectedFileType || ''}
                                     onChange={(e) => setSelectedFileType(e.target.value || null)}
-                                    className="block w-full pl-7 pr-6 py-1.5 text-[11.5px] font-medium text-gray-300 bg-[#22242C] border border-[#3A3F4B]/60 rounded-lg appearance-none focus:outline-none focus:border-blue-500/50 hover:bg-[#2A2D35] transition-colors cursor-pointer truncate"
+                                    className="block w-full pl-7 pr-6 py-1.5 text-[11.5px] font-medium text-text-secondary bg-surface border border-border/60 rounded-lg appearance-none focus:outline-none focus:border-blue-500/50 hover:bg-surface-raised transition-colors cursor-pointer truncate"
                                     style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
                                 >
                                     {ALL_FILE_TYPES.map(ft => (
-                                        <option key={ft.id} value={ft.id} className="bg-[#1C1E26] text-gray-200">
+                                        <option key={ft.id} value={ft.id} className="bg-surface text-text-primary">
                                             {ft.label}
                                         </option>
                                     ))}
@@ -461,10 +472,10 @@ export default function Sidebar() {
 
                 {/* Sources List Header */}
                 <div className="px-5 pt-8 pb-4 flex justify-between items-center bg-transparent">
-                    <span className="text-[14px] font-medium text-[#7D8590]">Select all sources</span>
+                    <span className="text-[14px] font-medium text-text-muted">Select all sources</span>
                     <button
                         onClick={() => selectedSources.size === materials.length && materials.length > 0 ? deselectAllSources() : selectAllSources()}
-                        className={`flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${selectedSources.size === materials.length && materials.length > 0 ? 'bg-transparent border-white text-white' : selectedSources.size > 0 ? 'bg-transparent border-gray-400 text-gray-400' : 'border-[#4A4E58] bg-transparent hover:border-gray-400'}`}
+                        className={`flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${selectedSources.size === materials.length && materials.length > 0 ? 'bg-transparent border-text-primary text-text-primary' : selectedSources.size > 0 ? 'bg-transparent border-gray-400 text-text-muted' : 'border-border bg-transparent hover:border-gray-400'}`}
                         title={selectedSources.size === materials.length && materials.length > 0 ? 'Deselect all' : 'Select all'}
                     >
                         {selectedSources.size === materials.length && materials.length > 0 ? (
@@ -550,13 +561,13 @@ export default function Sidebar() {
             {showTextModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowTextModal(false)}>
                     <div
-                        className="bg-[#1C1E26] border border-[#3A3F4B] rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative"
+                        className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Glow effect */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-blue-500/10 rounded-full blur-[60px] pointer-events-none"></div>
 
-                        <div className="p-4 sm:p-5 border-b border-[#3A3F4B] flex items-center justify-between bg-[#1C1E26]/80 backdrop-blur-xl z-10">
+                        <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-surface/80 backdrop-blur-xl z-10">
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -564,8 +575,8 @@ export default function Sidebar() {
                                     </svg>
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-[15px] font-semibold text-white truncate">{modalFilename}</h3>
-                                    <p className="text-[13px] text-gray-400 flex items-center gap-1.5 mt-0.5">
+                                    <h3 className="text-[15px] font-semibold text-text-primary truncate">{modalFilename}</h3>
+                                    <p className="text-[13px] text-text-muted flex items-center gap-1.5 mt-0.5">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                         Document Preview
                                     </p>
@@ -573,7 +584,7 @@ export default function Sidebar() {
                             </div>
                             <button
                                 onClick={() => setShowTextModal(false)}
-                                className="p-2 mr-1 rounded-lg text-gray-400 hover:text-white hover:bg-[#2A2D35] transition-colors focus:outline-none"
+                                className="p-2 mr-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors focus:outline-none"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -581,26 +592,26 @@ export default function Sidebar() {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto bg-[#1C1E26] relative z-10 p-5 sm:p-8 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto bg-surface relative z-10 p-5 sm:p-8 custom-scrollbar">
                             {modalLoading ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-5">
                                     <div className="relative">
                                         <div className="loading-spinner w-12 h-12 text-blue-500" />
                                         <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
                                     </div>
-                                    <p className="text-[14px] text-gray-400 font-medium tracking-wide animate-pulse">Analyzing document content...</p>
+                                    <p className="text-[14px] text-text-muted font-medium tracking-wide animate-pulse">Analyzing document content...</p>
                                 </div>
                             ) : (
-                                <div className="max-w-4xl mx-auto markdown-content rounded-xl">
-                                    <MarkdownRenderer content={modalText || '*No text content available for this source.*'} />
+                                <div className="max-w-5xl mx-auto rounded-xl">
+                                    <DocumentPreview content={modalText} filename={modalSourceFilename} />
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-4 border-t border-[#3A3F4B] bg-[#1C1E26]/95 backdrop-blur-xl flex justify-end z-10 rounded-b-2xl">
+                        <div className="p-4 border-t border-border bg-surface/95 backdrop-blur-xl flex justify-end z-10 rounded-b-2xl">
                             <button
                                 onClick={() => setShowTextModal(false)}
-                                className="px-5 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-[#2A2D35] transition-colors focus:outline-none"
+                                className="px-5 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors focus:outline-none"
                             >
                                 Close Preview
                             </button>

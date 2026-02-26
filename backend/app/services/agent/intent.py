@@ -26,6 +26,16 @@ CONTENT_GENERATION = "CONTENT_GENERATION"
 # ── Intent Hierarchy — order matters, checked top to bottom ──
 
 _INTENT_RULES = [
+    # FILE_GENERATION — must come before DATA_ANALYSIS to catch "create CSV/Excel/report"
+    (FILE_GENERATION, [
+        r"\b(create|generate|make|build|produce|export|save)\s+(a\s+|the\s+)?(csv|word|excel|pdf|spreadsheet|document|diagram|chart|graph)\b",
+        r"\b(write|create)\s+(a\s+)?report\b",
+        r"\b(export|save)\s+.*\bas\s+(file|csv|excel|pdf|word|xlsx|docx)\b",
+        r"\b(export|save)\s+as\s+(file|csv|excel|pdf|word|xlsx|docx)\b",
+        r"\b(export|save).*\b(csv|excel|xlsx|pdf|word|docx)\b",
+        r"\b(draw|make|create|generate)\s+(a\s+)?(graph|chart|diagram|plot)\b",
+        r"\b(create|generate)\s+(a\s+)?spreadsheet\b",
+    ], 0.92),
     # DATA_ANALYSIS — must come before QUESTION to catch data queries
     (DATA_ANALYSIS, [
         r"\b(csv|excel|xlsx|spreadsheet|dataframe|df\b|column|row|average|mean|sum|count|aggregate|trend|chart|plot|graph|visuali[sz]e|pandas|numpy|calculate|compute)\b",
@@ -41,6 +51,7 @@ _INTENT_RULES = [
     # CODE_EXECUTION — explicit code requests
     (CODE_EXECUTION, [
         r"\b(run|execute|write|create)\s+(a\s+)?(python|script|code|program|function)\b",
+        r"\b(execute|run)\s+\w+\s+(python|script|code|function)\b",
         r"\b(python|bash|shell)\b.*\b(run|execute|do)\b",
         r"\b(code|script)\s+(for|to|that)\b",
     ], 0.90),
@@ -49,18 +60,10 @@ _INTENT_RULES = [
         r"\b(research|investigate|deep\s*dive|find\s*out\s*about|search\s+the\s+web|look\s+up\s+online|latest|current|news\s+about)\b",
         r"\b(comprehensive|thorough|detailed)\s+(analysis|research|study|report)\b",
     ], 0.90),
-    # FILE_GENERATION — file creation requests (before CONTENT_GENERATION)
-    (FILE_GENERATION, [
-        r"\b(create|generate|make|build|produce|export|save)\s+(a\s+|the\s+)?(csv|word|excel|pdf|spreadsheet|document|diagram|chart|graph)\b",
-        r"\b(write|create)\s+(a\s+)?report\b",
-        r"\b(export|save)\s+as\s+(file|csv|excel|pdf|word|xlsx|docx)\b",
-        r"\b(draw|make|create|generate)\s+(a\s+)?(graph|chart|diagram|plot)\b",
-        r"\b(create|generate)\s+(a\s+)?spreadsheet\b",
-    ], 0.92),
     # CONTENT_GENERATION — explicit creation requests only
     (CONTENT_GENERATION, [
-        r"\b(make|create|generate|build|produce)\s+(me\s+)?(a\s+|some\s+)?(quiz|flashcard|flash\s*card|presentation|slides|ppt|podcast)\b",
-        r"\b(quiz|flashcard|flash\s*card)\s+(me|from|on|about)\b",
+        r"\b(make|create|generate|build|produce)\s+(me\s+)?(a\s+|some\s+|the\s+)?(quiz|flashcards?|flash\s*cards?|presentation|slides|ppt|podcast)\b",
+        r"\b(quiz|flashcards?|flash\s*cards?)\s+(me|from|on|about)\b",
     ], 0.92),
     # QUESTION — default fallback (always matches)
     (QUESTION, [r".*"], 0.50),

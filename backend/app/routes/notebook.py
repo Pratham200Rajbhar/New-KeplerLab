@@ -1,6 +1,7 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from enum import Enum
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from uuid import UUID
 
@@ -22,13 +23,13 @@ router = APIRouter(prefix="/notebooks")
 
 
 class NotebookCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
 
 
 class NotebookUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
 
 
 class NotebookResponse(BaseModel):
@@ -59,9 +60,11 @@ async def create_notebook_endpoint(
 
 @router.get("", response_model=List[NotebookResponse])
 async def list_notebooks(
+    skip: int = Query(0, ge=0, description="Number of notebooks to skip"),
+    take: int = Query(50, ge=1, le=200, description="Max notebooks to return"),
     current_user=Depends(get_current_user),
 ):
-    notebooks = await get_user_notebooks(str(current_user.id))
+    notebooks = await get_user_notebooks(str(current_user.id), skip=skip, take=take)
     return [
         NotebookResponse(
             id=str(n.id),
@@ -123,9 +126,16 @@ async def delete_notebook_endpoint(
 # ===== Generated Content Endpoints =====
 
 
+class ContentType(str, Enum):
+    flashcards = "flashcards"
+    quiz = "quiz"
+    audio = "audio"
+    presentation = "presentation"
+
+
 class SaveContentRequest(BaseModel):
-    content_type: str  # flashcards, quiz, audio
-    title: Optional[str] = None
+    content_type: ContentType
+    title: Optional[str] = Field(None, max_length=500)
     data: dict
     material_id: Optional[str] = None
 
@@ -146,7 +156,7 @@ async def save_generated_content(
     content = await save_notebook_content(
         notebook_id=str(notebook_id),
         user_id=str(current_user.id),
-        content_type=request.content_type,
+        content_type=request.content_type.value,
         title=request.title,
         data=request.data,
         material_id=request.material_id,
@@ -201,7 +211,8 @@ async def delete_generated_content(
 
 
 class UpdateContentRequest(BaseModel):
-    title: str
+    title: str = Field(..., min_length=1, max_length=500)
+
 
 @router.put("/{notebook_id}/content/{content_id}")
 async def update_generated_content_title_endpoint(

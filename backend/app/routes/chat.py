@@ -11,7 +11,7 @@ import logging
 import time
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.services.auth import get_current_user
@@ -29,7 +29,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     material_id: Optional[str] = None
     material_ids: Optional[List[str]] = None
-    message: str
+    message: str = Field(..., min_length=1, max_length=50000)
     notebook_id: str
     session_id: Optional[str] = None
     stream: Optional[bool] = True  # Default to streaming now
@@ -43,12 +43,12 @@ class ClearChatRequest(BaseModel):
 
 class BlockFollowupRequest(BaseModel):
     block_id: str
-    question: str
+    question: str = Field(..., min_length=1, max_length=10000)
     action: str = "ask"  # ask, simplify, translate, explain
 
 
 class SuggestionRequest(BaseModel):
-    partial_input: str
+    partial_input: str = Field(..., min_length=1, max_length=1000)
     notebook_id: str
 
 class CreateSessionRequest(BaseModel):

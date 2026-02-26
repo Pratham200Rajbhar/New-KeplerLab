@@ -1,6 +1,7 @@
+import asyncio
 import logging
 import threading
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from typing import Optional
 
 try:
@@ -28,6 +29,7 @@ class GPUManager:
 
     def _init_manager(self):
         self.gpu_lock = threading.Lock()
+        self._async_gpu_lock = asyncio.Lock()
         self.has_gpu = torch is not None and torch.cuda.is_available()
         if self.has_gpu:
             logger.info(f"GPUManager initialized: Found {torch.cuda.get_device_name(0)}")
@@ -36,7 +38,7 @@ class GPUManager:
 
     @contextmanager
     def gpu_session(self, task_name: str = "Generic Task"):
-        """Context manager for exclusive access to the GPU."""
+        """Context manager for exclusive access to the GPU (sync version)."""
         if not self.has_gpu:
             yield
             return
@@ -50,6 +52,23 @@ class GPUManager:
             finally:
                 self._clear_memory()
                 logger.info(f"Released GPU lock: {task_name}")
+
+    @asynccontextmanager
+    async def async_gpu_session(self, task_name: str = "Generic Task"):
+        """Async context manager for exclusive access to the GPU."""
+        if not self.has_gpu:
+            yield
+            return
+
+        logger.info(f"Waiting for async GPU lock: {task_name}")
+        async with self._async_gpu_lock:
+            logger.info(f"Acquired async GPU lock: {task_name}")
+            try:
+                self._clear_memory()
+                yield
+            finally:
+                self._clear_memory()
+                logger.info(f"Released async GPU lock: {task_name}")
 
     def _clear_memory(self):
         """Aggressive GPU memory cleanup."""

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -6,10 +6,11 @@ import { getNotebooks, deleteNotebook, updateNotebook } from '../api/notebooks';
 
 export default function HomePage() {
     const { user, logout } = useAuth();
-    const { theme, toggleTheme, isDark } = useTheme();
+    const { toggleTheme, isDark } = useTheme();
     const navigate = useNavigate();
     const [notebooks, setNotebooks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
     const [activeMenu, setActiveMenu] = useState(null);
     const [editingNotebook, setEditingNotebook] = useState(null);
@@ -17,16 +18,24 @@ export default function HomePage() {
     const [editDescription, setEditDescription] = useState('');
     const [saving, setSaving] = useState(false);
     const [deletingNotebook, setDeletingNotebook] = useState(null);
+    const [toastMsg, setToastMsg] = useState(null);
 
-    const loadNotebooks = async () => {
+    const showToast = useCallback((msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3000);
+    }, []);
+
+    const loadNotebooks = useCallback(async () => {
         try {
+            setError(null);
             const data = await getNotebooks();
             setNotebooks(data);
         } catch (err) {
             console.error('Failed to load notebooks:', err);
+            setError('Failed to load notebooks. Please try again.');
         }
         setLoading(false);
-    };
+    }, []);
 
     useEffect(() => {
         loadNotebooks();
@@ -48,6 +57,7 @@ export default function HomePage() {
             setNotebooks(prev => prev.filter(n => n.id !== notebookId));
         } catch (err) {
             console.error('Failed to delete notebook:', err);
+            showToast('Failed to delete notebook. Please try again.');
         }
     };
 
@@ -70,6 +80,7 @@ export default function HomePage() {
             setEditingNotebook(null);
         } catch (err) {
             console.error('Failed to rename notebook:', err);
+            showToast('Failed to rename notebook. Please try again.');
         }
         setSaving(false);
     };
@@ -117,7 +128,7 @@ export default function HomePage() {
                         )}
                     </button>
 
-                    <button className="btn-ghost text-sm">
+                    <button onClick={() => showToast('Settings coming soon!')} className="btn-ghost text-sm">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -173,6 +184,13 @@ export default function HomePage() {
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="loading-spinner w-8 h-8" />
+                    </div>
+                ) : error ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <p className="text-text-muted text-sm">{error}</p>
+                        <button onClick={loadNotebooks} className="btn-primary text-sm px-4 py-2">
+                            Retry
+                        </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -341,6 +359,13 @@ export default function HomePage() {
                             <button onClick={confirmDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium transition-colors">Delete</button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Toast notification */}
+            {toastMsg && (
+                <div className="fixed bottom-4 right-4 z-50 bg-surface-raised text-text-primary px-4 py-2 rounded-lg shadow-lg border border-border text-sm animate-fade-in">
+                    {toastMsg}
                 </div>
             )}
         </div>

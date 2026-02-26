@@ -125,10 +125,12 @@ async def lifespan(app: FastAPI):
 
     # ── Shutdown ──────────────────────────────────────────
     if _job_processor_task and not _job_processor_task.done():
+        from app.services.worker import graceful_shutdown, _SHUTDOWN_TIMEOUT
+        await graceful_shutdown()
         _job_processor_task.cancel()
         try:
-            await _job_processor_task
-        except asyncio.CancelledError:
+            await asyncio.wait_for(_job_processor_task, timeout=_SHUTDOWN_TIMEOUT)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
         logger.info("Background job processor stopped.")
 

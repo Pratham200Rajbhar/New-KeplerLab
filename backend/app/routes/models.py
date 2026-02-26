@@ -37,7 +37,10 @@ async def get_models_status(current_user=Depends(get_current_user)):
 
 @router.post("/reload")
 async def reload_models(current_user=Depends(get_current_user)):
-    """Reload and revalidate all models. Requires authentication."""
+    """Reload and revalidate all models. Requires admin role."""
+    if getattr(current_user, 'role', None) != 'ADMIN':
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin access required")
     results = await model_manager.validate_and_load_models()
     return {
         "message": "Model reload completed",

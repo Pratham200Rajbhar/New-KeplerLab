@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { streamChat, getChatHistory, streamResearch, getSuggestions, getChatSessions, createChatSession, deleteChatSession } from '../api/chat';
@@ -72,17 +72,16 @@ export default function ChatPanel() {
         materials,
     } = useApp();
 
-    const effectiveIds = Array.from(selectedSources).filter(id => {
+    const effectiveIds = useMemo(() => Array.from(selectedSources).filter(id => {
         const mat = materials.find(m => m.id === id);
         return mat && mat.status === 'completed';
-    });
+    }), [selectedSources, materials]);
     const hasSource = effectiveIds.length > 0;
     // True when the user has selected sources but they are still being processed
     const isSourceProcessing = !hasSource && selectedSources.size > 0;
 
     const [inputValue, setInputValue] = useState('');
     const [streamingContent, setStreamingContent] = useState('');
-    const [streamingId] = useState(() => `streaming-${Date.now()}`);
     const [agentStepLabel, setAgentStepLabel] = useState('');
 
     // Agent thinking state
@@ -97,6 +96,13 @@ export default function ChatPanel() {
     const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
+
+    // Toast for user-visible error feedback
+    const [toastMsg, setToastMsg] = useState(null);
+    const showToast = useCallback((msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 4000);
+    }, []);
 
     // Live streaming step log (shown before commit)
     const [liveStepLog, setLiveStepLog] = useState([]);
@@ -226,11 +232,6 @@ export default function ChatPanel() {
         setSuggestions([]);
     }, [inputValue]);
 
-    /** Update a message in the messages array by id. */
-    const patchMessage = useCallback((id, patch) => {
-        setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
-    }, [setMessages]);
-
     const handleCreateSession = async () => {
         if (!currentNotebook?.id) return;
         try {
@@ -243,6 +244,7 @@ export default function ChatPanel() {
             }
         } catch (e) {
             console.error("Failed to create session", e);
+            showToast('Failed to create chat session');
         }
     };
 
@@ -258,6 +260,7 @@ export default function ChatPanel() {
             }
         } catch (err) {
             console.error("Failed to delete", err);
+            showToast('Failed to delete session');
         }
     };
 
@@ -669,39 +672,43 @@ export default function ChatPanel() {
     const showTypingIndicator = isLoading && !streamingContent && !researchMode && liveStepLog.length === 0;
 
     // Search and Grouping Logic for Chat History
-    const filteredSessions = sessions.filter(s => {
+    const filteredSessions = useMemo(() => sessions.filter(s => {
         const searchTerm = historySearchTerm.toLowerCase();
         const matchesTitle = (s.title || 'New Conversation').toLowerCase().includes(searchTerm);
         const matchesContent = s.messages_text ? s.messages_text.toLowerCase().includes(searchTerm) : false;
         return matchesTitle || matchesContent;
-    });
+    }), [sessions, historySearchTerm]);
 
-    const groupedSessions = {
-        today: [],
-        yesterday: [],
-        previous7Days: [],
-        older: []
-    };
+    const groupedSessions = useMemo(() => {
+        const groups = {
+            today: [],
+            yesterday: [],
+            previous7Days: [],
+            older: []
+        };
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    filteredSessions.forEach(session => {
-        const sessionDate = new Date(session.createdAt || Date.now());
-        if (sessionDate >= today) {
-            groupedSessions.today.push(session);
-        } else if (sessionDate >= yesterday) {
-            groupedSessions.yesterday.push(session);
-        } else if (sessionDate >= sevenDaysAgo) {
-            groupedSessions.previous7Days.push(session);
-        } else {
-            groupedSessions.older.push(session);
-        }
-    });
+        filteredSessions.forEach(session => {
+            const sessionDate = new Date(session.createdAt || Date.now());
+            if (sessionDate >= today) {
+                groups.today.push(session);
+            } else if (sessionDate >= yesterday) {
+                groups.yesterday.push(session);
+            } else if (sessionDate >= sevenDaysAgo) {
+                groups.previous7Days.push(session);
+            } else {
+                groups.older.push(session);
+            }
+        });
+
+        return groups;
+    }, [filteredSessions]);
 
     const renderHistoryGroup = (title, items) => {
         if (items.length === 0) return null;
@@ -1155,6 +1162,13 @@ export default function ChatPanel() {
                     </div>
                 </div>
             </div>
+
+            {/* Toast notification */}
+            {toastMsg && (
+                <div className="fixed bottom-4 right-4 z-50 bg-surface-raised text-text-primary px-4 py-2 rounded-lg shadow-lg border border-border text-sm animate-fade-in">
+                    {toastMsg}
+                </div>
+            )}
         </main>
     );
 }

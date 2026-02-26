@@ -1,0 +1,194 @@
+======================================================================
+KeplerLab-AI-Notebook — Test Report
+Generated: 2026-02-26 18:15:04
+======================================================================
+
+  [PASS]  test/unit/test_auth_schemas.py                                (1.5s)
+  [PASS]  test/unit/test_auth_security.py                               (4.1s)
+  [PASS]  test/unit/test_chunker.py                                     (0.4s)
+  [PASS]  test/unit/test_citation_validator.py                          (0.3s)
+  [PASS]  test/unit/test_code_executor_imports.py                       (0.3s)
+  [PASS]  test/unit/test_code_security.py                               (0.3s)
+  [PASS]  test/unit/test_config.py                                      (0.4s)
+  [PASS]  test/unit/test_context_builder.py                             (0.6s)
+  [PASS]  test/unit/test_core_utils.py                                  (0.3s)
+  [PASS]  test/unit/test_file_detector.py                               (0.3s)
+  [PASS]  test/unit/test_file_validator.py                              (0.4s)
+  [PASS]  test/unit/test_performance_logger.py                          (0.6s)
+  [PASS]  test/unit/test_rate_limiter.py                                (0.6s)
+  [PASS]  test/unit/test_storage_service.py                             (0.4s)
+  [PASS]  test/unit/test_token_counter.py                               (1.3s)
+  [PASS]  test/integration/test_chromadb.py                             (2.2s)
+  [PASS]  test/integration/test_code_execution.py                       (5.9s)
+  [PASS]  test/integration/test_storage_integration.py                  (0.4s)
+  [PASS]  test/integration/test_text_processing_pipeline.py             (0.4s)
+  [PASS]  test/api/test_auth_api.py                                     (2.3s)
+  [FAIL]  test/api/test_health_api.py                                   (3.0s)
+
+    --- Failure output (last 30 lines) ---
+    ...FF                                                                    [100%]
+    =================================== FAILURES ===================================
+    ______ TestHealthResponseStructure.test_healthy_system_returns_200_or_503 ______
+    test/api/test_health_api.py:100: in test_healthy_system_returns_200_or_503
+        assert r.status_code in (200, 503, 401)
+    E   assert 500 in (200, 503, 401)
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    ________________ TestHealthAllComponentsMocked.test_all_healthy ________________
+    test/api/test_health_api.py:124: in test_all_healthy
+        assert r.status_code != 500
+    E   assert 500 != 500
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    =============================== warnings summary ===============================
+    .venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
+      /disk2/Projects/KeplerLab-AI-Notebook/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+        from crypt import crypt as _crypt
+    
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+    =========================== short test summary info ============================
+    FAILED test/api/test_health_api.py::TestHealthResponseStructure::test_healthy_system_returns_200_or_503
+    FAILED test/api/test_health_api.py::TestHealthAllComponentsMocked::test_all_healthy
+    2 failed, 3 passed, 1 warning in 2.00s
+
+  [FAIL]  test/api/test_jobs_api.py                                     (1.4s)
+
+    --- Failure output (last 30 lines) ---
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    _________________________ test_all_job_types[podcast] __________________________
+    test/api/test_jobs_api.py:147: in test_all_job_types
+        assert r.status_code == 200
+    E   assert 500 == 200
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    _______________________ test_all_job_types[presentation] _______________________
+    test/api/test_jobs_api.py:147: in test_all_job_types
+        assert r.status_code == 200
+    E   assert 500 == 200
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    =============================== warnings summary ===============================
+    .venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
+      /disk2/Projects/KeplerLab-AI-Notebook/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+        from crypt import crypt as _crypt
+    
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+    =========================== short test summary info ============================
+    FAILED test/api/test_jobs_api.py::test_job_not_found_404 - assert 500 == 404
+    FAILED test/api/test_jobs_api.py::test_job_status_completed - assert 500 == 200
+    FAILED test/api/test_jobs_api.py::test_all_job_statuses[pending] - assert 500...
+    FAILED test/api/test_jobs_api.py::test_all_job_statuses[processing] - assert ...
+    FAILED test/api/test_jobs_api.py::test_all_job_statuses[completed] - assert 5...
+    FAILED test/api/test_jobs_api.py::test_all_job_statuses[failed] - assert 500 ...
+    FAILED test/api/test_jobs_api.py::test_all_job_types[material_processing] - a...
+    FAILED test/api/test_jobs_api.py::test_all_job_types[flashcard] - assert 500 ...
+    FAILED test/api/test_jobs_api.py::test_all_job_types[quiz] - assert 500 == 200
+    FAILED test/api/test_jobs_api.py::test_all_job_types[podcast] - assert 500 ==...
+    FAILED test/api/test_jobs_api.py::test_all_job_types[presentation] - assert 5...
+    11 failed, 5 passed, 1 warning in 0.79s
+
+  [FAIL]  test/api/test_notebook_api.py                                 (1.4s)
+
+    --- Failure output (last 30 lines) ---
+    test/api/test_notebook_api.py:173: in test_delete_existing_returns_200_or_204
+        assert r.status_code in (200, 204)
+    E   assert 500 in (200, 204)
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    ____________ TestDeleteNotebook.test_delete_nonexistent_returns_404 ____________
+    test/api/test_notebook_api.py:179: in test_delete_nonexistent_returns_404
+        assert r.status_code == 404
+    E   assert 500 == 404
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    =============================== warnings summary ===============================
+    .venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
+      /disk2/Projects/KeplerLab-AI-Notebook/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+        from crypt import crypt as _crypt
+    
+    .venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:291
+      /disk2/Projects/KeplerLab-AI-Notebook/.venv/lib/python3.11/site-packages/pydantic/_internal/_config.py:291: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.9/migration/
+        warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+    
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+    =========================== short test summary info ============================
+    FAILED test/api/test_notebook_api.py::TestCreateNotebook::test_create_notebook_201
+    FAILED test/api/test_notebook_api.py::TestCreateNotebook::test_create_empty_name_422
+    FAILED test/api/test_notebook_api.py::TestCreateNotebook::test_create_missing_name_422
+    FAILED test/api/test_notebook_api.py::TestCreateNotebook::test_create_with_description
+    FAILED test/api/test_notebook_api.py::TestListNotebooks::test_list_returns_200
+    FAILED test/api/test_notebook_api.py::TestGetNotebook::test_get_existing_returns_200
+    FAILED test/api/test_notebook_api.py::TestGetNotebook::test_get_nonexistent_returns_404
+    FAILED test/api/test_notebook_api.py::TestDeleteNotebook::test_delete_existing_returns_200_or_204
+    FAILED test/api/test_notebook_api.py::TestDeleteNotebook::test_delete_nonexistent_returns_404
+    9 failed, 6 passed, 2 warnings in 0.78s
+
+  [FAIL]  test/api/test_upload_api.py                                   (2.0s)
+
+    --- Failure output (last 30 lines) ---
+    E   assert 500 == 422
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    ________________ TestUploadText.test_upload_text_empty_text_422 ________________
+    test/api/test_upload_api.py:125: in test_upload_text_empty_text_422
+        assert r.status_code in (400, 422)
+    E   assert 500 in (400, 422)
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    ____________ TestDeleteMaterial.test_delete_material_not_found_404 _____________
+    test/api/test_upload_api.py:140: in test_delete_material_not_found_404
+        assert r.status_code in (404, 200)  # depends on implementation
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    E   assert 500 in (404, 200)
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    _______________ TestDeleteMaterial.test_delete_material_success ________________
+    test/api/test_upload_api.py:148: in test_delete_material_success
+        assert r.status_code in (200, 204)
+    E   assert 500 in (200, 204)
+    E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+    =============================== warnings summary ===============================
+    .venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854
+      /disk2/Projects/KeplerLab-AI-Notebook/.venv/lib/python3.11/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+        from crypt import crypt as _crypt
+    
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+    =========================== short test summary info ============================
+    FAILED test/api/test_upload_api.py::TestUploadText::test_upload_text_missing_text_422
+    FAILED test/api/test_upload_api.py::TestUploadText::test_upload_text_empty_text_422
+    FAILED test/api/test_upload_api.py::TestDeleteMaterial::test_delete_material_not_found_404
+    FAILED test/api/test_upload_api.py::TestDeleteMaterial::test_delete_material_success
+    4 failed, 7 passed, 1 warning in 1.24s
+
+  [PASS]  test/e2e/test_agent_pipeline.py                               (1.8s)
+  [PASS]  test/e2e/test_generation_pipeline.py                          (1.8s)
+  [PASS]  test/e2e/test_rag_pipeline.py                                 (2.5s)
+  [FAIL]  test/e2e/test_upload_pipeline.py                              (2.5s)
+
+    --- Failure output (last 30 lines) ---
+    E   KeyError: 'iaas_billing'
+    ____________ TestStage2Chunking.test_chunks_cover_original_content _____________
+    test/e2e/test_upload_pipeline.py:120: in test_chunks_cover_original_content
+        text = SAMPLE_DOCUMENTS["iaas_fundamentals"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    E   KeyError: 'iaas_fundamentals'
+    ___________ TestStage2Chunking.test_chunk_ids_unique_across_document ___________
+    test/e2e/test_upload_pipeline.py:131: in test_chunk_ids_unique_across_document
+        chunks = chunk_text(SAMPLE_DOCUMENTS["iaas_fundamentals"])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    E   KeyError: 'iaas_fundamentals'
+    _______________ TestStage3Embedding.test_embed_science_document ________________
+    test/e2e/test_upload_pipeline.py:147: in test_embed_science_document
+        chunks = chunk_text(SAMPLE_DOCUMENTS["iaas_fundamentals"])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    E   KeyError: 'iaas_fundamentals'
+    ____________ TestStage4FullPipeline.test_full_pipeline_science_doc _____________
+    test/e2e/test_upload_pipeline.py:192: in test_full_pipeline_science_doc
+        text = SAMPLE_DOCUMENTS["iaas_fundamentals"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    E   KeyError: 'iaas_fundamentals'
+    =========================== short test summary info ============================
+    FAILED test/e2e/test_upload_pipeline.py::TestStage1TextStorage::test_save_and_retrieve_text
+    FAILED test/e2e/test_upload_pipeline.py::TestStage2Chunking::test_science_document_produces_multiple_chunks
+    FAILED test/e2e/test_upload_pipeline.py::TestStage2Chunking::test_history_document_chunks_have_section_titles
+    FAILED test/e2e/test_upload_pipeline.py::TestStage2Chunking::test_chunks_cover_original_content
+    FAILED test/e2e/test_upload_pipeline.py::TestStage2Chunking::test_chunk_ids_unique_across_document
+    FAILED test/e2e/test_upload_pipeline.py::TestStage3Embedding::test_embed_science_document
+    FAILED test/e2e/test_upload_pipeline.py::TestStage4FullPipeline::test_full_pipeline_science_doc
+    7 failed, 6 passed in 1.85s
+
+
+======================================================================
+SUMMARY: 23 passed, 5 failed  |  total time: 39.5s
+======================================================================

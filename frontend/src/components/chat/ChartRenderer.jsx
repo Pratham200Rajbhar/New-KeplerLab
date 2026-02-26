@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { MarkdownRenderer } from '../ChatMessage';
 
 /**
  * ChartRenderer — renders inline base64 PNG charts with Download + Expand.
@@ -61,8 +62,8 @@ export default function ChartRenderer({ base64Chart, explanation, title = 'Chart
                 {explanation && (
                     <div className="chart-insight">
                         <span className="chart-insight-icon">💡</span>
-                        <div className="chart-insight-text">
-                            <strong>Insight:</strong> {explanation}
+                        <div className="chart-insight-text markdown-content">
+                            <MarkdownRenderer content={explanation} />
                         </div>
                     </div>
                 )}
@@ -75,8 +76,8 @@ export default function ChartRenderer({ base64Chart, explanation, title = 'Chart
                         <button className="chart-modal-close" onClick={() => setExpanded(false)}>✕</button>
                         <img src={src} alt={title} className="chart-modal-image" />
                         {explanation && (
-                            <div className="chart-modal-insight">
-                                <strong>💡 Insight:</strong> {explanation}
+                            <div className="chart-modal-insight markdown-content">
+                                <MarkdownRenderer content={explanation} />
                             </div>
                         )}
                     </div>

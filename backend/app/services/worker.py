@@ -51,6 +51,10 @@ _POLL_SECONDS: float = 2.0    # idle wait between queue checks
 _ERROR_BACKOFF: float = 5.0   # extra wait after an unexpected error
 MAX_CONCURRENT_JOBS: int = 5  # Maximum number of concurrent resource extractions
 _STUCK_JOB_TIMEOUT_MINUTES: int = 30  # Jobs processing longer than this are considered stuck
+_SHUTDOWN_TIMEOUT: float = 30.0  # Max seconds to wait for in-flight jobs during shutdown
+
+# Graceful shutdown flag
+_shutdown_event = asyncio.Event()
 
 
 # ── Stuck Job Recovery ──────────────────────────────────────────
@@ -130,7 +134,7 @@ async def job_processor() -> None:
 
     active_tasks: set[asyncio.Task] = set()
 
-    while True:
+    while not _shutdown_event.is_set():
         try:
             # 1. Clean up completed tasks
             # Collect results / surface exceptions (although _process_job should catch all)
@@ -146,7 +150,7 @@ async def job_processor() -> None:
             jobs_to_fetch = MAX_CONCURRENT_JOBS - len(active_tasks)
             jobs_added = 0
 
-            if jobs_to_fetch > 0:
+            if jobs_to_fetch > 0 and not _shutdown_event.is_set():
                 for _ in range(jobs_to_fetch):
                     # Sequentially fetch and claim jobs to avoid race conditions via fetch_first -> update
                     job = await fetch_next_pending_job("material_processing")
@@ -173,6 +177,18 @@ async def job_processor() -> None:
             # Should never reach here unless absolute database failure occurs
             logger.exception("Unhandled error in job_processor event loop: %s", exc)
             await asyncio.sleep(_ERROR_BACKOFF)
+
+    # Graceful shutdown: wait for in-flight tasks to finish
+    if active_tasks:
+        logger.info("Waiting for %d in-flight job(s) to complete...", len(active_tasks))
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*active_tasks, return_exceptions=True),
+                timeout=_SHUTDOWN_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Shutdown timeout — %d job(s) still running", len([t for t in active_tasks if not t.done()]))
+    logger.info("Job processor loop exited.")
 
 
 async def _process_job(job) -> None:
@@ -321,3 +337,9 @@ async def _maybe_rename_notebook(notebook_id: str, material_id: str) -> None:
         )
     except Exception as exc:
         logger.warning("[WORKER] _maybe_rename_notebook failed (non-fatal): %s", exc)
+
+
+async def graceful_shutdown() -> None:
+    """Signal the worker to stop accepting new jobs and wait for in-flight tasks."""
+    _shutdown_event.set()
+    logger.info("Worker shutdown signal sent — waiting up to %.0fs for in-flight jobs", _SHUTDOWN_TIMEOUT)

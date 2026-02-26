@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { login as apiLogin, signup as apiSignup, logout as apiLogout, getCurrentUser, refreshToken } from '../api/auth';
 import { setAccessToken as syncTokenToApi } from '../api/config';
 
@@ -113,7 +113,7 @@ export function AuthProvider({ children }) {
         setUser(null);
     }, []);
 
-    const value = {
+    const value = useMemo(() => ({
         user,
         accessToken,
         isAuthenticated: !!user,
@@ -123,7 +123,7 @@ export function AuthProvider({ children }) {
         signup,
         logout,
         setError,
-    };
+    }), [user, accessToken, isLoading, error, login, signup, logout]);
 
     return (
         <AuthContext.Provider value={value}>

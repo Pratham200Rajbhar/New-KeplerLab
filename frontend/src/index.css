@@ -1761,8 +1761,33 @@
   }
 
   .chart-insight-text {
-    @apply text-sm leading-relaxed;
+    @apply text-sm leading-relaxed flex-1 min-w-0;
     color: var(--text-secondary);
+  }
+
+  .chart-insight-text .md-heading {
+    @apply text-sm font-semibold mt-3 mb-1;
+    color: var(--text-primary);
+  }
+
+  .chart-insight-text .md-heading:first-child {
+    @apply mt-0;
+  }
+
+  .chart-insight-text .md-paragraph {
+    @apply text-sm leading-relaxed mb-2;
+  }
+
+  .chart-insight-text .md-paragraph:last-child {
+    @apply mb-0;
+  }
+
+  .chart-insight-text .md-list {
+    @apply text-sm pl-4 mb-2 space-y-1;
+  }
+
+  .chart-insight-text .md-list li {
+    @apply leading-relaxed;
   }
 
   /* Chart expand modal */
@@ -1796,9 +1821,191 @@
   }
 
   .chart-modal-insight {
-    @apply px-5 py-3 text-sm;
+    @apply px-5 py-4 text-sm overflow-y-auto;
     color: var(--text-secondary);
     border-top: 1px solid var(--border-light);
+    max-height: 30vh;
+  }
+
+  .chart-modal-insight .md-heading {
+    @apply text-sm font-semibold mt-3 mb-1;
+    color: var(--text-primary);
+  }
+
+  .chart-modal-insight .md-heading:first-child {
+    @apply mt-0;
+  }
+
+  .chart-modal-insight .md-paragraph {
+    @apply text-sm leading-relaxed mb-2;
+  }
+
+  .chart-modal-insight .md-list {
+    @apply text-sm pl-4 mb-2 space-y-1;
+  }
+
+  /* ==================== DOCUMENT PREVIEW ==================== */
+  .doc-preview-root {
+    @apply w-full;
+  }
+
+  .doc-preview-empty {
+    @apply flex flex-col items-center justify-center h-full py-16;
+  }
+
+  .doc-preview-type-badge {
+    @apply mb-4;
+  }
+
+  /* ── Structured data (table) ────────────────────────────── */
+  .doc-preview-structured {
+    @apply space-y-6;
+  }
+
+  .doc-preview-table-section {
+    @apply rounded-xl overflow-hidden border;
+    border-color: var(--border);
+    background: var(--surface-raised);
+  }
+
+  .doc-preview-sheet-label {
+    @apply flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b;
+    color: var(--text-primary);
+    background: var(--surface-overlay);
+    border-color: var(--border);
+  }
+
+  .doc-preview-row-count {
+    @apply ml-auto text-xs font-normal px-2 py-0.5 rounded-full;
+    color: var(--text-muted);
+    background: var(--accent-subtle);
+  }
+
+  .doc-preview-table-wrapper {
+    @apply overflow-x-auto;
+    max-height: 70vh;
+    scrollbar-width: thin;
+  }
+
+  .doc-preview-table {
+    @apply w-full text-sm border-collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .doc-preview-th {
+    @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap sticky top-0 z-10;
+    color: var(--text-muted);
+    background: var(--surface-overlay);
+    border-bottom: 2px solid var(--border);
+  }
+
+  .doc-preview-th-index {
+    @apply w-12 text-center;
+    color: var(--text-muted);
+  }
+
+  .doc-preview-td {
+    @apply px-3 py-1.5 whitespace-nowrap text-sm;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .doc-preview-td-index {
+    @apply text-center text-xs font-mono;
+    color: var(--text-muted);
+    background: var(--surface-overlay);
+  }
+
+  .doc-preview-tr-even {
+    background: transparent;
+  }
+
+  .doc-preview-tr-odd {
+    background: var(--accent-subtle);
+  }
+
+  .doc-preview-tr-even:hover,
+  .doc-preview-tr-odd:hover {
+    background: var(--surface-raised);
+  }
+
+  .doc-preview-null {
+    @apply text-xs;
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  .doc-preview-number {
+    @apply font-mono tabular-nums;
+    color: var(--accent);
+  }
+
+  .doc-preview-truncated {
+    @apply text-center py-2.5 text-xs font-medium border-t;
+    color: var(--text-muted);
+    border-color: var(--border);
+    background: var(--surface-overlay);
+  }
+
+  .doc-preview-raw {
+    @apply p-4 text-sm font-mono whitespace-pre-wrap overflow-x-auto;
+    color: var(--text-secondary);
+  }
+
+  /* ── Code preview ───────────────────────────────────────── */
+  .doc-preview-code-section {
+    @apply rounded-xl overflow-hidden border;
+    border-color: var(--border);
+  }
+
+  .doc-preview-code-header {
+    @apply flex items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border-b;
+    color: var(--text-muted);
+    background: var(--surface-overlay);
+    border-color: var(--border);
+  }
+
+  .doc-preview-code-content {
+    @apply overflow-x-auto;
+  }
+
+  .doc-preview-code-content .markdown-content {
+    @apply p-0;
+  }
+
+  .doc-preview-code-content pre {
+    @apply rounded-none border-none m-0;
+  }
+
+  /* ── Text / document preview ────────────────────────────── */
+  .doc-preview-text-section {
+    @apply space-y-4;
+  }
+
+  .doc-preview-section-header {
+    @apply flex items-center gap-3 my-6;
+    color: var(--text-muted);
+  }
+
+  .doc-preview-section-header span {
+    @apply text-xs font-semibold uppercase tracking-wider whitespace-nowrap;
+  }
+
+  .doc-preview-section-line {
+    @apply flex-1 h-px;
+    background: var(--border);
+  }
+
+  .doc-preview-text-block {
+    @apply leading-relaxed;
+    color: var(--text-secondary);
+  }
+
+  .doc-preview-text-content {
+    @apply space-y-2;
   }
 
   /* ==================== BLOCK HOVER MENU ==================== */

@@ -1,9 +1,11 @@
 """Quiz generation route."""
 
+import asyncio
 import logging
+from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.services.quiz.generator import generate_quiz
@@ -14,13 +16,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+class DifficultyLevel(str, Enum):
+    easy = "Easy"
+    medium = "Medium"
+    hard = "Hard"
+
+
 class QuizRequest(BaseModel):
     material_id: Optional[str] = None
     material_ids: Optional[List[str]] = None
-    topic: Optional[str] = None
-    mcq_count: Optional[int] = 10
-    difficulty: Optional[str] = "Medium"
-    additional_instructions: Optional[str] = None
+    topic: Optional[str] = Field(None, max_length=500)
+    mcq_count: Optional[int] = Field(10, ge=1, le=50)
+    difficulty: DifficultyLevel = DifficultyLevel.medium
+    additional_instructions: Optional[str] = Field(None, max_length=2000)
 
 
 @router.post("/quiz")
@@ -41,11 +49,15 @@ async def create_quiz(
         text = f"Focus on the topic: {request.topic}\n\nContent:\n{text}"
 
     try:
-        quiz = generate_quiz(
-            text,
-            mcq_count=request.mcq_count,
-            difficulty=request.difficulty,
-            instructions=request.additional_instructions
+        loop = asyncio.get_running_loop()
+        quiz = await loop.run_in_executor(
+            None,
+            lambda: generate_quiz(
+                text,
+                mcq_count=request.mcq_count,
+                difficulty=request.difficulty.value,
+                instructions=request.additional_instructions,
+            ),
         )
         return JSONResponse(content=quiz)
     except Exception as e:

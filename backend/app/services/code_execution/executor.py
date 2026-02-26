@@ -133,6 +133,7 @@ async def execute_code(
 
     return {
         "success": success,
+        "output": result.stdout,   # alias for tests and API consumers
         "stdout": result.stdout,
         "stderr": result.stderr,
         "exit_code": result.exit_code,

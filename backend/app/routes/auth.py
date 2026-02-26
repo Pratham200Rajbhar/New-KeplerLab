@@ -91,7 +91,7 @@ def _clear_refresh_cookie(response: Response) -> None:
     )
 
 
-@router.post("/signup", response_model=UserResponse)
+@router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(request: SignupRequest):
     logger.info(f"Signup attempt for email: {request.email}")
     user = await register_user(request.email, request.username, request.password)

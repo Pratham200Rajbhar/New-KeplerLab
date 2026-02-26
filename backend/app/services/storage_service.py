@@ -52,7 +52,7 @@ def save_material_text(material_id: str, text: str) -> bool:
         
         file_path = MATERIAL_TEXT_DIR / f"{material_id}.txt"
         
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(file_path, "w", encoding="utf-8", newline="") as f:
             f.write(text)
         
         logger.info(f"Saved material text: {material_id} ({len(text)} chars)")
@@ -83,7 +83,7 @@ def load_material_text(material_id: str) -> Optional[str]:
             logger.warning(f"Material text not found: {material_id}")
             return None
         
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8", newline="") as f:
             text = f.read()
         
         logger.debug(f"Loaded material text: {material_id} ({len(text)} chars)")

@@ -9,15 +9,20 @@ Checks system component availability:
 from __future__ import annotations
 
 import logging
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+
+from app.services.auth import get_current_user
+from app.db.prisma_client import prisma
+from app.db.chroma import get_collection
+from app.services.llm_service.llm import get_llm
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(current_user=Depends(get_current_user)):
     """Health check endpoint - verify all system components.
     
     Returns:
@@ -32,9 +37,8 @@ async def health_check():
     
     # Check PostgreSQL
     try:
-        from app.db.prisma_client import prisma
-        # Simple query to test connection
-        await prisma.user.count()
+        # Lightweight connectivity check (avoids full table count)
+        await prisma.query_raw("SELECT 1")
         health_status["database"] = "ok"
         logger.debug("Database health check: OK")
     except Exception as e:
@@ -43,7 +47,6 @@ async def health_check():
     
     # Check ChromaDB
     try:
-        from app.db.chroma import get_collection
         collection = get_collection()
         # Test with a simple count operation
         collection.count()
@@ -55,7 +58,6 @@ async def health_check():
     
     # Check LLM (lightweight test)
     try:
-        from app.services.llm_service.llm import get_llm
         from app.core.config import settings
         
         # Just check if we can instantiate the LLM
@@ -90,14 +92,7 @@ async def health_check():
         health_status["overall"] = "degraded"
         status_code = 200
 
-    # Add storage stats
-    try:
-        from app.services.storage_service import get_storage_stats
-        from app.db.chroma import get_collection_stats
-        health_status["storage"] = get_storage_stats()
-        health_status["chroma_stats"] = get_collection_stats()
-    except Exception as e:
-        logger.debug("Storage stats unavailable: %s", e)
+    # Storage stats are intentionally excluded to avoid leaking internals
     
     return JSONResponse(
         content=health_status,

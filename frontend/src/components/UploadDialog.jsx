@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     uploadBatch,
@@ -76,6 +76,18 @@ const UploadDialog = ({ isOpen, onClose, currentNotebook, draftMode, onMaterialA
     const navigate = useNavigate();
 
     const fileInputRef = useRef(null);
+
+    // Reset state when dialog opens
+    useEffect(() => {
+        if (isOpen) {
+            setActiveTab('files');
+            setUrl('');
+            setTextContent('');
+            setTextTitle('');
+            setToast(null);
+            setDragActive(false);
+        }
+    }, [isOpen]);
 
     const showToast = (type, message) => {
         setToast({ type, message });
@@ -156,6 +168,17 @@ const UploadDialog = ({ isOpen, onClose, currentNotebook, draftMode, onMaterialA
     const handleUrlUpload = async () => {
         if (!url.trim()) {
             showToast('error', 'Please enter a URL');
+            return;
+        }
+        // Basic URL validation
+        try {
+            const parsed = new URL(url.trim());
+            if (!['http:', 'https:'].includes(parsed.protocol)) {
+                showToast('error', 'Only HTTP and HTTPS URLs are supported');
+                return;
+            }
+        } catch {
+            showToast('error', 'Please enter a valid URL (e.g. https://example.com)');
             return;
         }
         setLoading(true);

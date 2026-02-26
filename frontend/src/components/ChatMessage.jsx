@@ -28,6 +28,10 @@ const customCodeTheme = {
     },
 };
 
+// Hoist plugin arrays to module scope so they are referentially stable
+const REMARK_PLUGINS = [remarkGfm, remarkMath];
+const REHYPE_PLUGINS = [rehypeRaw, rehypeKatex];
+
 /**
  * Sanitize partially-streamed markdown so it doesn't break the renderer.
  * Closes unclosed fenced code blocks and unclosed bold/italic markers.
@@ -56,9 +60,27 @@ function CopyButton({ code }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Fallback for non-HTTPS or denied clipboard permission
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch {
+                // Silently fail if copy is completely unavailable
+            }
+        }
     };
 
     return (
@@ -118,8 +140,8 @@ export function MarkdownRenderer({ content }) {
 
     return (
         <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeRaw, rehypeKatex]}
+            remarkPlugins={REMARK_PLUGINS}
+            rehypePlugins={REHYPE_PLUGINS}
             components={{
                 h1: ({ children }) => (
                     <h1 className="md-heading md-h1">{children}</h1>

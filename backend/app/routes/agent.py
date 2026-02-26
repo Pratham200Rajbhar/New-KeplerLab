@@ -18,7 +18,7 @@ import uuid
 import time
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 from app.services.agent.persistence import log_code_execution
@@ -38,21 +38,21 @@ _SSE_HEADERS = {
 
 class ExecuteRequest(BaseModel):
     """Direct Python code execution (code-editor / REPL use-case)."""
-    code: str
+    code: str = Field(..., min_length=1, max_length=50000)
     notebook_id: str
-    timeout: int = 15
+    timeout: int = Field(15, ge=1, le=120)
 
 
 class AnalyzeRequest(BaseModel):
     """NL data-analysis request.  material_ids must be uploaded CSV materials."""
-    query: str
+    query: str = Field(..., min_length=1, max_length=10000)
     notebook_id: str
     material_ids: Optional[List[str]] = None
 
 
 class ResearchRequest(BaseModel):
     """Deep web-research request."""
-    query: str
+    query: str = Field(..., min_length=1, max_length=5000)
     notebook_id: str
     material_ids: Optional[List[str]] = None
 
@@ -239,11 +239,24 @@ async def execution_status(
     job_id: str,
     current_user=Depends(get_current_user),
 ):
-    """Execution status — synchronous executions return immediately."""
+    """Execution status — queries the job service for actual status."""
+    from app.services.job_service import get_job
+
+    job = await get_job(job_id, str(current_user.id))
+    if not job:
+        # Synchronous executions don't create jobs — treat as completed
+        return JSONResponse(content={
+            "job_id": job_id,
+            "status": "completed",
+            "message": "Synchronous execution — result was returned immediately",
+        })
+
     return JSONResponse(content={
         "job_id": job_id,
-        "status": "completed",
-        "message": "Synchronous execution — result was returned immediately",
+        "status": job.status,
+        "message": f"Job is {job.status}",
+        "result": job.result if job.status == "completed" else None,
+        "error": job.error if job.status == "failed" else None,
     })
 
 
@@ -312,7 +325,9 @@ async def download_generated_file(
 
     # IDOR protection: verify the token owner matches the requested user
     token_user_id = getattr(token_data, "user_id", None) or (token_data.get("user_id") if isinstance(token_data, dict) else None)
-    if token_user_id and str(token_user_id) != str(user_id):
+    if not token_user_id:
+        return JSONResponse(status_code=403, content={"detail": "Invalid token: missing user identity"})
+    if str(token_user_id) != str(user_id):
         return JSONResponse(status_code=403, content={"detail": "Token user mismatch"})
 
     # Prevent path traversal on all path components

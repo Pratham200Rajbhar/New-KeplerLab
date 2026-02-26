@@ -163,7 +163,18 @@ def _post_process_html(html: str) -> str:
 /* Safety overrides */
 script { display: none !important; }
 html { scroll-snap-type: y mandatory; scroll-behavior: smooth; overflow-x: hidden; }
-body { overflow-x: hidden; }
+body { overflow-x: hidden; margin: 0; padding: 0; }
+* { box-sizing: border-box; }
+/* Compact slide layout overrides */
+.slide {
+    width: 100%; height: 100vh; overflow: hidden;
+    padding: 40px 60px !important;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.slide h1 { font-size: clamp(1.8rem, 3vw, 2.5rem) !important; margin-bottom: 12px !important; }
+.slide h2 { font-size: clamp(1.3rem, 2.2vw, 1.8rem) !important; margin-bottom: 10px !important; }
+.slide h3 { font-size: clamp(1.1rem, 1.8vw, 1.4rem) !important; margin-bottom: 8px !important; }
+.slide p, .slide li { font-size: clamp(0.9rem, 1.3vw, 1.1rem) !important; line-height: 1.5 !important; }
 </style>
 """
     if "</head>" in stripped:

@@ -35,6 +35,21 @@ You are an elite presentation designer and content strategist. Your task is to g
 - Float animation on title slide only (pure CSS `@keyframes`)
 - NO JavaScript whatsoever
 
+### SPACING & LAYOUT (CRITICAL — MUST FOLLOW)
+- **Slides MUST look like a proper PowerPoint/Keynote presentation** — NO excessive whitespace
+- Use COMPACT padding on slides: `padding: 40px 60px` max for the slide container content area
+- Content should FILL 70-85% of each slide's visible area — avoid large empty zones
+- Headings: `font-size: 2rem-2.5rem`, NOT larger. Subheadings: `1.1rem-1.4rem`
+- Body text / bullets: `0.95rem-1.1rem` — dense but readable
+- Card/box internal padding: `16px-24px` max, NOT more
+- Gaps between grid/flex items: `12px-20px`, NOT excessive gaps
+- Margins between sections within a slide: `12px-24px`
+- Title slide heading max: `3rem`. Do NOT use `5rem+` giant headings
+- Each slide should feel FULL and purposeful — no half-empty slides
+- Avoid `margin: auto` on content that pushes things to the center with huge gaps
+- Use `box-sizing: border-box` on all elements
+- The `*` selector should set: `margin: 0; padding: 0; box-sizing: border-box;`
+
 ### THEME INSTRUCTIONS
 {{THEME_INSTRUCTIONS}}
 

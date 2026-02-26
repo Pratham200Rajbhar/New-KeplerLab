@@ -32,6 +32,11 @@ model User {
   generatedContent GeneratedContent[]
   refreshTokens    RefreshToken[]
   backgroundJobs   BackgroundJob[]
+  tokenUsage       UserTokenUsage[]
+  apiUsageLogs     ApiUsageLog[]
+  agentLogs        AgentExecutionLog[]
+  codeExecutions   CodeExecutionSession[]
+  researchSessions ResearchSession[]
 
   @@map("users")
 }
@@ -78,7 +83,7 @@ model Material {
   status       MaterialStatus @default(pending)
   chunkCount   Int            @default(0) @map("chunk_count")
   sourceType   String?        @default("file") @map("source_type") @db.VarChar(50) // 'file', 'url', 'youtube', 'text'
-  metadata     String?        @db.Text // JSON string for extraction metadata
+  metadata     String?        @db.Text // JSON string for extraction metadata (consider migrating to Json type)
   error        String?        @db.Text // Error message if processing failed
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at")
@@ -209,6 +214,8 @@ model UserTokenUsage {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, date])
   @@index([userId])
   @@index([date])
@@ -230,6 +237,8 @@ model ApiUsageLog {
   totalLatency       Float    @default(0) @map("total_latency")
   createdAt          DateTime @default(now()) @map("created_at")
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([endpoint])
   @@index([createdAt])
@@ -249,6 +258,8 @@ model AgentExecutionLog {
   tokensUsed    Int      @default(0) @map("tokens_used")
   elapsedTime   Float    @default(0.0) @map("elapsed_time")
   createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([notebookId])
@@ -284,6 +295,8 @@ model CodeExecutionSession {
   elapsedTime   Float    @default(0.0) @map("elapsed_time")
   createdAt     DateTime @default(now()) @map("created_at")
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([notebookId])
   @@map("code_execution_sessions")
@@ -303,6 +316,8 @@ model ResearchSession {
   elapsedTime   Float    @default(0.0) @map("elapsed_time")
   sourceUrls    String[] @default([]) @map("source_urls")
   createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([notebookId])

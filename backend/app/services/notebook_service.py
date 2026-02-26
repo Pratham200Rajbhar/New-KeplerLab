@@ -19,10 +19,12 @@ async def create_notebook(user_id: str, name: str, description: Optional[str]):
     return notebook
 
 
-async def get_user_notebooks(user_id: str) -> list:
+async def get_user_notebooks(user_id: str, skip: int = 0, take: int = 50) -> list:
     return await prisma.notebook.find_many(
         where={"userId": user_id if isinstance(user_id, str) else str(user_id)},
         order={"createdAt": "desc"},
+        skip=skip,
+        take=take,
     )
 
 

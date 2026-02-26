@@ -289,10 +289,11 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     flex: 1;
                     display: flex;
                     position: relative;
-                    background: #000;
-                    padding: 0;
+                    background: #0b0d13;
+                    padding: 16px;
                     margin: 0;
                     overflow: hidden;
+                    min-height: 0;
                 }
                 .pv-fullscreen .pv-stage {
                     padding: 0;
@@ -307,6 +308,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     height: 100%;
                     margin: 0;
                     padding: 0;
+                    min-height: 0;
                 }
                 .pv-fullscreen .pv-slide-wrapper {
                     max-width: none;
@@ -314,13 +316,18 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                 .pv-slide-container {
                     position: relative;
                     width: 100%;
-                    height: 100%;
+                    max-width: 100%;
+                    aspect-ratio: 16 / 9;
+                    max-height: 100%;
                     overflow: hidden;
                     background: #000;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
                 }
                 .pv-fullscreen .pv-slide-container {
                     border-radius: 0;
                     box-shadow: none;
+                    max-height: 100vh;
                 }
                 .pv-slide-img {
                     width: 100%;
@@ -339,8 +346,8 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                 .pv-slide-enter-left  { animation: slideFromLeft 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
                 .pv-slide-enter-right { animation: slideFromRight 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
                 .pv-slide-placeholder {
-                    width: 100%;
-                    height: 100%;
+                    position: absolute;
+                    inset: 0;
                     display: flex;
                     flex-direction: column;
                     align-items: center;

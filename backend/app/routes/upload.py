@@ -1,7 +1,9 @@
 import asyncio
+import ipaddress
 import logging
 import os
 import shutil
+import socket
 import tempfile
 import time
 import uuid
@@ -9,7 +11,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, UploadFile, Depends, Form, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from urllib.parse import urlparse, parse_qs
 
@@ -197,7 +199,7 @@ async def upload_file(
         created_notebook = None
         if auto_create_notebook == "true" and not nb_id:
             stem = os.path.splitext(file.filename or "upload")[0][:40].strip()
-            notebook_name = stem if stem else f"Notebook {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+            notebook_name = stem if stem else f"Notebook {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
             created_notebook = await create_notebook(str(current_user.id), notebook_name, None)
             nb_id = created_notebook.id
             logger.info("[UPLOAD] auto_notebook  name='%s'  id=%s", notebook_name, nb_id)
@@ -319,7 +321,8 @@ async def _process_single_batch_file(file: UploadFile, current_user_id: str, nb_
         # ── Storage & DB ──
         user_upload_dir = os.path.join(UPLOAD_DIR, current_user_id)
         os.makedirs(user_upload_dir, exist_ok=True)
-        unique_name = f"{uuid.uuid4().hex}_{file.filename}"
+        safe_filename = os.path.basename(file.filename or "upload")
+        unique_name = f"{uuid.uuid4().hex}_{safe_filename}"
         final_path = os.path.join(user_upload_dir, unique_name)
         shutil.move(temp_path, final_path)
         temp_path = None
@@ -382,7 +385,7 @@ async def upload_batch(
     if auto_create_notebook == "true" and not nb_id and files:
         first_name = files[0].filename or "batch"
         stem = os.path.splitext(first_name)[0][:40].strip()
-        notebook_name = stem if stem else f"Notebook {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+        notebook_name = stem if stem else f"Notebook {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
         created_notebook = await create_notebook(str(current_user.id), notebook_name, None)
         nb_id = created_notebook.id
         logger.info("Auto-created notebook '%s' id=%s for batch", notebook_name, nb_id)
@@ -409,9 +412,27 @@ async def upload_url(
     """Upload and process content from a URL (web page or YouTube) asynchronously"""
     logger.info(f"URL upload started - {request.url} by user {current_user.id}")
 
-    # Validate URL
+    # Validate URL format
     if not request.url.startswith(('http://', 'https://')):
         raise HTTPException(status_code=400, detail="Invalid URL format")
+
+    # SSRF protection: block requests to private/internal IPs
+    try:
+        parsed = urlparse(request.url)
+        hostname = parsed.hostname
+        if not hostname:
+            raise HTTPException(status_code=400, detail="Invalid URL: no hostname")
+        # Resolve hostname to IP and check for private ranges
+        resolved_ips = socket.getaddrinfo(hostname, None)
+        for _, _, _, _, addr in resolved_ips:
+            ip = ipaddress.ip_address(addr[0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise HTTPException(
+                    status_code=400,
+                    detail="URLs pointing to private/internal networks are not allowed",
+                )
+    except (socket.gaierror, ValueError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid URL: cannot resolve hostname")
 
     # Determine source type
     source_type = request.source_type
@@ -439,7 +460,7 @@ async def upload_url(
         except Exception:
             content_preview = request.url
 
-        notebook_name = content_preview[:50].strip() or f"Notebook {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+        notebook_name = content_preview[:50].strip() or f"Notebook {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
         created_notebook = await create_notebook(str(current_user.id), notebook_name, None)
         nb_id = created_notebook.id
         logger.info(f"Stage: Created notebook '{notebook_name}' with id {nb_id}")
@@ -505,7 +526,7 @@ async def upload_text(
     # Auto-create notebook if requested
     if request.auto_create_notebook and not nb_id:
         logger.info("Stage: Deriving notebook name from text title (no LLM)")
-        notebook_name = (request.title or "")[:50].strip() or f"Notebook {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+        notebook_name = (request.title or "")[:50].strip() or f"Notebook {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
         created_notebook = await create_notebook(str(current_user.id), notebook_name, None)
         nb_id = created_notebook.id
         logger.info(f"Stage: Created notebook '{notebook_name}' with id {nb_id}")
@@ -642,9 +663,15 @@ async def get_material_text_endpoint(
     current_user=Depends(get_current_user),
 ):
     """Get full material text from file storage."""
-    from app.services.material_service import get_material_text
+    from app.services.material_service import get_material_text, get_material_for_user
+    
+    material = await get_material_for_user(material_id, str(current_user.id))
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
     
     text = await get_material_text(material_id, str(current_user.id))
     if not text:
         raise HTTPException(status_code=404, detail="Material text not found")
-    return {"text": text}
+    
+    filename = getattr(material, "filename", "") or ""
+    return {"text": text, "filename": filename}

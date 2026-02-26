@@ -1,9 +1,11 @@
 """Flashcard generation route."""
 
+import asyncio
 import logging
+from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.services.flashcard.generator import generate_flashcards
@@ -14,13 +16,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+class DifficultyLevel(str, Enum):
+    easy = "Easy"
+    medium = "Medium"
+    hard = "Hard"
+
+
 class FlashcardRequest(BaseModel):
     material_id: Optional[str] = None
     material_ids: Optional[List[str]] = None
-    topic: Optional[str] = None
-    card_count: Optional[int] = None
-    difficulty: Optional[str] = "Medium"
-    additional_instructions: Optional[str] = None
+    topic: Optional[str] = Field(None, max_length=500)
+    card_count: Optional[int] = Field(None, ge=1, le=100)
+    difficulty: DifficultyLevel = DifficultyLevel.medium
+    additional_instructions: Optional[str] = Field(None, max_length=2000)
 
 
 @router.post("/flashcard")
@@ -41,11 +49,15 @@ async def create_flashcards(
         text = f"Focus on the topic: {request.topic}\n\nContent:\n{text}"
 
     try:
-        flashcards = generate_flashcards(
-            text,
-            card_count=request.card_count,
-            difficulty=request.difficulty,
-            instructions=request.additional_instructions
+        loop = asyncio.get_running_loop()
+        flashcards = await loop.run_in_executor(
+            None,
+            lambda: generate_flashcards(
+                text,
+                card_count=request.card_count,
+                difficulty=request.difficulty.value,
+                instructions=request.additional_instructions,
+            ),
         )
         return JSONResponse(content=flashcards)
     except Exception as e:
