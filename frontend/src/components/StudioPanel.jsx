@@ -3,8 +3,10 @@ import { useApp } from '../context/AppContext';
 import { generateFlashcards, generateQuiz, generatePodcast, downloadPodcast, downloadBlob, generatePresentation } from '../api/generation';
 import { apiConfig } from '../api/config';
 import { saveGeneratedContent, getGeneratedContent, deleteGeneratedContent, updateGeneratedContent } from '../api/notebooks';
+import { fetchExplainerVideoBlob } from '../api/explainer';
 import FeatureCard from './FeatureCard';
 import InlinePresentationView, { PresentationConfigDialog } from './PresentationView';
+import ExplainerDialog from './ExplainerDialog';
 import { jsPDF } from 'jspdf';
 import Modal from './Modal';
 
@@ -39,6 +41,12 @@ const BackIcon = () => (
     </svg>
 );
 
+const ExplainerVideoIcon = () => (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+);
+
 export default function StudioPanel() {
     const { currentMaterial, currentNotebook, draftMode, setFlashcards, setQuiz, loading, setLoadingState, selectedSources, materials } = useApp();
 
@@ -50,16 +58,18 @@ export default function StudioPanel() {
     // All selected material IDs for multi-source generation
     const selectedMaterialIds = [...selectedSources];
 
-    // View state: null = grid view, 'audio' | 'flashcards' | 'quiz' = inline view
+    // View state: null = grid view, 'audio' | 'flashcards' | 'quiz' | 'explainer' = inline view
     const [activeView, setActiveView] = useState(null);
 
     const [flashcardsData, setFlashcardsData] = useState(null);
     const [quizData, setQuizData] = useState(null);
     const [audioData, setAudioData] = useState(null);
     const [presentationData, setPresentationData] = useState(null);
+    const [explainerData, setExplainerData] = useState(null);
     const [showPresentationConfig, setShowPresentationConfig] = useState(false);
     const [showQuizConfig, setShowQuizConfig] = useState(false);
     const [showFlashcardConfig, setShowFlashcardConfig] = useState(false);
+    const [showExplainerDialog, setShowExplainerDialog] = useState(false);
     const [contentHistory, setContentHistory] = useState([]); // all saved items across types
     const [activeHistoryMenu, setActiveHistoryMenu] = useState(null);
     const [showRenameHistoryModal, setShowRenameHistoryModal] = useState(false);
@@ -87,6 +97,7 @@ export default function StudioPanel() {
         setShowPresentationConfig(false);
         setShowQuizConfig(false);
         setShowFlashcardConfig(false);
+        setShowExplainerDialog(false);
         setContentHistory([]);
         setFlashcards(null);
         setQuiz(null);
@@ -295,7 +306,10 @@ export default function StudioPanel() {
                 setPresentationData(item.data);
                 setActiveView('presentation');
                 break;
-
+            case 'explainer':
+                setExplainerData(item.data);
+                setActiveView('explainer');
+                break;
         }
     };
 
@@ -431,6 +445,7 @@ export default function StudioPanel() {
             case 'flashcards': return <FlashcardsIcon />;
             case 'quiz': return <QuizIcon />;
             case 'presentation': return <PresentationIcon />;
+            case 'explainer': return <ExplainerVideoIcon />;
             default: return null;
         }
     };
@@ -440,6 +455,12 @@ export default function StudioPanel() {
             case 'flashcards': return `${item.data?.flashcards?.length || 0} cards`;
             case 'quiz': return `${item.data?.questions?.length || 0} questions`;
             case 'presentation': return `${item.data?.slide_count || 0} slides`;
+            case 'explainer': {
+                const duration = item.data?.duration || 0;
+                const mins = Math.floor(duration / 60);
+                const secs = duration % 60;
+                return mins ? `${mins}m ${secs}s video` : `${secs}s video`;
+            }
             default: return 'Ready to play';
         }
     };
@@ -449,6 +470,7 @@ export default function StudioPanel() {
         { id: 'flashcards', title: 'Flashcards', description: 'Study with spaced repetition', icon: <FlashcardsIcon />, onClick: handleFlashcardsClick, onCancel: () => handleCancelGeneration('flashcards') },
         { id: 'quiz', title: 'Practice Quiz', description: 'Test your understanding', icon: <QuizIcon />, onClick: handleQuizClick, onCancel: () => handleCancelGeneration('quiz') },
         { id: 'presentation', title: 'Presentation', description: 'Generate a slide deck from content', icon: <PresentationIcon />, onClick: handlePresentationClick, onCancel: () => handleCancelGeneration('presentation') },
+        { id: 'explainer', title: 'Explainer Video', description: 'Create a narrated video from slides', icon: <ExplainerVideoIcon />, onClick: () => setShowExplainerDialog(true) },
     ];
 
     const viewTitles = {
@@ -456,6 +478,7 @@ export default function StudioPanel() {
         flashcards: 'Flashcards',
         quiz: 'Quiz',
         presentation: 'Presentation',
+        explainer: 'Explainer Video',
     };
 
     const renderInlineContent = () => {
@@ -489,6 +512,8 @@ export default function StudioPanel() {
                         loading={loading['presentation']}
                     />
                 );
+            case 'explainer':
+                return <InlineExplainerView data={explainerData} />;
             default:
                 return null;
         }
@@ -565,6 +590,14 @@ export default function StudioPanel() {
                     loading={loading['flashcards']}
                 />
             )}
+
+            {/* Explainer Video Dialog */}
+            <ExplainerDialog
+                isOpen={showExplainerDialog}
+                onClose={() => setShowExplainerDialog(false)}
+                materialIds={selectedMaterialIds}
+                notebookId={currentNotebook?.id}
+            />
 
             <aside
                 ref={panelRef}
@@ -1826,6 +1859,125 @@ function InlineQuizView({ data }) {
                         {currentIndex < questions.length - 1 ? 'Next Question →' : 'See Final Results ✨'}
                     </button>
                 </div>
+            )}
+        </div>
+    );
+}
+
+// ==================== INLINE EXPLAINER VIEW ====================
+function InlineExplainerView({ data }) {
+    const [videoBlobUrl, setVideoBlobUrl] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const explainerId = data?.explainer_id;
+    const duration = data?.duration || 0;
+    const chapters = data?.chapters || [];
+    const mins = Math.floor(duration / 60);
+    const secs = duration % 60;
+
+    useEffect(() => {
+        if (!explainerId) {
+            setLoading(false);
+            setError('No explainer ID found');
+            return;
+        }
+
+        let cancelled = false;
+        setLoading(true);
+        setError(null);
+
+        fetchExplainerVideoBlob(explainerId)
+            .then(blobUrl => {
+                if (!cancelled) {
+                    setVideoBlobUrl(blobUrl);
+                    setLoading(false);
+                }
+            })
+            .catch(err => {
+                if (!cancelled) {
+                    setError('Failed to load video');
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+            if (videoBlobUrl) URL.revokeObjectURL(videoBlobUrl);
+        };
+    }, [explainerId]);
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <div className="loading-spinner w-8 h-8" />
+                <p className="text-sm text-text-muted">Loading video...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-red-400">{error}</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* Video Player */}
+            {videoBlobUrl && (
+                <div className="rounded-lg overflow-hidden bg-black">
+                    <video
+                        controls
+                        className="w-full"
+                        src={videoBlobUrl}
+                        style={{ maxHeight: '300px' }}
+                    >
+                        Your browser does not support the video element.
+                    </video>
+                </div>
+            )}
+
+            {/* Duration & Info */}
+            <div className="flex items-center justify-between text-xs text-text-muted px-1">
+                <span>Duration: {mins}m {secs}s</span>
+                <span>{chapters.length} chapters</span>
+            </div>
+
+            {/* Chapters */}
+            {chapters.length > 0 && (
+                <div className="space-y-2">
+                    <h4 className="text-xs font-medium text-text-secondary uppercase tracking-wider">Chapters</h4>
+                    <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                        {chapters.map((ch, i) => (
+                            <div key={i} className="flex items-center gap-3 text-xs text-text-muted py-1.5 px-2 rounded hover:bg-glass-light transition-colors">
+                                <span className="text-text-secondary tabular-nums font-mono">
+                                    {Math.floor(ch.start_time / 60)}:{String(Math.floor(ch.start_time % 60)).padStart(2, '0')}
+                                </span>
+                                <span className="text-text-primary truncate">{ch.title}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Download Button */}
+            {videoBlobUrl && (
+                <a
+                    href={videoBlobUrl}
+                    download={`explainer_${explainerId}.mp4`}
+                    className="btn-primary w-full text-center"
+                >
+                    <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download Video
+                </a>
             )}
         </div>
     );

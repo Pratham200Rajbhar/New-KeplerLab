@@ -52,6 +52,7 @@ from app.routes.agent import router as agent_router
 from app.routes.websocket_router import router as ws_router
 from app.routes.search import router as search_router
 from app.routes.proxy import router as proxy_router
+from app.routes.explainer import router as explainer_router
 
 from app.services.rate_limiter import rate_limit_middleware
 from app.services.performance_logger import performance_monitoring_middleware
@@ -117,7 +118,7 @@ async def lifespan(app: FastAPI):
         logger.warning("Sandbox temp cleanup failed (non-fatal): %s", exc)
 
     # 5. Create output directories (use resolved absolute paths from settings)
-    for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PODCAST_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR]:
+    for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PODCAST_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers")]:
         os.makedirs(_dir, exist_ok=True)
     logger.info("Output directories ensured.")
 
@@ -253,6 +254,7 @@ app.include_router(ppt_router, tags=["presentation"])
 app.include_router(agent_router, tags=["agent"])
 app.include_router(search_router, prefix="/search", tags=["search"])
 app.include_router(proxy_router, prefix="/api/v1", tags=["proxy"])
+app.include_router(explainer_router, tags=["explainer"])
 
 # WebSocket channels (no REST replacement — live state push only)
 app.include_router(ws_router)

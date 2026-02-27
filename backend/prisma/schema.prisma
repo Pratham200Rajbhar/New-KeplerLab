@@ -37,6 +37,7 @@ model User {
   agentLogs        AgentExecutionLog[]
   codeExecutions   CodeExecutionSession[]
   researchSessions ResearchSession[]
+  explainerVideos  ExplainerVideo[]
 
   @@map("users")
 }
@@ -149,13 +150,43 @@ model GeneratedContent {
   contentType String   @map("content_type") @db.VarChar(50)
   title       String?  @db.VarChar(255)
   data        Json
+  language    String?  @db.VarChar(10)
+  materialIds String[] @default([]) @map("material_ids")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  notebook Notebook  @relation(fields: [notebookId], references: [id], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  material Material? @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  notebook        Notebook          @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material        Material?         @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  explainerVideos ExplainerVideo[]
 
   @@map("generated_content")
+}
+
+// ─── Explainer Videos ────────────────────────────────────
+
+model ExplainerVideo {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  presentationId    String    @map("presentation_id") @db.Uuid
+  pptLanguage       String    @map("ppt_language") @db.VarChar(10)
+  narrationLanguage String    @map("narration_language") @db.VarChar(10)
+  voiceGender       String    @map("voice_gender") @db.VarChar(10)
+  voiceId           String    @map("voice_id") @db.VarChar(100)
+  status            String    @default("pending") @db.VarChar(30)
+  script            Json?
+  audioFiles        Json?     @map("audio_files")
+  videoUrl          String?   @map("video_url") @db.Text
+  duration          Int?
+  chapters          Json?
+  error             String?   @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at")
+  completedAt       DateTime? @map("completed_at")
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  presentation GeneratedContent @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("explainer_videos")
 }
 
 // ─── Refresh Tokens (rotation tracking) ──────────────────

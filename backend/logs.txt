@@ -1,0 +1,304 @@
+2026-02-27 20:06:28,664 app.db.prisma_client INFO Prisma client connected to database
+2026-02-27 20:06:28,664 main INFO Warming up embedding model (running in thread pool)…
+2026-02-27 20:06:28,758 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-02-27 20:06:28,759 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-02-27 20:06:28,953 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-27 20:06:28,954 main INFO Preloading reranker model (running in thread pool)…
+2026-02-27 20:06:30,023 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-27 20:06:34,577 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-02-27 20:06:34,577 app.services.rag.reranker INFO Reranker loaded successfully in 4.68s
+2026-02-27 20:06:34,577 main INFO Reranker preloaded.
+2026-02-27 20:06:34,578 main INFO Background job processor task created.
+2026-02-27 20:06:34,578 main INFO Ensuring sandbox packages are installed…
+2026-02-27 20:06:35,079 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-02-27 20:06:35,080 main INFO Output directories ensured.
+2026-02-27 20:06:35,080 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-27 20:06:46,974 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Registered tool: rag_tool
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Registered tool: quiz_tool
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Registered tool: flashcard_tool
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Registered tool: ppt_tool
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Registered tool: python_tool
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Registered tool: research_tool
+2026-02-27 20:06:54,377 app.services.agent.tools_registry INFO Initialized 6 tools: ['rag_tool', 'quiz_tool', 'flashcard_tool', 'ppt_tool', 'python_tool', 'research_tool']
+2026-02-27 20:06:54,393 app.services.agent.graph INFO Agent graph compiled successfully
+2026-02-27 20:06:54,393 performance INFO request_performance
+2026-02-27 20:06:54,446 main INFO POST /chat 200 0.15s [8cd53980]
+2026-02-27 20:06:54,450 app.services.agent.intent INFO Detecting intent for message: explain VM Migration services...
+2026-02-27 20:06:54,453 app.services.agent.intent INFO Keyword intent: QUESTION (confidence=0.50)
+2026-02-27 20:07:02,955 app.services.agent.intent INFO [intent] LLM fallback: QUESTION (confidence=0.80)
+2026-02-27 20:07:02,956 app.services.agent.planner INFO Planning execution for intent: QUESTION
+2026-02-27 20:07:02,962 app.services.agent.planner INFO Plan: ['rag_tool', 'research_tool']
+2026-02-27 20:07:02,965 app.services.agent.router INFO [router] Executing | intent=QUESTION | step=1/2 | tool=rag_tool | iter=0 | desc='Search materials for answer'
+2026-02-27 20:07:02,965 app.services.agent.tools_registry INFO [rag_tool] START | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | materials=['8294f6f9-0e05-4eb7-8357-359d783c83e7'] | query='explain VM Migration services'
+2026-02-27 20:07:02,984 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: explain VM Migration services...
+2026-02-27 20:07:03,145 app.services.rag.secure_retriever INFO Retrieved 10 valid chunks
+2026-02-27 20:07:03,164 app.services.rag.secure_retriever INFO Applied MMR: 8 diverse chunks selected
+2026-02-27 20:07:03,386 app.services.rag.secure_retriever INFO Reranked to top 8 chunks
+2026-02-27 20:07:03,387 app.services.rag.context_formatter INFO Formatted 8 sources with citation metadata
+2026-02-27 20:08:35,730 app.services.agent.tools_registry INFO [rag_tool] OK | elapsed=92.77s | answer_len=5061 | context_len=6160
+2026-02-27 20:08:35,731 app.services.agent.router INFO [router] Result | tool=rag_tool | success=True | output='# VM Migration Services: A Deep Dive\n\n**VM Migration** is the process of moving a virtual machine (VM) from one physical' | iter=0
+2026-02-27 20:08:35,734 app.services.agent.reflection INFO [reflect] iter=1 | tool=rag_tool | intent=QUESTION | steps=1/2 | retries=0 | repairs=0 | tokens=1582
+2026-02-27 20:08:35,734 app.services.agent.reflection INFO [reflect] CONTINUE: next step 2/2
+2026-02-27 20:08:35,737 app.services.agent.router INFO [router] Skipping conditional step 'research_tool' — previous tool had results
+2026-02-27 20:08:35,739 app.services.agent.reflection INFO [reflect] iter=2 | tool=rag_tool | intent=QUESTION | steps=2/2 | retries=0 | repairs=0 | tokens=1582
+2026-02-27 20:08:35,739 app.services.agent.reflection INFO [reflect] RESPOND: all 2 plan step(s) complete
+2026-02-27 20:08:50,043 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:08:50,044 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:08:50,694 main INFO POST /auth/refresh 200 0.01s [8c3a3e4c]
+2026-02-27 20:08:50,704 main INFO GET /auth/me 200 0.00s [15483c53]
+2026-02-27 20:08:50,745 performance INFO request_performance
+2026-02-27 20:08:50,746 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [e5a0151a]
+2026-02-27 20:08:50,756 performance INFO request_performance
+2026-02-27 20:08:50,757 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [5af40d7c]
+2026-02-27 20:08:50,760 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:08:50,778 performance INFO request_performance
+2026-02-27 20:08:50,778 main INFO GET /chat/sessions/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.02s [030247a8]
+2026-02-27 20:08:50,836 main INFO GET /materials 200 0.07s [2e64638f]
+2026-02-27 20:08:50,844 performance INFO request_performance
+2026-02-27 20:08:50,845 main INFO GET /chat/history/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.08s [29f1da09]
+2026-02-27 20:08:50,851 performance INFO request_performance
+2026-02-27 20:08:50,852 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.09s [90da83e2]
+2026-02-27 20:08:50,867 main INFO GET /materials 200 0.01s [0a93b5c8]
+2026-02-27 20:09:38,689 performance INFO request_performance
+2026-02-27 20:09:38,689 main INFO DELETE /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content/beb1b808-c13c-4c69-92c5-b4e8a7c97167 200 0.02s [a5441d84]
+2026-02-27 20:09:41,235 performance INFO request_performance
+2026-02-27 20:09:41,235 main INFO DELETE /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content/d3b220d7-fab7-4cdf-9db8-176c028e04bf 200 0.02s [abbc8f2e]
+2026-02-27 20:09:42,738 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:09:42,738 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:09:43,111 main INFO POST /auth/refresh 200 0.01s [b1bfe52e]
+2026-02-27 20:09:43,122 main INFO GET /auth/me 200 0.01s [13d61cbd]
+2026-02-27 20:09:43,165 performance INFO request_performance
+2026-02-27 20:09:43,165 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [378e50d5]
+2026-02-27 20:09:43,172 performance INFO request_performance
+2026-02-27 20:09:43,173 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [b3c1ffd5]
+2026-02-27 20:09:43,185 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:09:43,196 main INFO GET /materials 200 0.01s [4d2b6e7b]
+2026-02-27 20:09:43,198 performance INFO request_performance
+2026-02-27 20:09:43,200 main INFO GET /chat/sessions/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.02s [13a96c1c]
+2026-02-27 20:09:43,200 performance INFO request_performance
+2026-02-27 20:09:43,201 performance INFO request_performance
+2026-02-27 20:09:43,201 main INFO GET /chat/history/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.02s [e21eeb5b]
+2026-02-27 20:09:43,201 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.02s [aa94eedc]
+2026-02-27 20:09:43,220 main INFO GET /materials 200 0.01s [8f8c6d48]
+2026-02-27 20:09:46,910 main INFO POST /explainer/check-presentations 200 0.01s [d3616386]
+2026-02-27 20:09:52,271 ppt.generator INFO PPT generation started | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | presentation_id=6df2ebf7b10a | text_length=19217 | target_slides=10 | theme=auto | has_extra_instructions=False
+2026-02-27 20:09:52,271 ppt.generator INFO PPT prompt built | prompt_length=31126 | build_time=0.000s
+2026-02-27 20:14:23,634 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
+2026-02-27 20:14:23,634 ppt.generator INFO PPT LLM invocation succeeded | llm_time=271.36s | title=Infrastructure as a Service (IaaS): Architecture, Implementation, and Strategy | slides=10 | html_length=13834
+2026-02-27 20:14:23,638 ppt.extractor INFO Found 4 slide elements | head_css_length=8677 chars
+2026-02-27 20:14:23,639 ppt.extractor INFO Slide extraction complete | extracted=4/4 | time=0.004s
+2026-02-27 20:14:23,639 ppt.generator WARNING PPT slide count mismatch: LLM reported 10 but HTML contains 4 .slide elements
+2026-02-27 20:14:23,639 ppt.generator INFO PPT generation COMPLETE | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | presentation_id=6df2ebf7b10a | total_time=271.37s | extract_time=0.004s | title=Infrastructure as a Service (IaaS): Architecture, Implementation, and Strategy | slide_count=4 | html_length=14802 | format=16:9@1920x1080
+2026-02-27 20:14:23,663 explainer.route INFO Explainer generation started | id=08c7db80-df48-4533-a934-67de8402276d | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | slides=4 | voice=hi-IN-MadhurNeural | narration=hi
+2026-02-27 20:14:23,664 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d: 4 slides extracted, starting pipeline
+2026-02-27 20:14:23,665 main INFO POST /explainer/generate 200 271.41s [f2349e77]
+2026-02-27 20:14:23,670 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d status → capturing_slides
+2026-02-27 20:14:23,671 ppt.screenshots INFO Starting slide capture | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | presentation_id=explainer_08c7db80-df48-4533-a934-67de8402276d | expected_slides=4
+2026-02-27 20:14:25,692 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [4c8e1b48]
+2026-02-27 20:14:27,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [f04df468]
+2026-02-27 20:14:28,346 ppt.screenshots INFO Detected 4 .slide elements (expected 4), capturing 4
+2026-02-27 20:14:29,676 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [6ec2309c]
+2026-02-27 20:14:31,611 ppt.screenshots INFO Slide capture COMPLETED | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | presentation_id=explainer_08c7db80-df48-4533-a934-67de8402276d | captured=4/4 slides | time=7.94s
+2026-02-27 20:14:31,615 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d status → generating_script
+2026-02-27 20:14:31,615 explainer.script INFO Generating scripts for 4 slides (parallel, max 3 concurrent)
+2026-02-27 20:14:31,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [20646348]
+2026-02-27 20:14:33,687 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [eb3ebd0a]
+2026-02-27 20:14:35,688 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [72f7333d]
+2026-02-27 20:14:37,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [94eb3844]
+2026-02-27 20:14:39,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [4d01761c]
+2026-02-27 20:14:41,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [df5c92dd]
+2026-02-27 20:14:43,678 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [005a4a10]
+2026-02-27 20:14:45,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [41838e0c]
+2026-02-27 20:14:47,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [921fb0d1]
+2026-02-27 20:14:49,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [91741994]
+2026-02-27 20:14:51,682 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [65661f81]
+2026-02-27 20:14:53,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [27c7a8a5]
+2026-02-27 20:14:55,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [6759870f]
+2026-02-27 20:14:57,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [3d593d05]
+2026-02-27 20:14:59,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [738a79c7]
+2026-02-27 20:15:01,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [5eeede38]
+2026-02-27 20:15:03,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [64bad910]
+2026-02-27 20:15:05,681 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [f0e10ccb]
+2026-02-27 20:15:07,687 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [12be71a4]
+2026-02-27 20:15:09,290 explainer.script INFO Script for slide 1 generated (1003 chars)
+2026-02-27 20:15:09,687 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [c7edb842]
+2026-02-27 20:15:11,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [7f3f33ae]
+2026-02-27 20:15:13,678 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [0852f78e]
+2026-02-27 20:15:15,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [57c22432]
+2026-02-27 20:15:17,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [076312d2]
+2026-02-27 20:15:19,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [d6039399]
+2026-02-27 20:15:21,678 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [bbc483d5]
+2026-02-27 20:15:23,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [6646d8b7]
+2026-02-27 20:15:25,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [90c1dc8d]
+2026-02-27 20:15:27,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [210d469f]
+2026-02-27 20:15:29,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [8a66039b]
+2026-02-27 20:15:31,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [f557eb86]
+2026-02-27 20:15:33,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [1c4f3cec]
+2026-02-27 20:15:35,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [4e6ab0f6]
+2026-02-27 20:15:37,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [b7b6fc64]
+2026-02-27 20:15:39,682 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [906b4fd0]
+2026-02-27 20:15:41,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [318635d6]
+2026-02-27 20:15:43,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [27ccf8f2]
+2026-02-27 20:15:45,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [2f3003e6]
+2026-02-27 20:15:45,923 explainer.script INFO Script for slide 3 generated (1000 chars)
+2026-02-27 20:15:47,680 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [3d88f395]
+2026-02-27 20:15:49,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [2605b080]
+2026-02-27 20:15:50,940 explainer.script INFO Script for slide 4 generated (971 chars)
+2026-02-27 20:15:51,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [690e1efe]
+2026-02-27 20:15:53,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [39a3c95d]
+2026-02-27 20:15:55,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [245a9a47]
+2026-02-27 20:15:57,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [34528b59]
+2026-02-27 20:15:59,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [a1f2f1f6]
+2026-02-27 20:16:01,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [4b609341]
+2026-02-27 20:16:03,683 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [084436e5]
+2026-02-27 20:16:05,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [b0eed4d8]
+2026-02-27 20:16:07,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [9cb71e7b]
+2026-02-27 20:16:08,796 explainer.script INFO Script for slide 2 generated (931 chars)
+2026-02-27 20:16:08,808 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d status → generating_script
+2026-02-27 20:16:08,815 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d status → generating_audio
+2026-02-27 20:16:09,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [7b4dabcd]
+2026-02-27 20:16:11,684 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [f681ff8d]
+2026-02-27 20:16:13,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [4f1dc198]
+2026-02-27 20:16:15,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [11ad02f7]
+2026-02-27 20:16:17,678 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [b7008d5e]
+2026-02-27 20:16:19,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [170d747b]
+2026-02-27 20:16:21,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [87f73df0]
+2026-02-27 20:16:23,687 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [ee024897]
+2026-02-27 20:16:24,120 explainer.tts INFO TTS audio saved: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_4.mp3 (504144 bytes)
+2026-02-27 20:16:24,293 explainer.processor INFO Audio for slide 4: 84.0s
+2026-02-27 20:16:24,318 explainer.tts INFO TTS audio saved: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_1.mp3 (511488 bytes)
+2026-02-27 20:16:24,490 explainer.processor INFO Audio for slide 1: 85.2s
+2026-02-27 20:16:25,489 explainer.tts INFO TTS audio saved: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_3.mp3 (513648 bytes)
+2026-02-27 20:16:25,671 explainer.processor INFO Audio for slide 3: 85.6s
+2026-02-27 20:16:25,678 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [65060829]
+2026-02-27 20:16:27,686 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [b567df33]
+2026-02-27 20:16:29,685 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [08eedc2b]
+2026-02-27 20:16:31,042 explainer.tts INFO TTS audio saved: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_2.mp3 (493344 bytes)
+2026-02-27 20:16:31,267 explainer.processor INFO Audio for slide 2: 82.2s
+2026-02-27 20:16:31,279 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d status → generating_audio
+2026-02-27 20:16:31,286 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d status → composing_video
+2026-02-27 20:16:31,287 explainer.video INFO Composing slide video: /disk2/Projects/KeplerLab-AI-Notebook/backend/output/presentations/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe/explainer_08c7db80-df48-4533-a934-67de8402276d/slide_1.png + /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_1.mp3 → /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_1.mp4
+2026-02-27 20:16:31,288 explainer.video INFO Composing slide video: /disk2/Projects/KeplerLab-AI-Notebook/backend/output/presentations/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe/explainer_08c7db80-df48-4533-a934-67de8402276d/slide_3.png + /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_3.mp3 → /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_3.mp4
+2026-02-27 20:16:31,288 explainer.video INFO Composing slide video: /disk2/Projects/KeplerLab-AI-Notebook/backend/output/presentations/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe/explainer_08c7db80-df48-4533-a934-67de8402276d/slide_4.png + /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_4.mp3 → /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_4.mp4
+2026-02-27 20:16:31,288 explainer.video INFO Composing slide video: /disk2/Projects/KeplerLab-AI-Notebook/backend/output/presentations/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe/explainer_08c7db80-df48-4533-a934-67de8402276d/slide_2.png + /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_2.mp3 → /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_2.mp4
+2026-02-27 20:16:31,690 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [99262d59]
+2026-02-27 20:16:33,756 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.05s [477c333e]
+2026-02-27 20:16:35,698 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [5e869a2f]
+2026-02-27 20:16:37,707 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [0060e414]
+2026-02-27 20:16:39,692 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [e77016a4]
+2026-02-27 20:16:41,703 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [2dd32f8d]
+2026-02-27 20:16:43,689 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [38338fba]
+2026-02-27 20:16:45,694 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [caea91f0]
+2026-02-27 20:16:47,696 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [d3c6c75a]
+2026-02-27 20:16:49,695 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [c3dcbc4d]
+2026-02-27 20:16:51,708 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [10b314c7]
+2026-02-27 20:16:53,697 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [800dc0b7]
+2026-02-27 20:16:55,699 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [7cbfcf3a]
+2026-02-27 20:16:57,692 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [50c217b2]
+2026-02-27 20:16:59,715 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [1119e7c8]
+2026-02-27 20:17:01,698 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [8dd53710]
+2026-02-27 20:17:03,712 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [02ab3754]
+2026-02-27 20:17:05,701 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [50470bd4]
+2026-02-27 20:17:07,702 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [e29c9459]
+2026-02-27 20:17:09,692 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.01s [c85e59a4]
+2026-02-27 20:17:11,693 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [4255b93d]
+2026-02-27 20:17:13,705 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.03s [6ec5b468]
+2026-02-27 20:17:15,693 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [b790a3ed]
+2026-02-27 20:17:17,695 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [6d4ab788]
+2026-02-27 20:17:18,673 explainer.video INFO Slide video created: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_2.mp4 (2441148 bytes)
+2026-02-27 20:17:19,690 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [8e6eacca]
+2026-02-27 20:17:19,870 explainer.video INFO Slide video created: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_4.mp4 (2378967 bytes)
+2026-02-27 20:17:19,991 explainer.video INFO Slide video created: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_3.mp4 (2566128 bytes)
+2026-02-27 20:17:20,120 explainer.video INFO Slide video created: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/slide_1.mp4 (2569849 bytes)
+2026-02-27 20:17:20,121 explainer.video INFO Concatenating 4 videos → /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/explainer_final.mp4
+2026-02-27 20:17:20,367 explainer.video INFO Final video created: /disk2/Projects/KeplerLab-AI-Notebook/backend/data/output/explainers/08c7db80-df48-4533-a934-67de8402276d/explainer_final.mp4 (9.5 MB)
+2026-02-27 20:17:20,385 explainer.processor INFO Explainer 08c7db80-df48-4533-a934-67de8402276d COMPLETED in 176.7s — 4 slides, 337s video
+2026-02-27 20:17:21,691 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/status 200 0.02s [2ebc11a6]
+2026-02-27 20:17:21,720 main INFO GET /explainer/08c7db80-df48-4533-a934-67de8402276d/video 200 0.01s [baf89c89]
+2026-02-27 20:21:06,670 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:21:06,671 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:21:07,384 main INFO POST /auth/refresh 200 0.01s [7ebc1b59]
+2026-02-27 20:21:07,396 main INFO GET /auth/me 200 0.00s [e84d43e4]
+2026-02-27 20:21:07,441 performance INFO request_performance
+2026-02-27 20:21:07,442 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:21:07,442 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [156f6ac9]
+2026-02-27 20:21:07,451 performance INFO request_performance
+2026-02-27 20:21:07,451 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [2b3546fe]
+2026-02-27 20:21:07,487 main INFO GET /materials 200 0.03s [9c6c21de]
+2026-02-27 20:21:07,503 performance INFO request_performance
+2026-02-27 20:21:07,503 main INFO GET /chat/sessions/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.04s [68205184]
+2026-02-27 20:21:07,517 main INFO GET /materials 200 0.01s [069a0c1c]
+2026-02-27 20:21:07,538 performance INFO request_performance
+2026-02-27 20:21:07,539 main INFO GET /chat/history/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.08s [49023a31]
+2026-02-27 20:21:07,544 performance INFO request_performance
+2026-02-27 20:21:07,544 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.08s [65269950]
+2026-02-27 20:21:54,969 performance INFO request_performance
+2026-02-27 20:21:54,969 main INFO POST /chat 200 0.02s [ee30e020]
+2026-02-27 20:21:54,972 app.services.agent.intent INFO Detecting intent for message: Which is cheper IaaS , SaaS or PaaS...
+2026-02-27 20:21:54,972 app.services.agent.intent INFO Keyword intent: QUESTION (confidence=0.50)
+2026-02-27 20:24:14,326 app.services.agent.intent INFO [intent] LLM fallback: QUESTION (confidence=0.80)
+2026-02-27 20:24:14,326 app.services.agent.planner INFO Planning execution for intent: QUESTION
+2026-02-27 20:24:14,331 app.services.agent.planner INFO Plan: ['rag_tool', 'research_tool']
+2026-02-27 20:24:14,332 app.services.agent.router INFO [router] Executing | intent=QUESTION | step=1/2 | tool=rag_tool | iter=0 | desc='Search materials for answer'
+2026-02-27 20:24:14,332 app.services.agent.tools_registry INFO [rag_tool] START | user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe | materials=['8294f6f9-0e05-4eb7-8357-359d783c83e7'] | query='Which is cheper IaaS , SaaS or PaaS'
+2026-02-27 20:24:14,343 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: Which is cheper IaaS , SaaS or PaaS...
+2026-02-27 20:24:14,484 app.services.rag.secure_retriever INFO Retrieved 10 valid chunks
+2026-02-27 20:24:14,505 app.services.rag.secure_retriever INFO Applied MMR: 8 diverse chunks selected
+2026-02-27 20:24:14,656 app.services.rag.secure_retriever INFO Reranked to top 8 chunks
+2026-02-27 20:24:14,656 app.services.rag.context_formatter INFO Formatted 8 sources with citation metadata
+2026-02-27 20:25:47,098 app.services.agent.tools_registry INFO [rag_tool] OK | elapsed=92.77s | answer_len=5678 | context_len=6093
+2026-02-27 20:25:47,098 app.services.agent.router INFO [router] Result | tool=rag_tool | success=True | output='Your provided materials focus exclusively on **Infrastructure as a Service (IaaS)** and do not contain pricing compariso' | iter=0
+2026-02-27 20:25:47,100 app.services.agent.reflection INFO [reflect] iter=1 | tool=rag_tool | intent=QUESTION | steps=1/2 | retries=0 | repairs=0 | tokens=1686
+2026-02-27 20:25:47,100 app.services.agent.reflection INFO [reflect] CONTINUE: next step 2/2
+2026-02-27 20:25:47,102 app.services.agent.router INFO [router] Skipping conditional step 'research_tool' — previous tool had results
+2026-02-27 20:25:47,103 app.services.agent.reflection INFO [reflect] iter=2 | tool=rag_tool | intent=QUESTION | steps=2/2 | retries=0 | repairs=0 | tokens=1686
+2026-02-27 20:25:47,103 app.services.agent.reflection INFO [reflect] RESPOND: all 2 plan step(s) complete
+2026-02-27 20:25:51,192 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:25:51,192 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:25:51,546 main INFO POST /auth/refresh 200 0.01s [184a300a]
+2026-02-27 20:25:51,555 main INFO GET /auth/me 200 0.00s [d5853b39]
+2026-02-27 20:25:51,594 performance INFO request_performance
+2026-02-27 20:25:51,594 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [0e939544]
+2026-02-27 20:25:51,600 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:25:51,601 performance INFO request_performance
+2026-02-27 20:25:51,601 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [2c3e7320]
+2026-02-27 20:25:51,626 performance INFO request_performance
+2026-02-27 20:25:51,627 main INFO GET /materials 200 0.01s [86ca4792]
+2026-02-27 20:25:51,627 main INFO GET /chat/sessions/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [897c948c]
+2026-02-27 20:25:51,631 performance INFO request_performance
+2026-02-27 20:25:51,634 main INFO GET /chat/history/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.02s [23befb39]
+2026-02-27 20:25:51,634 performance INFO request_performance
+2026-02-27 20:25:51,635 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.02s [4c17cf2c]
+2026-02-27 20:25:51,650 main INFO GET /materials 200 0.00s [47757ecf]
+2026-02-27 20:26:45,052 performance INFO request_performance
+2026-02-27 20:26:45,052 main INFO POST /chat 200 0.01s [33fc36ed]
+2026-02-27 20:26:45,053 app.services.agent.intent INFO Detecting intent for message: give me fibonacci code in python...
+2026-02-27 20:26:45,054 app.services.agent.intent INFO Keyword intent: QUESTION (confidence=0.50)
+2026-02-27 20:26:53,660 app.services.agent.intent INFO [intent] LLM fallback: CODE_EXECUTION (confidence=0.80)
+2026-02-27 20:26:53,660 app.services.agent.planner INFO Planning execution for intent: CODE_EXECUTION
+2026-02-27 20:26:53,660 app.services.agent.planner INFO Plan: ['python_tool']
+2026-02-27 20:26:53,662 app.services.agent.router INFO [router] Executing | intent=CODE_EXECUTION | step=1/1 | tool=python_tool | iter=0 | desc='Generate and execute Python code'
+2026-02-27 20:26:53,662 app.services.agent.tools_registry INFO [python_tool] START | query='give me fibonacci code in python'
+2026-02-27 20:26:53,687 app.services.agent.router INFO [router] Result | tool=python_tool | success=False | output='No readable data files found for the selected materials. Ensure the files are valid CSV or Excel format.' | iter=0
+2026-02-27 20:26:53,687 app.services.agent.router WARNING [router] Tool failure | tool=python_tool | error='data_validation_failed'
+2026-02-27 20:26:53,688 app.services.agent.reflection INFO [reflect] iter=1 | tool=python_tool | intent=CODE_EXECUTION | steps=1/1 | retries=0 | repairs=0 | tokens=0
+2026-02-27 20:26:53,689 app.services.agent.reflection INFO [reflect] Code error detected — repair attempt 1/3 for tool=python_tool
+2026-02-27 20:26:53,691 app.services.agent.reflection INFO [reflect] RESPOND: all 1 plan step(s) complete
+2026-02-27 20:27:45,172 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:27:45,172 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:27:45,501 main INFO POST /auth/refresh 200 0.01s [f520dcff]
+2026-02-27 20:27:45,511 main INFO GET /auth/me 200 0.00s [98fdbe7b]
+2026-02-27 20:27:45,549 performance INFO request_performance
+2026-02-27 20:27:45,549 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [5a90c950]
+2026-02-27 20:27:45,554 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:27:45,557 performance INFO request_performance
+2026-02-27 20:27:45,557 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [d9b5a4d7]
+2026-02-27 20:27:45,583 performance INFO request_performance
+2026-02-27 20:27:45,583 main INFO GET /materials 200 0.01s [59d4eca4]
+2026-02-27 20:27:45,584 main INFO GET /chat/sessions/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.01s [5a07ed64]
+2026-02-27 20:27:45,588 performance INFO request_performance
+2026-02-27 20:27:45,588 main INFO GET /chat/history/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b 200 0.02s [f3aae909]
+2026-02-27 20:27:45,591 performance INFO request_performance
+2026-02-27 20:27:45,592 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.02s [cf18edbb]
+2026-02-27 20:27:45,614 main INFO GET /materials 200 0.01s [c46e9e2e]

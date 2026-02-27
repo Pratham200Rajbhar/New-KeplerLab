@@ -61,6 +61,7 @@ openai-whisper
 playwright==1.40.0
 ffmpeg-python==0.2.0
 pydub==0.25.1
+edge-tts>=6.1.0
 
 # Web scraping and YouTube
 beautifulsoup4==4.12.3
