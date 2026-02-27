@@ -30,15 +30,6 @@ export async function generateQuiz(materialId, options = {}) {
   return apiJson('/quiz', { method: 'POST', body: JSON.stringify(body), ...(signal ? { signal } : {}) });
 }
 
-export async function generatePodcast(materialId, signal = null) {
-  return apiJson('/podcast', { method: 'POST', body: JSON.stringify({ material_id: materialId }), ...(signal ? { signal } : {}) });
-}
-
-export async function downloadPodcast(materialId) {
-  const response = await apiFetch('/podcast/download', { method: 'POST', body: JSON.stringify({ material_id: materialId }) });
-  return response.blob();
-}
-
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

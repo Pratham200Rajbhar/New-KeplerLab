@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { generateFlashcards, generateQuiz, generatePodcast, downloadPodcast, downloadBlob, generatePresentation } from '../api/generation';
+import { generateFlashcards, generateQuiz, downloadBlob, generatePresentation } from '../api/generation';
 import { apiConfig } from '../api/config';
 import { saveGeneratedContent, getGeneratedContent, deleteGeneratedContent, updateGeneratedContent } from '../api/notebooks';
 import { fetchExplainerVideoBlob } from '../api/explainer';
@@ -9,12 +9,6 @@ import InlinePresentationView, { PresentationConfigDialog } from './Presentation
 import ExplainerDialog from './ExplainerDialog';
 import { jsPDF } from 'jspdf';
 import Modal from './Modal';
-
-const AudioIcon = () => (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-    </svg>
-);
 
 const FlashcardsIcon = () => (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,7 +57,6 @@ export default function StudioPanel() {
 
     const [flashcardsData, setFlashcardsData] = useState(null);
     const [quizData, setQuizData] = useState(null);
-    const [audioData, setAudioData] = useState(null);
     const [presentationData, setPresentationData] = useState(null);
     const [explainerData, setExplainerData] = useState(null);
     const [showPresentationConfig, setShowPresentationConfig] = useState(false);
@@ -92,7 +85,6 @@ export default function StudioPanel() {
         // Reset all content state when notebook changes
         setFlashcardsData(null);
         setQuizData(null);
-        setAudioData(null);
         setPresentationData(null);
         setShowPresentationConfig(false);
         setShowQuizConfig(false);
@@ -122,9 +114,6 @@ export default function StudioPanel() {
                             case 'quiz':
                                 setQuizData(c.data);
                                 setQuiz(c.data);
-                                break;
-                            case 'audio':
-                                setAudioData(c.data);
                                 break;
                             case 'presentation':
                                 setPresentationData(c.data);
@@ -175,27 +164,6 @@ export default function StudioPanel() {
         } catch (error) {
             console.error(`Failed to save ${contentType}:`, error);
             return null;
-        }
-    };
-
-    const handleGenerateAudio = async () => {
-        if (!effectiveMaterial) return;
-        setLoadingState('audio', true);
-        const ac = new AbortController();
-        abortControllerRef.current.audio = ac;
-        try {
-            const data = await generatePodcast(effectiveMaterial.id, ac.signal);
-            setAudioData(data);
-            setActiveView('audio');
-            const saved = await trySave('audio', data, data.title || 'Audio Overview');
-            if (saved) setContentHistory(prev => [saved, ...prev]);
-        } catch (error) {
-            if (error.name === 'AbortError') return;
-            console.error('Failed to generate podcast:', error);
-            setActionError(error.message || 'Failed to generate audio overview. Please try again.');
-            setTimeout(() => setActionError(null), 5000);
-        } finally {
-            setLoadingState('audio', false);
         }
     };
 
@@ -288,10 +256,6 @@ export default function StudioPanel() {
     // Open a history item in the inline viewer
     const handleViewHistoryItem = (item) => {
         switch (item.content_type) {
-            case 'audio':
-                setAudioData(item.data);
-                setActiveView('audio');
-                break;
             case 'flashcards':
                 setFlashcardsData(item.data);
                 setFlashcards(item.data);
@@ -334,9 +298,6 @@ export default function StudioPanel() {
                 case 'presentation':
                     if (presentationData?.id === updated.id) setPresentationData(updated);
                     break;
-                case 'audio':
-                    if (audioData?.id === updated.id) setAudioData(updated);
-                    break;
             }
 
             setShowRenameHistoryModal(false);
@@ -375,9 +336,6 @@ export default function StudioPanel() {
                         break;
                     case 'presentation':
                         if (presentationData?.id === item.id) { setPresentationData(null); setActiveView(null); }
-                        break;
-                    case 'audio':
-                        if (audioData?.id === item.id) { setAudioData(null); setActiveView(null); }
                         break;
                 }
             }
@@ -441,7 +399,6 @@ export default function StudioPanel() {
 
     const contentTypeIcon = (type) => {
         switch (type) {
-            case 'audio': return <AudioIcon />;
             case 'flashcards': return <FlashcardsIcon />;
             case 'quiz': return <QuizIcon />;
             case 'presentation': return <PresentationIcon />;
@@ -466,7 +423,6 @@ export default function StudioPanel() {
     };
 
     const outputs = [
-        { id: 'audio', title: 'Audio Overview', description: 'Listen to a podcast-style summary', icon: <AudioIcon />, onClick: handleGenerateAudio, onCancel: () => handleCancelGeneration('audio') },
         { id: 'flashcards', title: 'Flashcards', description: 'Study with spaced repetition', icon: <FlashcardsIcon />, onClick: handleFlashcardsClick, onCancel: () => handleCancelGeneration('flashcards') },
         { id: 'quiz', title: 'Practice Quiz', description: 'Test your understanding', icon: <QuizIcon />, onClick: handleQuizClick, onCancel: () => handleCancelGeneration('quiz') },
         { id: 'presentation', title: 'Presentation', description: 'Generate a slide deck from content', icon: <PresentationIcon />, onClick: handlePresentationClick, onCancel: () => handleCancelGeneration('presentation') },
@@ -474,7 +430,6 @@ export default function StudioPanel() {
     ];
 
     const viewTitles = {
-        audio: 'Audio Overview',
         flashcards: 'Flashcards',
         quiz: 'Quiz',
         presentation: 'Presentation',
@@ -483,8 +438,6 @@ export default function StudioPanel() {
 
     const renderInlineContent = () => {
         switch (activeView) {
-            case 'audio':
-                return <InlineAudioView data={audioData} materialId={effectiveMaterial?.id} />;
             case 'flashcards':
                 return <InlineFlashcardsView data={flashcardsData} />;
             case 'quiz':
@@ -1038,322 +991,6 @@ function QuizConfigDialog({ onGenerate, onCancel, loading }) {
                 </div>
             </form>
         </Modal>
-    );
-}
-
-function InlineAudioView({ data, materialId }) {
-    const [downloading, setDownloading] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [playbackSpeed, setPlaybackSpeed] = useState(1);
-    const [activeCaptionIndex, setActiveCaptionIndex] = useState(-1);
-    const audioRef = useRef(null);
-    const captionRefs = useRef([]);
-    const captionContainerRef = useRef(null);
-
-    const audioFilename = data?.audio_filename;
-    const userId = data?.user_id;
-    const title = data?.title || 'Audio Overview';
-    const dialogue = data?.dialogue || [];
-
-    const handleDownload = async () => {
-        setDownloading(true);
-        try {
-            const blob = await downloadPodcast(materialId);
-            downloadBlob(blob, `${title.replace(/\s+/g, '_')}.wav`);
-        } catch (error) {
-            console.error('Failed to download audio:', error);
-        } finally {
-            setDownloading(false);
-        }
-    };
-
-    const audioUrl = (audioFilename && userId) ? `${apiConfig.baseUrl}/podcast/audio/${encodeURIComponent(userId)}/${encodeURIComponent(audioFilename)}` : null;
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const togglePlay = () => {
-        if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
-        }
-    };
-
-    const handleTimeUpdate = () => {
-        if (audioRef.current) {
-            const time = audioRef.current.currentTime;
-            setCurrentTime(time);
-
-            // Find active caption based on current time
-            const activeIndex = dialogue.findIndex(
-                (segment) => time >= segment.start_time && time < segment.end_time
-            );
-
-            if (activeIndex !== activeCaptionIndex) {
-                setActiveCaptionIndex(activeIndex);
-
-                // Auto-scroll to active caption
-                if (activeIndex >= 0 && captionRefs.current[activeIndex] && captionContainerRef.current) {
-                    const container = captionContainerRef.current;
-                    const caption = captionRefs.current[activeIndex];
-                    const containerRect = container.getBoundingClientRect();
-                    const captionRect = caption.getBoundingClientRect();
-
-                    // Check if caption is not fully visible
-                    if (captionRect.top < containerRect.top || captionRect.bottom > containerRect.bottom) {
-                        caption.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            }
-        }
-    };
-
-    const handleLoadedMetadata = () => {
-        if (audioRef.current) {
-            setDuration(audioRef.current.duration);
-        }
-    };
-
-    const handleSeek = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        const newTime = percent * duration;
-        if (audioRef.current) {
-            audioRef.current.currentTime = newTime;
-            setCurrentTime(newTime);
-        }
-    };
-
-    const seekToCaption = (startTime) => {
-        if (audioRef.current) {
-            audioRef.current.currentTime = startTime;
-            setCurrentTime(startTime);
-            if (!isPlaying) {
-                audioRef.current.play();
-                setIsPlaying(true);
-            }
-        }
-    };
-
-    const skip = (seconds) => {
-        if (audioRef.current) {
-            audioRef.current.currentTime = Math.max(0, Math.min(duration, audioRef.current.currentTime + seconds));
-        }
-    };
-
-    const cycleSpeed = () => {
-        const speeds = [1, 1.5, 2];
-        const nextIndex = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
-        const newSpeed = speeds[nextIndex];
-        setPlaybackSpeed(newSpeed);
-        if (audioRef.current) {
-            audioRef.current.playbackRate = newSpeed;
-        }
-    };
-
-    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-    if (!audioUrl) {
-        return (
-            <div className="flex items-center justify-center h-40 text-text-muted glass rounded-xl">
-                <p>Unable to load audio</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6 animate-fade-in mb-2 mt-4 px-1">
-            {/* Hidden audio element */}
-            <audio
-                ref={audioRef}
-                src={audioUrl}
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-            />
-
-            {/* Premium Player Card */}
-            <div className="bg-gradient-to-br from-surface-raised via-surface to-surface-overlay rounded-[2rem] p-6 shadow-2xl border border-border/40 relative overflow-hidden backdrop-blur-xl">
-                {/* Decorative glow */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none" />
-
-                <div className="relative z-10 space-y-8">
-                    {/* Header line */}
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-widest">Audio Deep Dive</span>
-                                {isPlaying && (
-                                    <span className="flex items-end gap-0.5 h-3">
-                                        <span className="w-1 bg-accent/60 h-1/2 animate-[bounce_1s_infinite_0ms]" />
-                                        <span className="w-1 bg-accent/60 h-full animate-[bounce_1s_infinite_200ms]" />
-                                        <span className="w-1 bg-accent/60 h-3/4 animate-[bounce_1s_infinite_400ms]" />
-                                    </span>
-                                )}
-                            </div>
-                            <h3 className="text-xl font-bold text-text-primary leading-tight">{title}</h3>
-                            <p className="text-sm text-text-secondary mt-1 tracking-wide">{dialogue.length} segments ready</p>
-                        </div>
-                        <button
-                            onClick={handleDownload}
-                            disabled={downloading}
-                            className="btn-secondary text-xs flex items-center gap-1.5 rounded-full px-4 py-2 hover:shadow-md transition-all border-border bg-surface/50 backdrop-blur-sm"
-                            title="Download Audio (.wav)"
-                        >
-                            {downloading ? (
-                                <div className="loading-spinner w-3 h-3" />
-                            ) : (
-                                <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                            )}
-                            <span className="font-medium">Get Audio</span>
-                        </button>
-                    </div>
-
-                    {/* Timeline Controls */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <span className="text-xs font-mono text-text-secondary w-10 text-right">{formatTime(currentTime)}</span>
-
-                            <div
-                                className="flex-1 h-2 bg-surface-overlay/80 rounded-full cursor-pointer relative group flex items-center shadow-inner"
-                                onClick={handleSeek}
-                            >
-                                <div
-                                    className="absolute left-0 h-full bg-gradient-to-r from-accent to-purple-500 rounded-full pointer-events-none"
-                                    style={{ width: `${progress}%` }}
-                                />
-                                {/* Scrubber dot */}
-                                <div
-                                    className="absolute w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity scale-75 group-hover:scale-100 duration-200"
-                                    style={{ left: `${progress}%` }}
-                                />
-                            </div>
-
-                            <span className="text-xs font-mono text-text-secondary w-10">{formatTime(duration)}</span>
-                        </div>
-
-                        {/* Central Playback Controls */}
-                        <div className="flex items-center justify-center gap-6">
-                            <button
-                                onClick={cycleSpeed}
-                                className="w-10 h-10 flex items-center justify-center text-xs font-bold text-text-secondary hover:text-accent hover:bg-accent/10 rounded-full transition-all"
-                                title="Playback Speed"
-                            >
-                                {playbackSpeed}x
-                            </button>
-
-                            <button
-                                onClick={() => skip(-10)}
-                                className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded-full transition-all"
-                                title="Rewind 10 seconds"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
-                                </svg>
-                            </button>
-
-                            <button
-                                onClick={togglePlay}
-                                className="w-16 h-16 rounded-full bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center hover:from-accent-light hover:to-purple-500 transition-all shadow-lg hover:shadow-accent/30 hover:scale-105 transform duration-300"
-                            >
-                                {isPlaying ? (
-                                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={() => skip(10)}
-                                className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded-full transition-all"
-                                title="Forward 10 seconds"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
-                                </svg>
-                            </button>
-
-                            {/* Empty div for balance if needed, or an options button */}
-                            <div className="w-10" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Captions Section */}
-            {dialogue.length > 0 && (
-                <div className="space-y-3 mt-8">
-                    <div className="flex items-center gap-2 pl-2">
-                        <div className="w-6 h-6 rounded-full bg-surface-overlay flex items-center justify-center">
-                            <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                            </svg>
-                        </div>
-                        <h4 className="text-sm font-semibold text-text-primary font-mono tracking-tight uppercase">Interactive Transcript</h4>
-                    </div>
-
-                    <div
-                        ref={captionContainerRef}
-                        className="bg-surface/30 border border-border/30 rounded-2xl p-3 max-h-[300px] overflow-y-auto space-y-2 custom-scrollbar shadow-inner backdrop-blur-sm"
-                    >
-                        {dialogue.map((segment, index) => {
-                            const isActive = index === activeCaptionIndex;
-                            const isHost = segment.speaker === 'host';
-
-                            return (
-                                <div
-                                    key={index}
-                                    ref={(el) => (captionRefs.current[index] = el)}
-                                    onClick={() => seekToCaption(segment.start_time)}
-                                    className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ease-out border ${isActive
-                                        ? 'bg-gradient-to-r from-accent/15 to-transparent border-accent/40 shadow-sm translate-x-1'
-                                        : 'bg-transparent border-transparent hover:bg-surface/50 hover:border-border/50'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between gap-3 mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${isHost ? 'bg-blue-500' : 'bg-purple-500'} ${isActive ? 'animate-pulse' : ''}`} />
-                                            <span className={`text-xs font-bold uppercase tracking-wider ${isHost ? 'text-blue-400' : 'text-purple-400'}`}>
-                                                {isHost ? 'Host' : 'Guest'}
-                                            </span>
-                                        </div>
-                                        <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${isActive ? 'bg-accent/20 text-accent-light' : 'bg-surface-overlay text-text-muted'}`}>
-                                            {formatTime(segment.start_time)}
-                                        </span>
-                                    </div>
-
-                                    <p className={`text-sm leading-relaxed pl-4 border-l-2 transition-colors duration-300 ${isActive ? 'text-text-primary border-accent/50' : 'text-text-secondary border-surface-overlay'}`}>
-                                        {segment.text}
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <p className="text-xs text-text-muted text-center pt-2 italic opacity-60">
-                        Select any segment to jump to that moment
-                    </p>
-                </div>
-            )}
-        </div>
     );
 }
 

@@ -317,8 +317,7 @@ async def download_generated_file(
 ):
     """Download a generated file with token-based auth.
 
-    Uses the same file token system as podcast downloads.
-    Validates that the token's user matches the requested user_id.
+    Uses signed file token auth to validate that the token's user matches the requested user_id.
     """
     # Verify the file token and get the token's user_id
     token_data = await require_file_token(token)

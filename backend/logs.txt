@@ -302,3 +302,121 @@
 2026-02-27 20:27:45,591 performance INFO request_performance
 2026-02-27 20:27:45,592 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.02s [cf18edbb]
 2026-02-27 20:27:45,614 main INFO GET /materials 200 0.01s [c46e9e2e]
+2026-02-27 20:38:59,362 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:38:59,363 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:38:59,462 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
+2026-02-27 20:38:59,463 main INFO Background job processor stopped.
+2026-02-27 20:38:59,467 app.db.prisma_client INFO Prisma client disconnected from database
+2026-02-27 20:40:00,435 app.db.prisma_client INFO Prisma client connected to database
+2026-02-27 20:40:00,436 main INFO Warming up embedding model (running in thread pool)…
+2026-02-27 20:40:00,593 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-02-27 20:40:00,596 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-02-27 20:40:00,961 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-27 20:40:02,501 main INFO Preloading reranker model (running in thread pool)…
+2026-02-27 20:40:05,835 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-27 20:40:09,276 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-02-27 20:40:09,276 app.services.rag.reranker INFO Reranker loaded successfully in 3.58s
+2026-02-27 20:40:09,277 main INFO Reranker preloaded.
+2026-02-27 20:40:09,278 main INFO Background job processor task created.
+2026-02-27 20:40:09,278 main INFO Ensuring sandbox packages are installed…
+2026-02-27 20:40:10,348 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-02-27 20:40:10,352 main INFO Output directories ensured.
+2026-02-27 20:40:10,353 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-27 20:40:10,363 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:40:45,555 main INFO POST /auth/refresh 200 0.03s [a4d26089]
+2026-02-27 20:41:00,010 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:41:00,010 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:41:00,110 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
+2026-02-27 20:41:00,110 main INFO Background job processor stopped.
+2026-02-27 20:41:00,113 app.db.prisma_client INFO Prisma client disconnected from database
+2026-02-27 20:41:04,700 app.db.prisma_client INFO Prisma client connected to database
+2026-02-27 20:41:04,701 main INFO Warming up embedding model (running in thread pool)…
+2026-02-27 20:41:04,844 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-02-27 20:41:04,846 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-02-27 20:41:05,174 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-27 20:41:06,611 main INFO Preloading reranker model (running in thread pool)…
+2026-02-27 20:41:09,630 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-27 20:41:12,943 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-02-27 20:41:12,944 app.services.rag.reranker INFO Reranker loaded successfully in 3.45s
+2026-02-27 20:41:12,944 main INFO Reranker preloaded.
+2026-02-27 20:41:12,945 main INFO Background job processor task created.
+2026-02-27 20:41:12,946 main INFO Ensuring sandbox packages are installed…
+2026-02-27 20:41:13,959 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-02-27 20:41:13,960 main INFO Output directories ensured.
+2026-02-27 20:41:13,960 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-27 20:41:13,970 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:41:14,050 performance INFO request_performance
+2026-02-27 20:41:14,050 main INFO GET /notebooks/2bbb6a00-a39f-4c5b-b195-9dd0d18bc32b/content 200 0.08s [af183a05]
+2026-02-27 20:45:04,394 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:45:04,395 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:45:04,495 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
+2026-02-27 20:45:04,495 main INFO Background job processor stopped.
+2026-02-27 20:45:04,498 app.db.prisma_client INFO Prisma client disconnected from database
+2026-02-27 20:45:09,090 app.db.prisma_client INFO Prisma client connected to database
+2026-02-27 20:45:09,091 main INFO Warming up embedding model (running in thread pool)…
+2026-02-27 20:45:09,292 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-02-27 20:45:09,294 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-02-27 20:45:09,748 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-27 20:45:11,191 main INFO Preloading reranker model (running in thread pool)…
+2026-02-27 20:45:14,152 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-27 20:45:17,507 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-02-27 20:45:17,507 app.services.rag.reranker INFO Reranker loaded successfully in 3.49s
+2026-02-27 20:45:17,507 main INFO Reranker preloaded.
+2026-02-27 20:45:17,508 main INFO Background job processor task created.
+2026-02-27 20:45:17,509 main INFO Ensuring sandbox packages are installed…
+2026-02-27 20:45:18,530 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-02-27 20:45:18,532 main INFO Output directories ensured.
+2026-02-27 20:45:18,532 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-27 20:45:18,545 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:45:57,872 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:45:57,873 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:45:57,973 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
+2026-02-27 20:45:57,974 main INFO Background job processor stopped.
+2026-02-27 20:45:57,977 app.db.prisma_client INFO Prisma client disconnected from database
+2026-02-27 20:46:02,557 app.db.prisma_client INFO Prisma client connected to database
+2026-02-27 20:46:02,557 main INFO Warming up embedding model (running in thread pool)…
+2026-02-27 20:46:02,697 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-02-27 20:46:02,699 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-02-27 20:46:02,993 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-27 20:46:04,417 main INFO Preloading reranker model (running in thread pool)…
+2026-02-27 20:46:07,568 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-27 20:46:11,584 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-02-27 20:46:11,585 app.services.rag.reranker INFO Reranker loaded successfully in 4.16s
+2026-02-27 20:46:11,585 main INFO Reranker preloaded.
+2026-02-27 20:46:11,586 main INFO Background job processor task created.
+2026-02-27 20:46:11,587 main INFO Ensuring sandbox packages are installed…
+2026-02-27 20:46:12,616 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-02-27 20:46:12,617 main INFO Output directories ensured.
+2026-02-27 20:46:12,617 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-27 20:46:12,625 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:46:39,904 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe disconnected
+2026-02-27 20:46:39,904 app.services.ws_manager INFO WS disconnect: user=ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe  remaining=0
+2026-02-27 20:46:40,004 app.services.worker INFO Worker shutdown signal sent — waiting up to 30s for in-flight jobs
+2026-02-27 20:46:40,004 main INFO Background job processor stopped.
+2026-02-27 20:46:40,043 app.db.prisma_client INFO Prisma client disconnected from database
+2026-02-27 20:46:44,374 app.db.prisma_client INFO Prisma client connected to database
+2026-02-27 20:46:44,374 main INFO Warming up embedding model (running in thread pool)…
+2026-02-27 20:46:44,504 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-02-27 20:46:44,507 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-02-27 20:46:44,791 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-02-27 20:46:46,230 main INFO Preloading reranker model (running in thread pool)…
+2026-02-27 20:46:49,151 app.services.rag.reranker INFO Loading reranker: BAAI/bge-reranker-large on cuda
+2026-02-27 20:46:52,587 app.services.rag.reranker INFO Reranker warm-up forward pass complete
+2026-02-27 20:46:52,588 app.services.rag.reranker INFO Reranker loaded successfully in 3.56s
+2026-02-27 20:46:52,588 main INFO Reranker preloaded.
+2026-02-27 20:46:52,589 main INFO Background job processor task created.
+2026-02-27 20:46:52,589 main INFO Ensuring sandbox packages are installed…
+2026-02-27 20:46:53,623 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-02-27 20:46:53,624 main INFO Output directories ensured.
+2026-02-27 20:46:53,624 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-02-27 20:46:53,632 app.routes.websocket_router INFO WS /ws/jobs/ddb53204-9702-4dcf-b2c7-4ab0f0fd2dfe connected
+2026-02-27 20:53:45,594 main INFO POST /auth/refresh 200 0.03s [7d566de0]
+2026-02-27 21:06:46,057 main INFO POST /auth/refresh 200 0.04s [d07973ba]
+2026-02-27 21:19:47,049 main INFO POST /auth/refresh 200 0.03s [526315d9]
+2026-02-27 21:32:48,050 main INFO POST /auth/refresh 200 0.03s [1c93d7c8]
+2026-02-27 21:45:49,051 main INFO POST /auth/refresh 200 0.03s [2053260d]
+2026-02-27 21:58:50,029 main INFO POST /auth/refresh 200 0.01s [2c7d0c62]
+2026-02-27 22:11:51,051 main INFO POST /auth/refresh 200 0.04s [df31f02d]
+2026-02-27 22:24:52,052 main INFO POST /auth/refresh 200 0.01s [8424dd9b]
+2026-02-27 22:37:53,031 main INFO POST /auth/refresh 200 0.01s [aead0b16]
+2026-02-27 22:50:54,078 main INFO POST /auth/refresh 200 0.06s [26c723b8]

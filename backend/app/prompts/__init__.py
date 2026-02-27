@@ -31,10 +31,6 @@ def _render(filename: str, subs: Dict[str, str]) -> str:
 # ── Public helpers ────────────────────────────────────────
 
 
-def get_podcast_prompt(material_text: str) -> str:
-    return _render("podcast_prompt.txt", {"{{MATERIAL_TEXT}}": material_text})
-
-
 def get_flashcard_prompt(content_text: str, card_count: int = None, difficulty: str = "Medium", instructions: str = None) -> str:
     instructions_text = f"\nAdditional Instructions: {instructions}" if instructions else ""
     count_instruction = f"Generate {card_count} flashcards" if card_count else "Aim for 5-10 high-quality cards depending on the text length."

@@ -6,7 +6,7 @@ counters.
 
 Limits:
 - Chat endpoints: 30 requests per minute per user
-- Generation endpoints (flashcard, quiz, PPT, podcast): 5 requests per minute per user
+- Generation endpoints (flashcard, quiz, PPT): 5 requests per minute per user
 - Auth endpoints (login/signup): 10 requests per minute per IP (brute-force protection)
 """
 
@@ -224,7 +224,7 @@ async def rate_limit_middleware(request: Request, call_next):
         endpoint_type = "auth"
     elif "/chat" in request.url.path:
         endpoint_type = "chat"
-    elif any(x in request.url.path for x in ["/flashcard", "/quiz", "/ppt", "/podcast"]):
+    elif any(x in request.url.path for x in ["/flashcard", "/quiz", "/ppt"]):
         endpoint_type = "generation"
     
     # Only apply rate limiting to known endpoints

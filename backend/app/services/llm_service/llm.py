@@ -182,7 +182,7 @@ def get_llm(
     # Tiered temperature defaults
     _TEMP_MAP = {
         "chat": settings.LLM_TEMPERATURE_CHAT,          # 0.2 — factual RAG
-        "creative": settings.LLM_TEMPERATURE_CREATIVE,   # 0.7 — podcast, brainstorm
+        "creative": settings.LLM_TEMPERATURE_CREATIVE,   # 0.7 — creative, brainstorm
         "structured": settings.LLM_TEMPERATURE_STRUCTURED, # 0.1 — JSON output
         "code": settings.LLM_TEMPERATURE_CODE,           # 0.1 — python_tool
     }

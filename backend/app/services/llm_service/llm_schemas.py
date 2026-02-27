@@ -62,18 +62,6 @@ class FlashcardOutput(BaseModel):
         return self
 
 
-# ── Podcast ───────────────────────────────────────────────
-
-class PodcastDialogueLine(BaseModel):
-    speaker: str
-    text: str
-
-
-class PodcastScriptOutput(BaseModel):
-    title: str
-    dialogue: List[PodcastDialogueLine] = Field(min_length=1)
-
-
 # ── Presentation ─────────────────────────────────────────
 
 

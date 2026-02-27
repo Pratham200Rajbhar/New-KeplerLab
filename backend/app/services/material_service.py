@@ -738,7 +738,7 @@ async def get_material_text(material_id: str, user_id: str) -> Optional[str]:
     """Retrieve full text for a material from file storage.
     
     Use this helper when you need the full text for generation tasks
-    (PPT, podcast, flashcards, quiz, etc.).
+    (PPT, flashcards, quiz, etc.).
     
     Args:
         material_id: Material ID

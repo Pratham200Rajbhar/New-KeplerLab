@@ -80,8 +80,6 @@ Thumbs.db
 !/backend/output/html/.gitkeep
 /backend/output/slide_images/*
 !/backend/output/slide_images/.gitkeep
-/backend/output/podcasts/*
-!/backend/output/podcasts/.gitkeep
 /backend/output/videos/*
 !/backend/output/videos/.gitkeep
 /backend/*.log

@@ -36,7 +36,6 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 25
 
     # ── Output Directories ────────────────────────────────
-    PODCAST_OUTPUT_DIR: str = "output/podcasts"
     PRESENTATIONS_OUTPUT_DIR: str = "output/presentations"
     GENERATED_OUTPUT_DIR: str = "output/generated"
     TEMPLATES_DIR: str = "./templates"
@@ -159,7 +158,7 @@ class Settings(BaseSettings):
         """Resolve relative paths to absolute & cross-validate provider keys."""
         # Resolve relative paths against project root
         for attr in ("CHROMA_DIR", "UPLOAD_DIR", "MODELS_DIR", "TEMPLATES_DIR",
-                     "PODCAST_OUTPUT_DIR", "PRESENTATIONS_OUTPUT_DIR", "GENERATED_OUTPUT_DIR"):
+                     "PRESENTATIONS_OUTPUT_DIR", "GENERATED_OUTPUT_DIR"):
             val = getattr(self, attr)
             if val and not os.path.isabs(val):
                 object.__setattr__(self, attr, os.path.join(_PROJECT_ROOT, val))

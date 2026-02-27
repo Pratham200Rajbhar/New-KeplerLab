@@ -40,7 +40,6 @@ from app.db.prisma_client import connect_db, disconnect_db
 from app.routes.auth import router as auth_router
 from app.routes.notebook import router as notebook_router
 from app.routes.upload import router as upload_router
-from app.routes.podcast_router import router as podcast_router
 from app.routes.flashcard import router as flashcard_router
 from app.routes.quiz import router as quiz_router
 from app.routes.chat import router as chat_router
@@ -118,7 +117,7 @@ async def lifespan(app: FastAPI):
         logger.warning("Sandbox temp cleanup failed (non-fatal): %s", exc)
 
     # 5. Create output directories (use resolved absolute paths from settings)
-    for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PODCAST_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers")]:
+    for _dir in [settings.GENERATED_OUTPUT_DIR, settings.PRESENTATIONS_OUTPUT_DIR, os.path.join(settings.GENERATED_OUTPUT_DIR, "..", "explainers")]:
         os.makedirs(_dir, exist_ok=True)
     logger.info("Output directories ensured.")
 
@@ -245,7 +244,6 @@ app.include_router(models_router, tags=["models"])
 # Protected
 app.include_router(notebook_router, tags=["notebooks"])
 app.include_router(upload_router, tags=["upload"])
-app.include_router(podcast_router, tags=["podcast"])
 app.include_router(flashcard_router, tags=["flashcard"])
 app.include_router(quiz_router, tags=["quiz"])
 app.include_router(chat_router, tags=["chat"])

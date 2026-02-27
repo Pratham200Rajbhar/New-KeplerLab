@@ -170,7 +170,7 @@ async def performance_monitoring_middleware(request: Request, call_next):
     user_id = getattr(request.state, "user_id", None)
     
     # Log metrics for monitored endpoints
-    if any(x in request.url.path for x in ["/chat", "/flashcard", "/quiz", "/ppt", "/podcast", "/notebook"]):
+    if any(x in request.url.path for x in ["/chat", "/flashcard", "/quiz", "/ppt", "/notebook"]):
         log_performance_metrics(
             endpoint=request.url.path,
             method=request.method,

@@ -62,7 +62,7 @@ _INTENT_RULES = [
     ], 0.90),
     # CONTENT_GENERATION — explicit creation requests only
     (CONTENT_GENERATION, [
-        r"\b(make|create|generate|build|produce)\s+(me\s+)?(a\s+|some\s+|the\s+)?(quiz|flashcards?|flash\s*cards?|presentation|slides|ppt|podcast)\b",
+        r"\b(make|create|generate|build|produce)\s+(me\s+)?(a\s+|some\s+|the\s+)?(quiz|flashcards?|flash\s*cards?|presentation|slides|ppt)\b",
         r"\b(quiz|flashcards?|flash\s*cards?)\s+(me|from|on|about)\b",
     ], 0.92),
     # QUESTION — default fallback (always matches)
@@ -86,7 +86,7 @@ async def _llm_classify(message: str) -> Dict[str, Any]:
         f"- RESEARCH: asks to search the web or research external topics\n"
         f"- CODE_EXECUTION: asks to write or run code\n"
         f"- FILE_GENERATION: asks to create/export a file (CSV, Word, Excel, PDF, chart, diagram)\n"
-        f"- CONTENT_GENERATION: asks to create quiz, flashcards, presentation, or podcast\n"
+        f"- CONTENT_GENERATION: asks to create quiz, flashcards, or presentation\n"
         f"\nMessage: \"{message}\"\n"
         f"Reply with ONLY the intent name, nothing else."
     )
