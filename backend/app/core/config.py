@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str = ""
     MYOPENLM_MODEL: str = "default"
     MYOPENLM_API_URL: str = "https://openlmfallback-0adc8b183b77.herokuapp.com/api/chat"
-    LLM_TIMEOUT: int = 120
+    LLM_TIMEOUT: Optional[int] = None  # None = no timeout (LLM calls can take minutes for large outputs)
     
     # ── LLM Generation Control ───────────────────────────
     LLM_TEMPERATURE_STRUCTURED: float = 0.1

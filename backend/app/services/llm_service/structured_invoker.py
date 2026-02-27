@@ -13,12 +13,10 @@ from __future__ import annotations
 import json
 import logging
 import re
-import time
 from typing import Any, Dict, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from app.core.config import settings
 from app.services.llm_service.llm import get_llm_structured
 
 logger = logging.getLogger(__name__)
@@ -192,16 +190,8 @@ def invoke_structured(
     last_error: Optional[Exception] = None
     last_response: str = ""
     
-    start_time = time.time()
-    effective_timeout = timeout or settings.LLM_TIMEOUT
-    
     for attempt in range(1 + max_retries):
         try:
-            # Check timeout
-            if time.time() - start_time > effective_timeout:
-                logger.error(f"Structured invocation timeout after {effective_timeout}s")
-                raise TimeoutError(f"LLM invocation exceeded {effective_timeout}s timeout")
-            
             # Build prompt
             if attempt > 0:
                 effective_prompt = _build_retry_prompt(prompt, last_response, last_error)
@@ -309,15 +299,8 @@ async def async_invoke_structured(
     last_error: Optional[Exception] = None
     last_response: str = ""
     
-    start_time = time.time()
-    effective_timeout = timeout or settings.LLM_TIMEOUT
-    
     for attempt in range(1 + max_retries):
         try:
-            if time.time() - start_time > effective_timeout:
-                logger.error(f"Async structured invocation timeout after {effective_timeout}s")
-                raise TimeoutError(f"LLM invocation exceeded {effective_timeout}s timeout")
-            
             if attempt > 0:
                 effective_prompt = _build_retry_prompt(prompt, last_response, last_error)
                 logger.info(f"Async retry attempt {attempt}/{max_retries}")

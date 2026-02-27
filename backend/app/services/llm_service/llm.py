@@ -65,8 +65,10 @@ def _common_kwargs(
     """Shared kwargs for all providers with explicit generation control."""
     kwargs = {
         "temperature": temperature,
-        "timeout": settings.LLM_TIMEOUT,
     }
+    # Only set timeout if explicitly configured; None = no timeout
+    if settings.LLM_TIMEOUT is not None:
+        kwargs["timeout"] = settings.LLM_TIMEOUT
     
     if max_tokens:
         kwargs["max_tokens"] = max_tokens
@@ -299,7 +301,7 @@ class MyOpenLM(LLM):
                     self.api_url,
                     json=self._build_payload(prompt),
                     headers={"Content-Type": "application/json"},
-                    timeout=settings.LLM_TIMEOUT,
+                    timeout=settings.LLM_TIMEOUT,  # None = no timeout
                 )
                 resp.raise_for_status()
                 return resp.json()["data"]["response"]
@@ -337,7 +339,7 @@ class MyOpenLM(LLM):
 
         for attempt in range(self._MAX_RETRIES):
             try:
-                async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT) as client:
+                async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT) as client:  # None = no timeout
                     resp = await client.post(
                         self.api_url,
                         json=self._build_payload(prompt),

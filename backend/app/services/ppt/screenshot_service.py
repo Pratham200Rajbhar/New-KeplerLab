@@ -1,7 +1,11 @@
 """Playwright-based screenshot service for HTML presentations.
 
-Takes full-page screenshots of each slide in the generated presentation
-and saves them as PNG images with proper naming and organization.
+Takes 16:9 widescreen screenshots (1920×1080) of each slide in the
+generated HTML presentation and saves them as PNG images.
+
+Slide detection strategy:
+  1. Try to find `.slide` elements and screenshot each one via clip.
+  2. Fall back to scroll-based capture if no `.slide` elements found.
 """
 
 from __future__ import annotations
@@ -18,173 +22,264 @@ from app.core.config import settings
 
 logger = logging.getLogger("ppt.screenshots")
 
+# Fixed 16:9 widescreen dimensions
+SLIDE_WIDTH = 1920
+SLIDE_HEIGHT = 1080
+
 
 class ScreenshotService:
-    """Service for taking screenshots of HTML presentation slides."""
-    
+    """Service for taking 16:9 screenshots of HTML presentation slides."""
+
     def __init__(self):
         self.output_dir = settings.PRESENTATIONS_OUTPUT_DIR
         os.makedirs(self.output_dir, exist_ok=True)
-    
+
     async def capture_slides(
-        self, 
-        html_content: str, 
+        self,
+        html_content: str,
         user_id: str,
         presentation_id: str,
-        slide_count: int
+        slide_count: int,
     ) -> List[Dict[str, str]]:
-        """
-        Take screenshots of each slide and return metadata.
-        
+        """Take 1920×1080 screenshots of each slide and return metadata.
+
         Args:
-            html_content: Complete HTML presentation
-            user_id: User ID for folder organization
-            presentation_id: Unique ID for this presentation
-            slide_count: Number of slides to capture
-            
+            html_content: Complete HTML presentation (fixed 1920×1080 slides).
+            user_id: User ID for folder organization.
+            presentation_id: Unique ID for this presentation.
+            slide_count: Number of slides to capture.
+
         Returns:
-            List of slide metadata with file paths and URLs
+            List of slide metadata dicts with file paths and URLs.
         """
+        t0 = time.time()
         logger.info(
-            "Starting slide capture | user=%s | presentation_id=%s | slides=%d",
-            user_id, presentation_id, slide_count
+            "Starting slide capture | user=%s | presentation_id=%s | expected_slides=%d",
+            user_id,
+            presentation_id,
+            slide_count,
         )
-        
-        # Create user directory
-        user_dir = os.path.join(self.output_dir, user_id)
-        os.makedirs(user_dir, exist_ok=True)
-        
-        # Create presentation directory
-        ppt_dir = os.path.join(user_dir, presentation_id)
+
+        # Create output directories
+        ppt_dir = os.path.join(self.output_dir, user_id, presentation_id)
         os.makedirs(ppt_dir, exist_ok=True)
-        
-        slides_data = []
-        
+
+        slides_data: List[Dict[str, str]] = []
+
         try:
             async with async_playwright() as p:
-                # Launch browser with error handling
                 browser = await p.chromium.launch(
                     headless=True,
                     args=[
-                        '--disable-web-security',
-                        '--disable-features=VizDisplayCompositor'
-                    ]
+                        "--disable-web-security",
+                        "--disable-features=VizDisplayCompositor",
+                        "--no-sandbox",
+                        "--disable-gpu",
+                        "--font-render-hinting=none",
+                    ],
                 )
                 logger.debug("Browser launched successfully")
-                
-                # Create context with proper viewport
+
+                # Viewport MUST match our slide dimensions exactly
                 context = await browser.new_context(
-                    viewport={"width": 1920, "height": 1080},
-                    device_scale_factor=1
+                    viewport={"width": SLIDE_WIDTH, "height": SLIDE_HEIGHT},
+                    device_scale_factor=1,
                 )
-                
+
                 page = await context.new_page()
-                
+
                 # Write HTML to temp file and load it
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".html", delete=False, encoding="utf-8"
+                ) as f:
                     f.write(html_content)
                     temp_html_path = f.name
-                
+
                 try:
-                    await page.goto(f"file://{temp_html_path}", wait_until="networkidle")
+                    await page.goto(
+                        f"file://{temp_html_path}",
+                        wait_until="networkidle",
+                        timeout=30000,
+                    )
                     logger.debug("Page loaded successfully")
-                    
-                    # Wait for any CSS animations to settle
-                    await page.wait_for_timeout(2000)
-                    
-                    # Take screenshots of each slide
-                    for slide_num in range(1, slide_count + 1):
+
+                    # Wait for CSS rendering (gradients, blur, fonts)
+                    await page.wait_for_timeout(3000)
+
+                    # ── Detect actual slide elements ──────────────
+                    actual_slide_count = await page.evaluate(
+                        "document.querySelectorAll('.slide').length"
+                    )
+                    target_count = actual_slide_count if actual_slide_count > 0 else slide_count
+                    logger.info(
+                        "Detected %d .slide elements (expected %d), capturing %d",
+                        actual_slide_count,
+                        slide_count,
+                        target_count,
+                    )
+
+                    # ── Capture each slide ────────────────────────
+                    for slide_num in range(1, target_count + 1):
                         slide_filename = f"slide_{slide_num}.png"
                         slide_path = os.path.join(ppt_dir, slide_filename)
-                        
+
                         try:
-                            # Scroll to the specific slide
-                            # Each slide is 100vh, so slide N starts at (N-1) * viewport_height
-                            scroll_position = (slide_num - 1) * 1080
-                            await page.evaluate(f"window.scrollTo(0, {scroll_position})")
-                            
-                            # Wait for scroll to complete
-                            await page.wait_for_timeout(500)
-                            
-                            # Take screenshot of the current viewport (should show the slide)
-                            # Fixed: Removed quality parameter for PNG format
-                            await page.screenshot(
-                                path=slide_path,
-                                full_page=False,  # Just the viewport
-                                type='png'
-                                # Note: quality parameter is not supported for PNG format in Playwright
-                                # Use type='jpeg' with quality parameter if compression is needed
-                            )
-                            
-                            # Verify screenshot was created and has reasonable size
+                            if actual_slide_count > 0:
+                                # Strategy A: clip-based capture using element position
+                                # This is more reliable than scroll-based capture
+                                bbox = await page.evaluate(
+                                    f"""
+                                    (() => {{
+                                        const el = document.querySelectorAll('.slide')[{slide_num - 1}];
+                                        if (!el) return null;
+                                        const r = el.getBoundingClientRect();
+                                        return {{ x: r.x, y: r.y + window.scrollY, width: r.width, height: r.height }};
+                                    }})()
+                                    """
+                                )
+
+                                if bbox:
+                                    # Scroll the slide into view first
+                                    await page.evaluate(
+                                        f"document.querySelectorAll('.slide')[{slide_num - 1}].scrollIntoView({{behavior: 'instant', block: 'start'}})"
+                                    )
+                                    await page.wait_for_timeout(400)
+
+                                    # Capture the viewport (which should show exactly this slide)
+                                    await page.screenshot(
+                                        path=slide_path,
+                                        full_page=False,
+                                        type="png",
+                                        clip={
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": SLIDE_WIDTH,
+                                            "height": SLIDE_HEIGHT,
+                                        },
+                                    )
+                                else:
+                                    # Element not found — fall back to scroll
+                                    await self._scroll_and_capture(
+                                        page, slide_num, slide_path
+                                    )
+                            else:
+                                # Strategy B: scroll-based capture (fallback)
+                                await self._scroll_and_capture(
+                                    page, slide_num, slide_path
+                                )
+
+                            # Verify screenshot
                             if os.path.exists(slide_path):
                                 file_size = os.path.getsize(slide_path)
-                                if file_size < 1000:  # Less than 1KB is probably an error
-                                    logger.warning("Screenshot file is unusually small: %d bytes", file_size)
+                                if file_size < 1000:
+                                    logger.warning(
+                                        "Slide %d screenshot unusually small: %d bytes",
+                                        slide_num,
+                                        file_size,
+                                    )
                             else:
-                                raise Exception(f"Screenshot file was not created: {slide_path}")
-                            
-                            # Generate URL for the screenshot
-                            relative_path = f"{user_id}/{presentation_id}/{slide_filename}"
-                            slide_url = f"/presentation/slides/{relative_path}"
-                            
-                            slides_data.append({
-                                "slide_number": slide_num,
-                                "filename": slide_filename,
-                                "file_path": slide_path,
-                                "url": slide_url,
-                                "width": 1920,
-                                "height": 1080,
-                                "file_size": os.path.getsize(slide_path)
-                            })
-                            
-                            logger.debug("Captured slide %d/%d (size: %d bytes)", 
-                                       slide_num, slide_count, os.path.getsize(slide_path))
-                            
+                                raise FileNotFoundError(
+                                    f"Screenshot not created: {slide_path}"
+                                )
+
+                            relative_path = (
+                                f"{user_id}/{presentation_id}/{slide_filename}"
+                            )
+                            slides_data.append(
+                                {
+                                    "slide_number": slide_num,
+                                    "filename": slide_filename,
+                                    "file_path": slide_path,
+                                    "url": f"/presentation/slides/{relative_path}",
+                                    "width": SLIDE_WIDTH,
+                                    "height": SLIDE_HEIGHT,
+                                    "file_size": os.path.getsize(slide_path),
+                                }
+                            )
+
+                            logger.debug(
+                                "Captured slide %d/%d (size: %d bytes)",
+                                slide_num,
+                                target_count,
+                                os.path.getsize(slide_path),
+                            )
+
                         except Exception as slide_error:
-                            logger.error("Failed to capture slide %d: %s", slide_num, str(slide_error))
-                            # Continue with other slides even if one fails
+                            logger.error(
+                                "Failed to capture slide %d: %s",
+                                slide_num,
+                                str(slide_error),
+                            )
                             continue
-                    
+
                 finally:
-                    # Clean up temp file
                     if os.path.exists(temp_html_path):
                         os.unlink(temp_html_path)
-                
+
                 await browser.close()
-                
+
         except Exception as exc:
             logger.error(
                 "Screenshot capture FAILED | user=%s | presentation_id=%s | error=%s",
-                user_id, presentation_id, str(exc)
+                user_id,
+                presentation_id,
+                str(exc),
             )
             raise
-        
+
+        elapsed = time.time() - t0
         logger.info(
-            "Slide capture COMPLETED | user=%s | presentation_id=%s | captured=%d slides",
-            user_id, presentation_id, len(slides_data)
+            "Slide capture COMPLETED | user=%s | presentation_id=%s | captured=%d/%d slides | time=%.2fs",
+            user_id,
+            presentation_id,
+            len(slides_data),
+            target_count,
+            elapsed,
         )
-        
+
         return slides_data
+
+    async def _scroll_and_capture(
+        self,
+        page,
+        slide_num: int,
+        slide_path: str,
+    ) -> None:
+        """Fallback: scroll to Nth slide position and take a viewport screenshot."""
+        scroll_position = (slide_num - 1) * SLIDE_HEIGHT
+        await page.evaluate(f"window.scrollTo(0, {scroll_position})")
+        await page.wait_for_timeout(600)
+        await page.screenshot(
+            path=slide_path,
+            full_page=False,
+            type="png",
+            clip={
+                "x": 0,
+                "y": 0,
+                "width": SLIDE_WIDTH,
+                "height": SLIDE_HEIGHT,
+            },
+        )
 
 
 async def capture_presentation_slides(
     html_content: str,
-    user_id: str, 
+    user_id: str,
     presentation_id: str,
-    slide_count: int
+    slide_count: int,
 ) -> List[Dict[str, str]]:
-    """
-    Convenience function to capture slides using the ScreenshotService.
-    
+    """Convenience function to capture slides using the ScreenshotService.
+
     Args:
-        html_content: Complete HTML presentation
-        user_id: User ID for organization
-        presentation_id: Unique presentation identifier
-        slide_count: Number of slides expected
-        
+        html_content: Complete HTML presentation (1920×1080 slides).
+        user_id: User ID for organization.
+        presentation_id: Unique presentation identifier.
+        slide_count: Number of slides expected.
+
     Returns:
-        List of slide metadata
+        List of slide metadata.
     """
     service = ScreenshotService()
-    return await service.capture_slides(html_content, user_id, presentation_id, slide_count)
+    return await service.capture_slides(
+        html_content, user_id, presentation_id, slide_count
+    )

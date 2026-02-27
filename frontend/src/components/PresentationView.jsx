@@ -1,56 +1,122 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { apiConfig, getAccessToken } from '../api/config';
-import { jsPDF } from 'jspdf';
 import Modal from './Modal';
 
-// ─── Authenticated Image Fetcher ──────────────────────────────────────────────
+// Slide dimensions — must match backend SLIDE_WIDTH / SLIDE_HEIGHT
+const SLIDE_W = 1920;
+const SLIDE_H = 1080;
 
-function useSlideImages(slides) {
-    const [blobUrls, setBlobUrls] = useState(new Map());
-    const [errors, setErrors] = useState(new Set());
-    const fetchingRef = useRef(new Set());
-    const blobUrlsRef = useRef(blobUrls);
+// ─── Responsive scale hook ────────────────────────────────────────────────────
+// Watches a container element and returns the CSS scale factor needed to fit
+// a 1920×1080 slide inside it while preserving the 16:9 aspect ratio.
 
-    // Keep ref in sync with state
+function useSlideScale(containerRef) {
+    const [scale, setScale] = useState(1);
+
     useEffect(() => {
-        blobUrlsRef.current = blobUrls;
-    }, [blobUrls]);
+        const el = containerRef.current;
+        if (!el) return;
 
-    const fetchImage = useCallback(async (slide) => {
-        if (!slide?.url) return;
-        const key = String(slide.slide_number);
-        // Use ref to avoid stale closure — no dependency on blobUrls
-        if (blobUrlsRef.current.has(key) || fetchingRef.current.has(key)) return;
+        const update = () => {
+            const w = el.clientWidth  || el.offsetWidth  || SLIDE_W;
+            const h = el.clientHeight || el.offsetHeight || (w * 9 / 16);
+            const scaleW = w / SLIDE_W;
+            const scaleH = h / SLIDE_H;
+            setScale(Math.min(scaleW, scaleH));
+        };
 
-        fetchingRef.current.add(key);
-        try {
-            const token = getAccessToken();
-            if (!token) return;
-            const res = await fetch(`${apiConfig.baseUrl}${slide.url}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error(`${res.status}`);
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            setBlobUrls(prev => new Map(prev).set(key, url));
-        } catch {
-            setErrors(prev => new Set([...prev, slide.slide_number]));
-        } finally {
-            fetchingRef.current.delete(key);
-        }
-    }, []); // stable — no deps needed thanks to refs
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [containerRef]);
 
-    const getUrl = useCallback((slide) => {
-        if (!slide) return null;
-        return blobUrls.get(String(slide.slide_number)) || null;
-    }, [blobUrls]);
+    return scale;
+}
 
-    // Cleanup on unmount — use ref to get latest blob URLs
-    useEffect(() => () => {
-        blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-    }, []);
+// ─── Single slide rendered inside a scaled iframe ────────────────────────────
 
-    return { fetchImage, getUrl, errors };
+function SlideFrame({ slideHtml, label, scale, animClass = '' }) {
+    const iframeRef = useRef(null);
+
+    // srcdoc is the cleanest way to embed HTML without a URL.
+    // sandbox="allow-same-origin" keeps styles/layout but blocks scripts.
+    return (
+        <div
+            className={`pv-slide-canvas-wrap ${animClass}`}
+            style={{
+                width:  SLIDE_W * scale,
+                height: SLIDE_H * scale,
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: scale < 0.9 ? 8 : 0,
+                boxShadow: scale < 0.9 ? '0 4px 32px rgba(0,0,0,0.5)' : 'none',
+                background: '#000',
+            }}
+        >
+            <iframe
+                ref={iframeRef}
+                title={label}
+                srcDoc={slideHtml}
+                sandbox="allow-same-origin"
+                scrolling="no"
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width:  SLIDE_W,
+                    height: SLIDE_H,
+                    border: 'none',
+                    transformOrigin: 'top left',
+                    transform: `scale(${scale})`,
+                    display: 'block',
+                    background: 'transparent',
+                    pointerEvents: 'none',   // let the parent handle all clicks
+                }}
+            />
+        </div>
+    );
+}
+
+// ─── Thumbnail slide (smaller scale, lighter weight) ─────────────────────────
+
+function SlideThumbnail({ slideHtml, slideNumber, isActive, onClick }) {
+    const thumbScale = 200 / SLIDE_W;   // ~200px wide thumbnails
+    return (
+        <button
+            className={`pv-overview-item${isActive ? ' active' : ''}`}
+            onClick={onClick}
+            title={`Slide ${slideNumber}`}
+            style={{ width: 200, height: 200 * (SLIDE_H / SLIDE_W), background: 'transparent', padding: 0, border: 'none' }}
+        >
+            <div style={{
+                width: SLIDE_W * thumbScale,
+                height: SLIDE_H * thumbScale,
+                overflow: 'hidden',
+                position: 'relative',
+                pointerEvents: 'none',
+            }}>
+                <iframe
+                    title={`Thumb ${slideNumber}`}
+                    srcDoc={slideHtml}
+                    sandbox="allow-same-origin"
+                    scrolling="no"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: SLIDE_W,
+                        height: SLIDE_H,
+                        border: 'none',
+                        transformOrigin: 'top left',
+                        transform: `scale(${thumbScale})`,
+                        display: 'block',
+                        pointerEvents: 'none',
+                    }}
+                />
+            </div>
+            <div className="pv-overview-num">{slideNumber}</div>
+        </button>
+    );
 }
 
 // ─── Main Presentation Viewer ─────────────────────────────────────────────────
@@ -60,51 +126,43 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showOverview, setShowOverview] = useState(false);
     const [showDownload, setShowDownload] = useState(false);
-    const [slideDirection, setSlideDirection] = useState(''); // 'left' | 'right'
+    const [slideDirection, setSlideDirection] = useState('');
     const [animating, setAnimating] = useState(false);
     const containerRef = useRef(null);
+    const stageRef = useRef(null);
     const downloadRef = useRef(null);
 
     const title = data?.title || 'Presentation';
     const slideCount = data?.slide_count || 0;
     const theme = data?.theme || '';
-    const slides = data?.slides || [];
+    const slides = data?.slides || [];   // [{slide_number, slide_id, html}]
+    const fullHtml = data?.html || '';
 
-    const { fetchImage, getUrl, errors } = useSlideImages(slides);
+    // Calculate scale to fit 1920×1080 into the stage area
+    const scale = useSlideScale(stageRef);
 
-    // Preload current + neighbors
-    useEffect(() => {
-        if (!slides.length) return;
-        const toLoad = slides.slice(Math.max(0, current - 2), Math.min(slides.length, current + 3));
-        toLoad.forEach(fetchImage);
-    }, [slides, current, fetchImage]);
-
-    // Preload all thumbnails
-    useEffect(() => {
-        slides.forEach(fetchImage);
-    }, [slides, fetchImage]);
+    const currentSlide = slides[current - 1];
 
     const navigateTo = useCallback((num, dir = '') => {
         if (num < 1 || num > slideCount || animating) return;
         setSlideDirection(dir);
         setCurrent(num);
         setAnimating(true);
-        // tiny lock to prevent accidental double-clicks during CSS entrance
         setTimeout(() => setAnimating(false), 250);
     }, [slideCount, animating]);
 
-    const next = useCallback(() => navigateTo(current + 1, 'left'), [current, navigateTo]);
+    const next = useCallback(() => navigateTo(current + 1, 'left'),  [current, navigateTo]);
     const prev = useCallback(() => navigateTo(current - 1, 'right'), [current, navigateTo]);
 
-    // Keyboard nav
+    // Keyboard navigation
     useEffect(() => {
         const handler = (e) => {
             if (showOverview) return;
             switch (e.key) {
                 case 'ArrowRight': case ' ': e.preventDefault(); next(); break;
-                case 'ArrowLeft': e.preventDefault(); prev(); break;
-                case 'Home': e.preventDefault(); navigateTo(1); break;
-                case 'End': e.preventDefault(); navigateTo(slideCount); break;
+                case 'ArrowLeft':  e.preventDefault(); prev(); break;
+                case 'Home':       e.preventDefault(); navigateTo(1); break;
+                case 'End':        e.preventDefault(); navigateTo(slideCount); break;
                 case 'Escape':
                     if (isFullscreen) document.exitFullscreen();
                     setShowOverview(false);
@@ -117,7 +175,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
         return () => document.removeEventListener('keydown', handler);
     }, [next, prev, navigateTo, slideCount, isFullscreen, showOverview]);
 
-    // Close dropdown when clicking outside
+    // Close dropdown on outside click
     useEffect(() => {
         const handler = (e) => {
             if (downloadRef.current && !downloadRef.current.contains(e.target)) {
@@ -128,7 +186,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // Fullscreen sync
+    // Fullscreen
     const toggleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) {
             containerRef.current?.requestFullscreen();
@@ -143,11 +201,11 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
         return () => document.removeEventListener('fullscreenchange', handler);
     }, []);
 
-    // ── Download Handlers ──────────────────────────────────────────────────────
+    // ── Download handlers ──────────────────────────────────────────────────────
 
     const handleDownloadHTML = useCallback(() => {
-        if (!data?.html) return;
-        const blob = new Blob([data.html], { type: 'text/html' });
+        if (!fullHtml) return;
+        const blob = new Blob([fullHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -155,58 +213,39 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
         a.click();
         URL.revokeObjectURL(url);
         setShowDownload(false);
-    }, [data?.html, title]);
+    }, [fullHtml, title]);
 
-    const handleDownloadPDF = useCallback(async () => {
-        if (!slides.length) return;
-        setShowDownload(false);
-
-        // Build PDF using jsPDF — 16:9 landscape
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: [960, 540] });
-
-        for (let i = 0; i < slides.length; i++) {
-            const slide = slides[i];
-            let url = getUrl(slide);
-
-            // Ensure the slide is fetched
-            if (!url) {
-                await fetchImage(slide);
-                // wait a tick
-                await new Promise(r => setTimeout(r, 200));
-                url = getUrl(slide);
-            }
-
-            if (url) {
-                if (i > 0) doc.addPage([960, 540], 'landscape');
-                doc.addImage(url, 'PNG', 0, 0, 960, 540);
-            }
-        }
-
-        doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
-    }, [slides, getUrl, fetchImage, title]);
-
-    const handleDownloadPNG = useCallback(() => {
-        const slide = slides[current - 1];
-        const url = getUrl(slide);
-        if (!url) return;
+    const handleDownloadSlideHTML = useCallback(() => {
+        if (!currentSlide?.html) return;
+        const blob = new Blob([currentSlide.html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${title.replace(/\s+/g, '_')}_slide${current}.png`;
+        a.download = `${title.replace(/\s+/g, '_')}_slide${current}.html`;
         a.click();
+        URL.revokeObjectURL(url);
         setShowDownload(false);
-    }, [slides, current, getUrl, title]);
+    }, [currentSlide, title, current]);
 
+    const handleOpenFullscreen = useCallback(() => {
+        if (!fullHtml) return;
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const win = window.open(url, '_blank');
+        if (win) {
+            // Revoke the URL after the window loads
+            win.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+        }
+        setShowDownload(false);
+    }, [fullHtml]);
 
-    // ── Slide image for current ────────────────────────────────────────────────
-    const currentSlide = slides[current - 1];
-    const currentUrl = getUrl(currentSlide);
-    const hasError = errors.has(current);
-
+    // ── Empty state ────────────────────────────────────────────────────────────
     if (!slides.length) {
         return (
             <div className="pv-empty">
                 <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 <p>No presentation data</p>
             </div>
@@ -244,6 +283,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     padding: 14px 20px;
                     background: rgba(26,29,46,0.5);
                     border-bottom: 1px solid rgba(255,255,255,0.05);
+                    flex-shrink: 0;
                 }
                 .pv-header-title {
                     font-weight: 600;
@@ -262,6 +302,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     display: flex;
                     align-items: center;
                     gap: 8px;
+                    flex-shrink: 0;
                 }
                 .pv-icon-btn {
                     display: flex;
@@ -285,55 +326,35 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     border-color: rgba(99,102,241,0.4);
                     color: #818cf8;
                 }
+                /* Stage: fills all remaining space */
                 .pv-stage {
                     flex: 1;
                     display: flex;
-                    position: relative;
+                    align-items: center;
+                    justify-content: center;
                     background: #0b0d13;
                     padding: 16px;
-                    margin: 0;
                     overflow: hidden;
+                    position: relative;
                     min-height: 0;
                 }
                 .pv-fullscreen .pv-stage {
                     padding: 0;
                 }
+                /* Slide wrapper: exact aspect-ratio box for the scale calc */
                 .pv-slide-wrapper {
                     flex: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    position: relative;
                     width: 100%;
                     height: 100%;
-                    margin: 0;
-                    padding: 0;
+                    position: relative;
                     min-height: 0;
                 }
-                .pv-fullscreen .pv-slide-wrapper {
-                    max-width: none;
-                }
-                .pv-slide-container {
-                    position: relative;
-                    width: 100%;
-                    max-width: 100%;
-                    aspect-ratio: 16 / 9;
-                    max-height: 100%;
-                    overflow: hidden;
-                    background: #000;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-                }
-                .pv-fullscreen .pv-slide-container {
-                    border-radius: 0;
-                    box-shadow: none;
-                    max-height: 100vh;
-                }
-                .pv-slide-img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
+                .pv-slide-canvas-wrap {
                     display: block;
+                    flex-shrink: 0;
                 }
                 @keyframes slideFromLeft {
                     from { opacity: 0; transform: translateX(-40px); }
@@ -343,19 +364,35 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     from { opacity: 0; transform: translateX(40px); }
                     to   { opacity: 1; transform: translateX(0); }
                 }
-                .pv-slide-enter-left  { animation: slideFromLeft 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-                .pv-slide-enter-right { animation: slideFromRight 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-                .pv-slide-placeholder {
+                .pv-slide-enter-left  { animation: slideFromLeft  0.22s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+                .pv-slide-enter-right { animation: slideFromRight 0.22s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+                .pv-hover-arrow {
                     position: absolute;
-                    inset: 0;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 24px;
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    gap: 16px;
-                    background: linear-gradient(135deg, #1e2235 0%, #0e1020 100%);
-                    color: rgba(255,255,255,0.5);
-                    font-size: 14px;
+                    background: rgba(0,0,0,0.5);
+                    backdrop-filter: blur(8px);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    color: white;
+                    cursor: pointer;
+                    opacity: 0;
+                    z-index: 10;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                }
+                .pv-hover-arrow.left  { left: 16px; }
+                .pv-hover-arrow.right { right: 16px; }
+                .pv-slide-wrapper:hover .pv-hover-arrow { opacity: 1; }
+                .pv-hover-arrow:hover {
+                    background: rgba(99,102,241,0.9);
+                    border-color: #818cf8;
+                    transform: translateY(-50%) scale(1.1);
                 }
                 .pv-footer {
                     display: flex;
@@ -364,6 +401,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     padding: 12px 20px;
                     background: rgba(26,29,46,0.6);
                     border-top: 1px solid rgba(255,255,255,0.06);
+                    flex-shrink: 0;
                 }
                 .pv-counter {
                     font-size: 13px;
@@ -386,7 +424,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     font-size: 13px;
                     font-weight: 500;
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: all 0.2s;
                     border: 1px solid transparent;
                 }
                 .pv-nav-btn:hover:not(:disabled) {
@@ -394,38 +432,8 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     color: #fff;
                     transform: translateY(-1px);
                 }
-                .pv-nav-btn:disabled {
-                    opacity: 0.3;
-                    cursor: not-allowed;
-                }
-                .pv-hover-arrow {
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 24px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: rgba(0,0,0,0.5);
-                    backdrop-filter: blur(8px);
-                    border: 1px solid rgba(255,255,255,0.1);
-                    color: white;
-                    cursor: pointer;
-                    opacity: 0;
-                    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-                    z-index: 10;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                }
-                .pv-hover-arrow.left  { left: 16px; }
-                .pv-hover-arrow.right { right: 16px; }
-                .pv-slide-wrapper:hover .pv-hover-arrow { opacity: 1; }
-                .pv-hover-arrow:hover { 
-                    background: rgba(99,102,241,0.9); 
-                    border-color: #818cf8; 
-                    transform: translateY(-50%) scale(1.1); 
-                }
+                .pv-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+                /* Overview */
                 .pv-overview {
                     position: absolute;
                     inset: 0;
@@ -443,6 +451,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     justify-content: space-between;
                     padding: 16px 24px;
                     border-bottom: 1px solid rgba(255,255,255,0.06);
+                    flex-shrink: 0;
                 }
                 .pv-overview-title { font-size: 16px; font-weight: 600; color: #f8fafc; }
                 .pv-overview-grid {
@@ -463,11 +472,9 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     transition: all 0.2s ease;
                     position: relative;
                     background: rgba(255,255,255,0.04);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 }
                 .pv-overview-item:hover { border-color: rgba(99,102,241,0.5); transform: translateY(-3px); }
                 .pv-overview-item.active { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.4); }
-                .pv-overview-item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
                 .pv-overview-num {
                     position: absolute;
                     bottom: 6px;
@@ -478,8 +485,9 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     color: rgba(255,255,255,0.95);
                     padding: 3px 8px;
                     border-radius: 6px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                    pointer-events: none;
                 }
+                /* Download dropdown */
                 .pv-download-wrap { position: relative; }
                 .pv-dropdown {
                     position: absolute;
@@ -489,14 +497,14 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     border: 1px solid rgba(255,255,255,0.1);
                     border-radius: 12px;
                     padding: 8px;
-                    min-width: 200px;
+                    min-width: 210px;
                     box-shadow: 0 24px 60px rgba(0,0,0,0.6);
                     z-index: 50;
-                    animation: dropUp 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+                    animation: dropUp 0.2s cubic-bezier(0.2,0.8,0.2,1);
                 }
                 @keyframes dropUp {
                     from { opacity: 0; transform: translateY(10px) scale(0.95); }
-                    to   { opacity: 1; transform: translateY(0) scale(1); }
+                    to   { opacity: 1; transform: translateY(0)    scale(1); }
                 }
                 .pv-dropdown-item {
                     display: flex;
@@ -508,26 +516,19 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     color: rgba(255,255,255,0.85);
                     font-size: 13px;
                     cursor: pointer;
-                    transition: all 0.15s ease;
+                    transition: all 0.15s;
                     background: transparent;
                     border: none;
                     text-align: left;
                 }
                 .pv-dropdown-item:hover { background: rgba(99,102,241,0.2); color: #fff; }
                 .pv-dropdown-item-icon {
-                    width: 32px;
-                    height: 32px;
+                    width: 32px; height: 32px;
                     border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    display: flex; align-items: center; justify-content: center;
                     flex-shrink: 0;
                 }
-                .pv-dropdown-divider {
-                    height: 1px;
-                    background: rgba(255,255,255,0.06);
-                    margin: 6px 0;
-                }
+                .pv-dropdown-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0; }
                 .pv-dropdown-label { font-weight: 600; }
                 .pv-dropdown-sub { font-size: 11px; color: rgba(255,255,255,0.45); }
                 .pv-empty {
@@ -546,6 +547,8 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
             `}</style>
 
             <div ref={containerRef} className={`pv-root${isFullscreen ? ' pv-fullscreen' : ''}`}>
+
+                {/* ── Header ── */}
                 <div className="pv-header">
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="pv-header-title" title={title}>{title}</div>
@@ -553,46 +556,49 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                             {slideCount} slides{theme ? ` · ${theme}` : ''}
                         </div>
                     </div>
-                    {onRegenerate && (
-                        <div className="pv-header-actions">
-                            <button className="pv-nav-btn" onClick={onRegenerate} style={{ padding: '6px 12px', background: 'rgba(99,102,241,0.1)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,0.2)' }}>
+                    <div className="pv-header-actions">
+                        {onRegenerate && (
+                            <button
+                                className="pv-nav-btn"
+                                onClick={onRegenerate}
+                                style={{ padding: '6px 12px', background: 'rgba(99,102,241,0.1)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,0.2)' }}
+                            >
                                 <RegenerateIcon /> <span style={{ fontSize: 12 }}>Regenerate</span>
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
+                {/* ── Stage ── */}
                 <div className="pv-stage">
+                    {/* Overview overlay */}
                     {showOverview && (
                         <div className="pv-overview">
                             <div className="pv-overview-header">
                                 <span className="pv-overview-title">{title} — {slideCount} slides</span>
-                                <button className="pv-icon-btn" onClick={() => setShowOverview(false)} title="Close overview">
+                                <button className="pv-icon-btn" onClick={() => setShowOverview(false)} title="Close">
                                     <CloseIcon />
                                 </button>
                             </div>
-                            <div className="pv-overview-grid" style={{ gridTemplateColumns: `repeat(${Math.min(4, Math.ceil(Math.sqrt(slideCount)))}, 1fr)` }}>
-                                {slides.map((slide, i) => {
-                                    const n = i + 1;
-                                    const url = getUrl(slide);
-                                    return (
-                                        <button key={n} className={`pv-overview-item${n === current ? ' active' : ''}`} onClick={() => { setCurrent(n); setShowOverview(false); }}>
-                                            {url ? (
-                                                <img src={url} alt={`Slide ${n}`} draggable={false} />
-                                            ) : (
-                                                <div style={{ width: '100%', aspectRatio: '16/9', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>Loading…</span>
-                                                </div>
-                                            )}
-                                            <div className="pv-overview-num">{n}</div>
-                                        </button>
-                                    );
-                                })}
+                            <div
+                                className="pv-overview-grid"
+                                style={{ gridTemplateColumns: `repeat(${Math.min(4, Math.ceil(Math.sqrt(slideCount)))}, 1fr)` }}
+                            >
+                                {slides.map((slide) => (
+                                    <SlideThumbnail
+                                        key={slide.slide_number}
+                                        slideHtml={slide.html}
+                                        slideNumber={slide.slide_number}
+                                        isActive={slide.slide_number === current}
+                                        onClick={() => { setCurrent(slide.slide_number); setShowOverview(false); }}
+                                    />
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    <div className="pv-slide-wrapper">
+                    {/* Main slide area */}
+                    <div className="pv-slide-wrapper" ref={stageRef}>
                         {current > 1 && (
                             <button className="pv-hover-arrow left" onClick={prev} title="Previous">
                                 <ChevronLeft size={24} />
@@ -604,33 +610,43 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                             </button>
                         )}
 
-                        <div className={`pv-slide-container${slideDirection === 'left' ? ' pv-slide-enter-left' : slideDirection === 'right' ? ' pv-slide-enter-right' : ''}`} key={current}>
-                            {currentUrl && !hasError ? (
-                                <img src={currentUrl} alt={`Slide ${current}`} className="pv-slide-img" draggable={false} />
-                            ) : (
-                                <div className="pv-slide-placeholder">
-                                    {!hasError ? (
-                                        <>
-                                            <div className="pv-spinner" />
-                                            <p>Loading slide…</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ImageOffIcon />
-                                            <p>Slide {current} unavailable</p>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        {currentSlide?.html ? (
+                            <SlideFrame
+                                key={current}
+                                slideHtml={currentSlide.html}
+                                label={`Slide ${current} of ${slideCount}`}
+                                scale={scale}
+                                animClass={
+                                    slideDirection === 'left'  ? 'pv-slide-enter-left' :
+                                    slideDirection === 'right' ? 'pv-slide-enter-right' : ''
+                                }
+                            />
+                        ) : (
+                            <div style={{
+                                width: SLIDE_W * scale,
+                                height: SLIDE_H * scale,
+                                background: 'linear-gradient(135deg,#1e2235,#0e1020)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'rgba(255,255,255,0.4)',
+                                fontSize: 14,
+                                borderRadius: 8,
+                            }}>
+                                Slide {current} unavailable
+                            </div>
+                        )}
                     </div>
                 </div>
 
+                {/* ── Footer ── */}
                 <div className="pv-footer">
+                    {/* Counter */}
                     <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
                         <span className="pv-counter">Slide {current} of {slideCount}</span>
                     </div>
 
+                    {/* Nav buttons */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flex: 1 }}>
                         <button className="pv-nav-btn" onClick={prev} disabled={current <= 1}>
                             <ChevronLeft size={16} /> Prev
@@ -640,31 +656,52 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                         </button>
                     </div>
 
+                    {/* Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flex: 1 }}>
-                        <button className={`pv-icon-btn${showOverview ? ' active' : ''}`} onClick={() => setShowOverview(v => !v)} title="Slide overview">
+                        <button
+                            className={`pv-icon-btn${showOverview ? ' active' : ''}`}
+                            onClick={() => setShowOverview(v => !v)}
+                            title="Slide overview"
+                        >
                             <GridIcon />
                         </button>
 
+                        {/* Open in new tab (full-screen HTML viewer / print-to-PDF) */}
+                        <button className="pv-icon-btn" onClick={handleOpenFullscreen} title="Open in new tab (for presentation / print to PDF)">
+                            <OpenTabIcon />
+                        </button>
+
+                        {/* Download dropdown */}
                         <div ref={downloadRef} className="pv-download-wrap">
-                            <button className="pv-icon-btn" onClick={() => setShowDownload(v => !v)} title="Download" style={showDownload ? { background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,0.4)' } : {}}>
+                            <button
+                                className="pv-icon-btn"
+                                onClick={() => setShowDownload(v => !v)}
+                                title="Download"
+                                style={showDownload ? { background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,0.4)' } : {}}
+                            >
                                 <DownloadIcon />
                             </button>
 
                             {showDownload && (
                                 <div className="pv-dropdown">
                                     <button className="pv-dropdown-item" onClick={handleDownloadHTML}>
-                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(249,115,22,0.15)' }}><HtmlIcon /></div>
-                                        <div><div className="pv-dropdown-label">HTML</div><div className="pv-dropdown-sub">Interactive file</div></div>
+                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(249,115,22,0.15)' }}>
+                                            <HtmlIcon />
+                                        </div>
+                                        <div>
+                                            <div className="pv-dropdown-label">Full Presentation</div>
+                                            <div className="pv-dropdown-sub">HTML · all slides</div>
+                                        </div>
                                     </button>
                                     <div className="pv-dropdown-divider" />
-                                    <button className="pv-dropdown-item" onClick={handleDownloadPDF}>
-                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(239,68,68,0.15)' }}><PdfIcon /></div>
-                                        <div><div className="pv-dropdown-label">PDF</div><div className="pv-dropdown-sub">All slides</div></div>
-                                    </button>
-                                    <div className="pv-dropdown-divider" />
-                                    <button className="pv-dropdown-item" onClick={handleDownloadPNG} disabled={!currentUrl}>
-                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(16,185,129,0.15)' }}><PngIcon /></div>
-                                        <div><div className="pv-dropdown-label">PNG</div><div className="pv-dropdown-sub">Current slide</div></div>
+                                    <button className="pv-dropdown-item" onClick={handleDownloadSlideHTML} disabled={!currentSlide?.html}>
+                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(16,185,129,0.15)' }}>
+                                            <SlideIcon />
+                                        </div>
+                                        <div>
+                                            <div className="pv-dropdown-label">Current Slide</div>
+                                            <div className="pv-dropdown-sub">HTML · slide {current}</div>
+                                        </div>
                                     </button>
                                 </div>
                             )}
@@ -890,5 +927,21 @@ const PngIcon = () => (
     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
+    </svg>
+);
+
+const SlideIcon = () => (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+);
+
+const OpenTabIcon = () => (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
 );

@@ -149,10 +149,15 @@ class PresentationHTMLOutput(BaseModel):
 
     @model_validator(mode="after")
     def _validate_html(self) -> "PresentationHTMLOutput":
-        """Basic sanity check on the HTML output."""
+        """Sanity check and auto-repair HTML output."""
         h = self.html.strip()
         if "<html" not in h.lower():
             raise ValueError("HTML output must contain an <html> tag")
+        # Auto-repair: if </html> is missing the LLM truncated slightly — append it
         if "</html>" not in h.lower():
-            raise ValueError("HTML output must contain a closing </html> tag")
+            # Check if </body> is also missing and add both
+            if "</body>" not in h.lower():
+                self.html = h + "\n</body>\n</html>"
+            else:
+                self.html = h + "\n</html>"
         return self
