@@ -38,6 +38,7 @@ model User {
   codeExecutions   CodeExecutionSession[]
   researchSessions ResearchSession[]
   explainerVideos  ExplainerVideo[]
+  podcastSessions  PodcastSession[]
 
   @@map("users")
 }
@@ -353,5 +354,128 @@ model ResearchSession {
   @@index([userId])
   @@index([notebookId])
   @@map("research_sessions")
+}
+
+// ─── Podcast Sessions (Live Podcast Feature) ─────────────
+
+enum PodcastSessionStatus {
+  created
+  script_generating
+  audio_generating
+  ready
+  playing
+  paused
+  completed
+  failed
+}
+
+model PodcastSession {
+  id               String               @id @default(uuid()) @db.Uuid
+  notebookId       String               @map("notebook_id") @db.Uuid
+  userId           String               @map("user_id") @db.Uuid
+  mode             String               @default("full") @db.VarChar(20) // 'full' or 'topic'
+  topic            String?              @db.Text
+  language         String               @default("en") @db.VarChar(10)
+  status           PodcastSessionStatus @default(created)
+  currentSegment   Int                  @default(0) @map("current_segment")
+  hostVoice        String               @default("en-US-GuyNeural") @map("host_voice") @db.VarChar(100)
+  guestVoice       String               @default("en-US-JennyNeural") @map("guest_voice") @db.VarChar(100)
+  title            String?              @db.VarChar(255)
+  tags             String[]             @default([])
+  chapters         Json?                // [{name, startSegment}]
+  totalDurationMs  Int                  @default(0) @map("total_duration_ms")
+  materialIds      String[]             @default([]) @map("material_ids")
+  summary          String?              @db.Text
+  error            String?              @db.Text
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
+  completedAt      DateTime?            @map("completed_at")
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  segments PodcastSegment[]
+  doubts   PodcastDoubt[]
+  exports  PodcastExport[]
+  bookmarks PodcastBookmark[]
+  annotations PodcastAnnotation[]
+
+  @@index([userId])
+  @@index([notebookId])
+  @@index([userId, status])
+  @@map("podcast_sessions")
+}
+
+model PodcastSegment {
+  id          String   @id @default(uuid()) @db.Uuid
+  sessionId   String   @map("session_id") @db.Uuid
+  index       Int      // sequential order
+  speaker     String   @db.VarChar(10) // 'host' or 'guest'
+  text        String   @db.Text
+  audioUrl    String?  @map("audio_url") @db.Text
+  durationMs  Int      @default(0) @map("duration_ms")
+  chapter     String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session PodcastSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, index])
+  @@index([sessionId])
+  @@map("podcast_segments")
+}
+
+model PodcastDoubt {
+  id               String    @id @default(uuid()) @db.Uuid
+  sessionId        String    @map("session_id") @db.Uuid
+  pausedAtSegment  Int       @map("paused_at_segment")
+  questionText     String    @map("question_text") @db.Text
+  questionAudioUrl String?   @map("question_audio_url") @db.Text
+  answerText       String?   @map("answer_text") @db.Text
+  answerAudioUrl   String?   @map("answer_audio_url") @db.Text
+  resolvedAt       DateTime? @map("resolved_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  session PodcastSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("podcast_doubts")
+}
+
+model PodcastExport {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  format    String   @db.VarChar(10) // 'pdf' or 'json'
+  fileUrl   String?  @map("file_url") @db.Text
+  status    String   @default("pending") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session PodcastSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("podcast_exports")
+}
+
+model PodcastBookmark {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionId    String   @map("session_id") @db.Uuid
+  segmentIndex Int      @map("segment_index")
+  label        String?  @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  session PodcastSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("podcast_bookmarks")
+}
+
+model PodcastAnnotation {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionId    String   @map("session_id") @db.Uuid
+  segmentIndex Int      @map("segment_index")
+  note         String   @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  session PodcastSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("podcast_annotations")
 }
 

@@ -9,6 +9,8 @@ import InlinePresentationView, { PresentationConfigDialog } from './Presentation
 import ExplainerDialog from './ExplainerDialog';
 import { jsPDF } from 'jspdf';
 import Modal from './Modal';
+import { PodcastStudio, PodcastConfigDialog, PodcastMiniPlayer } from './podcast';
+import { PodcastProvider, usePodcast } from '../context/PodcastContext';
 
 const FlashcardsIcon = () => (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,8 +43,23 @@ const ExplainerVideoIcon = () => (
     </svg>
 );
 
+const PodcastIcon = () => (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+    </svg>
+);
+
 export default function StudioPanel() {
+    return (
+        <PodcastProvider>
+            <StudioPanelInner />
+        </PodcastProvider>
+    );
+}
+
+function StudioPanelInner() {
     const { currentMaterial, currentNotebook, draftMode, setFlashcards, setQuiz, loading, setLoadingState, selectedSources, materials } = useApp();
+    const podcast = usePodcast();
 
     // Effective material: first selected source (checkbox only)
     const effectiveMaterial = selectedSources.size > 0
@@ -63,6 +80,7 @@ export default function StudioPanel() {
     const [showQuizConfig, setShowQuizConfig] = useState(false);
     const [showFlashcardConfig, setShowFlashcardConfig] = useState(false);
     const [showExplainerDialog, setShowExplainerDialog] = useState(false);
+    const [showPodcastConfig, setShowPodcastConfig] = useState(false);
     const [contentHistory, setContentHistory] = useState([]); // all saved items across types
     const [activeHistoryMenu, setActiveHistoryMenu] = useState(null);
     const [showRenameHistoryModal, setShowRenameHistoryModal] = useState(false);
@@ -94,6 +112,9 @@ export default function StudioPanel() {
         setFlashcards(null);
         setQuiz(null);
         setActiveView(null);
+
+        // Load podcast sessions for this notebook
+        podcast.loadSessions();
 
         const loadSavedContent = async () => {
             if (currentNotebook?.id && !currentNotebook.isDraft && !draftMode) {
@@ -422,18 +443,65 @@ export default function StudioPanel() {
         }
     };
 
+    // ── Podcast inline generation ──────────────────────────────────
+    const podcastGeneratingRef = useRef(false);
+
+    const handlePodcastGenerate = async (config) => {
+        if (podcastGeneratingRef.current) return; // prevent double-click
+        podcastGeneratingRef.current = true;
+        setShowPodcastConfig(false);
+        setLoadingState('podcast', true);
+        try {
+            const session = await podcast.create(config);
+            if (session?.id) {
+                await podcast.startGeneration(session.id);
+            }
+            // generation continues via WS events —
+            // podcast context will update phase & progress
+        } catch (err) {
+            setActionError(err.message || 'Failed to start podcast generation.');
+            setTimeout(() => setActionError(null), 5000);
+            setLoadingState('podcast', false);
+            podcastGeneratingRef.current = false;
+        }
+    };
+
+    // Track podcast phase to update the card loading state
+    useEffect(() => {
+        const { phase: podPhase } = podcast;
+        if (podPhase === 'generating') {
+            setLoadingState('podcast', true);
+        } else {
+            setLoadingState('podcast', false);
+            podcastGeneratingRef.current = false;
+        }
+        // When podcast becomes ready → auto-open player + reload session list
+        if (podPhase === 'player') {
+            podcast.loadSessions();
+            setActiveView('podcast');
+        }
+    }, [podcast.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const outputs = [
         { id: 'flashcards', title: 'Flashcards', description: 'Study with spaced repetition', icon: <FlashcardsIcon />, onClick: handleFlashcardsClick, onCancel: () => handleCancelGeneration('flashcards') },
         { id: 'quiz', title: 'Practice Quiz', description: 'Test your understanding', icon: <QuizIcon />, onClick: handleQuizClick, onCancel: () => handleCancelGeneration('quiz') },
         { id: 'presentation', title: 'Presentation', description: 'Generate a slide deck from content', icon: <PresentationIcon />, onClick: handlePresentationClick, onCancel: () => handleCancelGeneration('presentation') },
         { id: 'explainer', title: 'Explainer Video', description: 'Create a narrated video from slides', icon: <ExplainerVideoIcon />, onClick: () => setShowExplainerDialog(true) },
+        { id: 'podcast', title: 'AI Podcast', description: podcast.phase === 'generating' ? (podcast.generationProgress?.message || 'Generating…') : 'Two-host AI podcast from your sources', icon: <PodcastIcon />, onClick: () => { if (podcast.phase !== 'generating') setShowPodcastConfig(true); }, onCancel: undefined },
     ];
+
+    // Completed podcast sessions for the Created section
+    const completedPodcastSessions = (podcast.sessions || []).filter(s =>
+        s.status === 'ready' || s.status === 'playing' ||
+        s.status === 'paused' || s.status === 'completed'
+    );
 
     const viewTitles = {
         flashcards: 'Flashcards',
         quiz: 'Quiz',
         presentation: 'Presentation',
         explainer: 'Explainer Video',
+        podcast: 'AI Podcast',
     };
 
     const renderInlineContent = () => {
@@ -467,6 +535,8 @@ export default function StudioPanel() {
                 );
             case 'explainer':
                 return <InlineExplainerView data={explainerData} />;
+            case 'podcast':
+                return <PodcastStudio onRequestNew={() => setShowPodcastConfig(true)} />;
             default:
                 return null;
         }
@@ -551,6 +621,19 @@ export default function StudioPanel() {
                 materialIds={selectedMaterialIds}
                 notebookId={currentNotebook?.id}
             />
+
+            {/* Podcast Config Dialog */}
+            {showPodcastConfig && (
+                <PodcastConfigDialog
+                    onGenerate={(config) => {
+                        handlePodcastGenerate(config);
+                    }}
+                    onCancel={() => {
+                        setShowPodcastConfig(false);
+                    }}
+                    loading={false}
+                />
+            )}
 
             <aside
                 ref={panelRef}
@@ -649,7 +732,46 @@ export default function StudioPanel() {
                                 ))}
                             </div>
 
-                            {contentHistory.length > 0 && (
+                            {/* Podcast generating progress bar on card */}
+                            {podcast.phase === 'generating' && podcast.generationProgress && (
+                                <div className="mt-3 p-3 rounded-xl border border-accent/20 bg-accent/5 animate-fade-in">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="loading-spinner w-4 h-4" />
+                                        <span className="text-xs font-medium text-text-primary">
+                                            {podcast.generationProgress.message || 'Generating podcast…'}
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-surface-overlay overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full bg-accent transition-all duration-700 ease-out"
+                                            style={{ width: `${Math.max(podcast.generationProgress.pct || 0, 3)}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-text-muted mt-1.5">
+                                        {Math.round(podcast.generationProgress.pct || 0)}% complete
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Podcast error toast */}
+                            {podcast.error && podcast.phase === 'idle' && (
+                                <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 animate-fade-in">
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
+                                        </svg>
+                                        <span className="text-xs text-red-400">{podcast.error}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => { podcast.setError(null); setShowPodcastConfig(true); }}
+                                        className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
+                            )}
+
+                            {(contentHistory.length > 0 || completedPodcastSessions.length > 0) && (
                                 <>
                                     <div className="divider my-5" />
                                     <h3 className="text-xs font-medium text-text-muted uppercase tracking-wider mb-3">Created</h3>
@@ -732,6 +854,54 @@ export default function StudioPanel() {
                                             </div>
                                         ))}
                                     </div>
+
+                                    {/* Podcast sessions in Created section */}
+                                    {completedPodcastSessions.length > 0 && (
+                                        <div className="space-y-2 mt-2">
+                                            {completedPodcastSessions.map((ps) => (
+                                                <div
+                                                    key={`podcast-${ps.id}`}
+                                                    className="group relative w-full"
+                                                >
+                                                    <div
+                                                        className="output-card w-full text-left cursor-pointer flex items-center pr-10"
+                                                        onClick={() => {
+                                                            podcast.loadSession(ps.id);
+                                                            setActiveView('podcast');
+                                                        }}
+                                                    >
+                                                        <div className="output-card-icon bg-accent/10">
+                                                            <span className="text-accent-light"><PodcastIcon /></span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 pr-2">
+                                                            <h4 className="text-sm font-medium text-text-primary truncate">
+                                                                {ps.title || 'AI Podcast'}
+                                                            </h4>
+                                                            <p className="text-xs text-text-muted">
+                                                                {ps.totalDurationMs > 0
+                                                                    ? `${Math.floor(ps.totalDurationMs / 60000)}m ${Math.floor((ps.totalDurationMs % 60000) / 1000)}s`
+                                                                    : 'Podcast'
+                                                                }
+                                                                {ps.language ? ` · ${ps.language.toUpperCase()}` : ''}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            podcast.removeSession(ps.id);
+                                                        }}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-red-500/10 text-text-muted opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all z-10"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </>
@@ -1666,3 +1836,4 @@ function HistoryRenameModal({ isOpen, onClose, itemName, newTitle, setNewTitle, 
         </div>
     );
 }
+

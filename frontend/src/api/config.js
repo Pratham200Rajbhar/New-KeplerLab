@@ -146,3 +146,18 @@ export async function apiJson(endpoint, options = {}) {
   if (response.status === 204) return null;
   return response.json();
 }
+
+/**
+ * Fetch an audio file from the API with authentication and return a
+ * blob: object URL safe to use as HTMLAudioElement.src.
+ * The caller is responsible for calling URL.revokeObjectURL() when done.
+ */
+export async function fetchAudioObjectUrl(path) {
+  // Accept either a full URL (http://...) or a relative path (/podcast/...)
+  const endpoint = path.startsWith('http')
+    ? path.replace(API_BASE_URL, '')
+    : path;
+  const response = await apiFetch(endpoint);
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}

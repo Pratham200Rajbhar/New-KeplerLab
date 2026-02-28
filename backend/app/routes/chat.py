@@ -365,7 +365,7 @@ async def block_followup(
                             # Get next block index
                             max_block = await prisma.responseblock.find_first(
                                 where={"chatMessageId": parent_block.chatMessageId},
-                                order_by={"blockIndex": "desc"},
+                                order={"blockIndex": "desc"},
                             )
                             next_idx = (max_block.blockIndex + 1) if max_block else 0
                             await prisma.responseblock.create(

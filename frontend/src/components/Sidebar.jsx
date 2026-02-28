@@ -28,6 +28,7 @@ export default function Sidebar() {
         toggleSourceSelection,
         selectAllSources,
         deselectAllSources,
+        podcastWsHandlerRef,
     } = useApp();
     const [dragActive, setDragActive] = useState(false);
     const [width, setWidth] = useState(320); // Increased default width
@@ -112,6 +113,12 @@ export default function Sidebar() {
 
     // WebSocket: real-time material processing updates
     const handleWsMessage = useCallback((msg) => {
+        // Forward podcast_* events to PodcastContext via shared ref
+        if (msg.type && msg.type.startsWith('podcast_')) {
+            podcastWsHandlerRef?.current?.(msg);
+            return;
+        }
+
         if (msg.type === 'material_update' && msg.material_id) {
             setMaterials(prev => prev.map(m =>
                 m.id === msg.material_id
@@ -135,7 +142,7 @@ export default function Sidebar() {
                 }
             }
         }
-    }, [setMaterials, loadMaterials, setSelectedSources]);
+    }, [setMaterials, loadMaterials, setSelectedSources, podcastWsHandlerRef]);
 
     useMaterialUpdates(user?.id || null, handleWsMessage);
 

@@ -2,6 +2,10 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo, u
 
 const AppContext = createContext(null);
 
+// Shared ref for routing podcast WS events from Sidebar → PodcastContext
+// This avoids prop-drilling across distant components.
+const _podcastWsHandlerRef = { current: null };
+
 export function AppProvider({ children }) {
     // Notebook state
     const [currentNotebook, setCurrentNotebook] = useState(null);
@@ -112,6 +116,9 @@ export function AppProvider({ children }) {
     }, []);
 
     const value = useMemo(() => ({
+        // Podcast WS bridge
+        podcastWsHandlerRef: _podcastWsHandlerRef,
+
         // Notebook
         currentNotebook,
         setCurrentNotebook,
