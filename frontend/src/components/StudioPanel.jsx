@@ -11,6 +11,7 @@ import { jsPDF } from 'jspdf';
 import Modal from './Modal';
 import { PodcastStudio, PodcastConfigDialog, PodcastMiniPlayer } from './podcast';
 import { PodcastProvider, usePodcast } from '../context/PodcastContext';
+import MindMapView from './MindMapView';
 
 const FlashcardsIcon = () => (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -76,6 +77,7 @@ function StudioPanelInner() {
     const [quizData, setQuizData] = useState(null);
     const [presentationData, setPresentationData] = useState(null);
     const [explainerData, setExplainerData] = useState(null);
+    const [mindmapData, setMindmapData] = useState(null);
     const [showPresentationConfig, setShowPresentationConfig] = useState(false);
     const [showQuizConfig, setShowQuizConfig] = useState(false);
     const [showFlashcardConfig, setShowFlashcardConfig] = useState(false);
@@ -104,6 +106,7 @@ function StudioPanelInner() {
         setFlashcardsData(null);
         setQuizData(null);
         setPresentationData(null);
+        setMindmapData(null);
         setShowPresentationConfig(false);
         setShowQuizConfig(false);
         setShowFlashcardConfig(false);
@@ -138,6 +141,9 @@ function StudioPanelInner() {
                                 break;
                             case 'presentation':
                                 setPresentationData(c.data);
+                                break;
+                            case 'mindmap':
+                                setMindmapData(c.data);
                                 break;
                         }
                     }
@@ -274,6 +280,21 @@ function StudioPanelInner() {
     };
 
 
+    // Called by MindMapView when a new map is generated/regenerated
+    const handleMindmapGenerated = useCallback(async (mapResponse) => {
+        if (!canSave) return;
+        try {
+            // Refresh the full content history so the new mindmap entry appears in Created
+            const contents = await getGeneratedContent(currentNotebook.id);
+            setContentHistory(contents.map(c => ({ ...c })));
+            // Update the active mindmap data state with latest data
+            const latest = contents.find(c => c.content_type === 'mindmap');
+            if (latest) setMindmapData(latest.data);
+        } catch (err) {
+            console.error('Failed to refresh content history after mindmap generation:', err);
+        }
+    }, [canSave, currentNotebook?.id]);
+
     // Open a history item in the inline viewer
     const handleViewHistoryItem = (item) => {
         switch (item.content_type) {
@@ -294,6 +315,10 @@ function StudioPanelInner() {
             case 'explainer':
                 setExplainerData(item.data);
                 setActiveView('explainer');
+                break;
+            case 'mindmap':
+                setMindmapData(item.data);
+                setActiveView('mindmap');
                 break;
         }
     };
@@ -357,6 +382,9 @@ function StudioPanelInner() {
                         break;
                     case 'presentation':
                         if (presentationData?.id === item.id) { setPresentationData(null); setActiveView(null); }
+                        break;
+                    case 'mindmap':
+                        setMindmapData(null); setActiveView(null);
                         break;
                 }
             }
@@ -424,6 +452,7 @@ function StudioPanelInner() {
             case 'quiz': return <QuizIcon />;
             case 'presentation': return <PresentationIcon />;
             case 'explainer': return <ExplainerVideoIcon />;
+            case 'mindmap': return <span className="w-5 h-5 flex items-center justify-center text-base">🗺</span>;
             default: return null;
         }
     };
@@ -439,6 +468,7 @@ function StudioPanelInner() {
                 const secs = duration % 60;
                 return mins ? `${mins}m ${secs}s video` : `${secs}s video`;
             }
+            case 'mindmap': return `${item.data?.nodes?.length || 0} concepts mapped`;
             default: return 'Ready to play';
         }
     };
@@ -488,6 +518,7 @@ function StudioPanelInner() {
         { id: 'presentation', title: 'Presentation', description: 'Generate a slide deck from content', icon: <PresentationIcon />, onClick: handlePresentationClick, onCancel: () => handleCancelGeneration('presentation') },
         { id: 'explainer', title: 'Explainer Video', description: 'Create a narrated video from slides', icon: <ExplainerVideoIcon />, onClick: () => setShowExplainerDialog(true) },
         { id: 'podcast', title: 'AI Podcast', description: podcast.phase === 'generating' ? (podcast.generationProgress?.message || 'Generating…') : 'Two-host AI podcast from your sources', icon: <PodcastIcon />, onClick: () => { if (podcast.phase !== 'generating') setShowPodcastConfig(true); }, onCancel: undefined },
+        { id: 'mindmap', title: 'Mind Map', description: 'Visualize concept relationships', icon: <span className="w-5 h-5 flex items-center justify-center text-base">🗺</span>, onClick: () => setActiveView('mindmap'), onCancel: undefined },
     ];
 
     // Completed podcast sessions for the Created section
@@ -502,6 +533,7 @@ function StudioPanelInner() {
         presentation: 'Presentation',
         explainer: 'Explainer Video',
         podcast: 'AI Podcast',
+        mindmap: 'Mind Map',
     };
 
     const renderInlineContent = () => {
@@ -537,6 +569,12 @@ function StudioPanelInner() {
                 return <InlineExplainerView data={explainerData} />;
             case 'podcast':
                 return <PodcastStudio onRequestNew={() => setShowPodcastConfig(true)} />;
+            case 'mindmap':
+                return <MindMapView
+                    notebookId={currentNotebook?.id}
+                    selectedSources={selectedMaterialIds}
+                    onGenerated={handleMindmapGenerated}
+                />;
             default:
                 return null;
         }

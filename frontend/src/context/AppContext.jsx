@@ -44,6 +44,9 @@ export function AppProvider({ children }) {
     const [quiz, setQuiz] = useState(null);
     const [notes, setNotes] = useState([]);
 
+    // Mind map → chat bridge
+    const [pendingChatMessage, setPendingChatMessage] = useState(null);
+
     // UI state
     const [loading, setLoading] = useState({});
     const [error, setError] = useState(null);
@@ -154,6 +157,10 @@ export function AppProvider({ children }) {
         setNotes,
         addNote,
 
+        // Mind map
+        pendingChatMessage,
+        setPendingChatMessage,
+
         // UI
         loading,
         setLoadingState,
@@ -168,7 +175,7 @@ export function AppProvider({ children }) {
         addMaterial, setSelectedSources, toggleSourceSelection, selectAllSources,
         deselectAllSources, setSessionId, setMessages, addMessage, clearMessages,
         setFlashcards, setQuiz, setNotes, addNote, setLoadingState, setError,
-        setActivePanel,
+        setActivePanel, pendingChatMessage, setPendingChatMessage,
     ]);
 
     return (

@@ -46,6 +46,7 @@ from app.routes.chat import router as chat_router
 from app.routes.models import router as models_router
 from app.routes.jobs import router as jobs_router
 from app.routes.ppt import router as ppt_router
+from app.routes.mindmap import router as mindmap_router
 from app.routes.health import router as health_router
 from app.routes.agent import router as agent_router
 from app.routes.websocket_router import router as ws_router
@@ -250,6 +251,7 @@ app.include_router(quiz_router, tags=["quiz"])
 app.include_router(chat_router, tags=["chat"])
 app.include_router(jobs_router, tags=["jobs"])
 app.include_router(ppt_router, tags=["presentation"])
+app.include_router(mindmap_router, tags=["mindmap"])
 app.include_router(agent_router, tags=["agent"])
 app.include_router(search_router, prefix="/search", tags=["search"])
 app.include_router(proxy_router, prefix="/api/v1", tags=["proxy"])

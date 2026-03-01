@@ -107,6 +107,12 @@ def get_slide_content_prompt(
     })
 
 
+def get_mindmap_prompt(material_text: str) -> str:
+    return _render("mindmap_prompt.txt", {
+        "{material_text}": material_text,
+    })
+
+
 def get_ppt_prompt(
     material_text: str,
     slide_count: int = 10,

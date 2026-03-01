@@ -313,7 +313,7 @@ def _apply_mmr(
         return list(range(len(documents)))
     
     # Validate input dimensions
-    if not embeddings or not query_embedding:
+    if len(embeddings) == 0 or not query_embedding:
         return list(range(min(k, len(documents))))
     
     try:
@@ -507,7 +507,7 @@ def secure_similarity_search_enhanced(
     documents = _expand_structured_chunks(documents, metadatas)
 
     # ── Step 2: Apply MMR for diversity ───────────────────────
-    if use_mmr and len(documents) > settings.MMR_K and embeddings:
+    if use_mmr and len(documents) > settings.MMR_K and len(embeddings) > 0:
         try:
             # Get query embedding
             query_results = collection.query(

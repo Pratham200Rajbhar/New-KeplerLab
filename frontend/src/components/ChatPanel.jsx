@@ -70,6 +70,8 @@ export default function ChatPanel() {
         draftMode,
         selectedSources,
         materials,
+        pendingChatMessage,
+        setPendingChatMessage,
     } = useApp();
 
     const effectiveIds = useMemo(() => Array.from(selectedSources).filter(id => {
@@ -83,6 +85,9 @@ export default function ChatPanel() {
     const [inputValue, setInputValue] = useState('');
     const [streamingContent, setStreamingContent] = useState('');
     const [agentStepLabel, setAgentStepLabel] = useState('');
+
+    // Mind map → chat bridge
+    const [mindMapBanner, setMindMapBanner] = useState(null);
 
     // Agent thinking state
     const [isThinking, setIsThinking] = useState(false);
@@ -137,6 +142,16 @@ export default function ChatPanel() {
             abortControllerRef.current?.abort();
         };
     }, []);
+
+    // Mind map pending message
+    useEffect(() => {
+        if (pendingChatMessage?.source === 'mindmap') {
+            setInputValue(pendingChatMessage.text);
+            setMindMapBanner(pendingChatMessage.nodeLabel);
+            textareaRef.current?.focus();
+            setPendingChatMessage(null);
+        }
+    }, [pendingChatMessage, setPendingChatMessage]);
 
     useEffect(() => {
         isChattingRef.current = loading.chat || researchMode;
@@ -1079,6 +1094,39 @@ export default function ChatPanel() {
                     )}
 
                     {/* Removed AI Agent Mode label */}
+
+                    {/* Mind Map banner */}
+                    {mindMapBanner && (
+                        <div
+                            style={{
+                                borderLeft: '3px solid #68d391',
+                                background: '#2d3748',
+                                padding: '6px 12px',
+                                marginBottom: '8px',
+                                borderRadius: '0 6px 6px 0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <span style={{ fontSize: '12px', color: '#a0aec0' }}>
+                                Asking about: <strong style={{ color: '#e2e8f0' }}>{mindMapBanner}</strong>
+                            </span>
+                            <button
+                                onClick={() => setMindMapBanner(null)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#a0aec0',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    padding: '0 4px',
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    )}
 
                     <div className="chat-input-container rounded-2xl shadow-elevated bg-surface-raised border border-border focus-within:ring-2 ring-accent/20 transition-all transform-gpu hover:shadow-lg">
                         <textarea

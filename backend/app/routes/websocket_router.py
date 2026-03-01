@@ -93,17 +93,28 @@ async def ws_jobs(
             msg = json.loads(raw)
             if msg.get("type") == "auth" and msg.get("token"):
                 caller_id = await _authenticate(msg["token"])
-        except (asyncio.TimeoutError, json.JSONDecodeError, Exception):
+        except (asyncio.TimeoutError, json.JSONDecodeError, WebSocketDisconnect):
+            # Client disconnected before sending auth — nothing to send back
+            return
+        except Exception:
             pass
         
         if caller_id is None:
-            await websocket.send_text(_close_msg(4001, "Unauthorized: invalid or missing token"))
-            await websocket.close(code=4001)
+            if websocket.client_state == WebSocketState.CONNECTED:
+                try:
+                    await websocket.send_text(_close_msg(4001, "Unauthorized: invalid or missing token"))
+                    await websocket.close(code=4001)
+                except Exception:
+                    pass
             return
         
         if caller_id != user_id:
-            await websocket.send_text(_close_msg(4003, "Forbidden: token user_id mismatch"))
-            await websocket.close(code=4003)
+            if websocket.client_state == WebSocketState.CONNECTED:
+                try:
+                    await websocket.send_text(_close_msg(4003, "Forbidden: token user_id mismatch"))
+                    await websocket.close(code=4003)
+                except Exception:
+                    pass
             return
     else:
         # Query-param auth succeeded — validate user match before accepting
