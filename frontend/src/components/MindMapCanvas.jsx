@@ -135,7 +135,7 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                 source: n.parent_id,
                 target: n.id,
                 type: 'smoothstep',
-                style: { stroke: '#4a5568' },
+                style: { stroke: 'var(--border-strong)' },
             }));
     }, [allNodes, visibleNodeIds]);
 
@@ -174,7 +174,7 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
         if (!el) return;
         try {
             const dataUrl = await toPng(el, {
-                backgroundColor: '#1a202c',
+                backgroundColor: 'var(--surface)',
                 quality: 1,
             });
             const a = document.createElement('a');
@@ -192,7 +192,7 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                 position: 'fixed',
                 inset: 0,
                 zIndex: 50,
-                background: '#1a202c',
+                background: 'var(--surface)',
                 display: 'flex',
                 flexDirection: 'column',
             }}
@@ -205,7 +205,7 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    borderBottom: '1px solid #2d3748',
+                    borderBottom: '1px solid var(--border)',
                     padding: '0 16px',
                     flexShrink: 0,
                 }}
@@ -215,8 +215,8 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                     onClick={onClose}
                     style={{
                         background: 'none',
-                        border: '1px solid #4a5568',
-                        color: 'white',
+                        border: '1px solid var(--border-strong)',
+                        color: 'var(--text-primary)',
                         padding: '4px 12px',
                         borderRadius: '6px',
                         cursor: 'pointer',
@@ -227,7 +227,7 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                 </button>
 
                 {/* Center: Title */}
-                <span style={{ color: 'white', fontSize: '14px', fontWeight: 600 }}>
+                <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>
                     {mapData?.title || 'Mind Map'}
                 </span>
 
@@ -237,8 +237,8 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                         onClick={onRegenerate}
                         style={{
                             background: 'none',
-                            border: '1px solid #4a5568',
-                            color: 'white',
+                            border: '1px solid var(--border-strong)',
+                            color: 'var(--text-primary)',
                             padding: '4px 12px',
                             borderRadius: '6px',
                             cursor: 'pointer',
@@ -251,8 +251,8 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                         onClick={handleExportPng}
                         style={{
                             background: 'none',
-                            border: '1px solid #4a5568',
-                            color: 'white',
+                            border: '1px solid var(--border-strong)',
+                            color: 'var(--text-primary)',
                             padding: '4px 12px',
                             borderRadius: '6px',
                             cursor: 'pointer',
@@ -279,9 +279,9 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search nodes..."
                             style={{
-                                background: '#2d3748',
-                                border: '1px solid #4a5568',
-                                color: 'white',
+                                background: 'var(--surface-raised)',
+                                border: '1px solid var(--border-strong)',
+                                color: 'var(--text-primary)',
                                 padding: '4px 12px 4px 28px',
                                 borderRadius: '6px',
                                 fontSize: '13px',
@@ -307,11 +307,11 @@ export default function MindMapCanvas({ mapData, onClose, onRegenerate }) {
                     <Controls position="bottom-left" />
                     <MiniMap
                         position="bottom-right"
-                        nodeColor="#4a5568"
-                        maskColor="rgba(0,0,0,0.5)"
-                        style={{ background: '#2d3748' }}
+                        nodeColor="var(--border-strong)"
+                        maskColor="var(--backdrop)"
+                        style={{ background: 'var(--surface-raised)' }}
                     />
-                    <Background variant="dots" color="#4a5568" gap={20} />
+                    <Background variant="dots" color="var(--border-strong)" gap={20} />
                 </ReactFlow>
             </div>
         </div>

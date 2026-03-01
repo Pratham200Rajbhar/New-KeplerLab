@@ -61,6 +61,7 @@ class AgentState(TypedDict, total=False):
     # ── Intent Detection ──────────────────────────────────
     intent: str                    # QUESTION, DATA_ANALYSIS, RESEARCH, CODE_EXECUTION, CONTENT_GENERATION
     intent_confidence: float       # 0.0 – 1.0
+    intent_override: str           # Slash command override — skips AI detection when set
     # requires_planning is intentionally removed — planner always runs
 
     # ── Planning ──────────────────────────────────────────

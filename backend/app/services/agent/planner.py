@@ -162,8 +162,17 @@ async def plan_execution(state: AgentState) -> AgentState:
 
     # ── Dynamic multi-step planning ────────────────────────────────────────
     if intent == QUESTION:
+        # Check if this is a /summarize slash command — add instruction modifier
+        intent_override = state.get("intent_override", "")
+        summarize_modifier = ""
+        if intent_override == "SUMMARIZE":
+            summarize_modifier = (
+                " — provide a comprehensive structured summary with key points, "
+                "themes, and conclusions"
+            )
+
         plan = [
-            {"tool": "rag_tool", "description": "Search materials for answer"},
+            {"tool": "rag_tool", "description": f"Search materials for answer{summarize_modifier}"},
         ]
         # Add research_tool as conditional fallback if RAG returns empty
         plan.append({

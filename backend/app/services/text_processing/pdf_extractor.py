@@ -100,43 +100,42 @@ class PDFExtractor:
         """
         try:
             self._meta = _Meta()
-            doc = fitz.open(pdf_path)
-            self._meta.page_count = len(doc)
+            with fitz.open(pdf_path) as doc:
+                self._meta.page_count = len(doc)
 
-            # ── Detect document type ──────────────────────────────────────────
-            # Sample up to 5 pages spread across the document for a more
-            # reliable digital-vs-scanned classification.
-            sample_indices = sorted(set([
-                0,
-                len(doc) // 4,
-                len(doc) // 2,
-                3 * len(doc) // 4,
-                len(doc) - 1,
-            ]))[:min(5, len(doc))]
-            sample_n = len(sample_indices)
-            sample_chars = sum(len(doc[i].get_text().strip()) for i in sample_indices)
-            avg_chars = sample_chars / sample_n if sample_n else 0
+                # ── Detect document type ──────────────────────────────────────────
+                # Sample up to 5 pages spread across the document for a more
+                # reliable digital-vs-scanned classification.
+                sample_indices = sorted(set([
+                    0,
+                    len(doc) // 4,
+                    len(doc) // 2,
+                    3 * len(doc) // 4,
+                    len(doc) - 1,
+                ]))[:min(5, len(doc))]
+                sample_n = len(sample_indices)
+                sample_chars = sum(len(doc[i].get_text().strip()) for i in sample_indices)
+                avg_chars = sample_chars / sample_n if sample_n else 0
 
-            if avg_chars > DIGITAL_CHARS_THRESHOLD:
-                logger.info(
-                    "Digital PDF detected (avg %.0f chars/page), using PyMuPDF",
-                    avg_chars,
-                )
-                text, ocr_pages = self._extract_digital(doc, pdf_path)
-                self._meta.method = "pymupdf" if not ocr_pages else "pymupdf+ocr"
-            else:
-                logger.info(
-                    "Scanned PDF detected (avg %.0f chars/page), routing all pages to OCR",
-                    avg_chars,
-                )
-                # No point doing block extraction on a scanned PDF.
-                # Let OCRService produce the structured Markdown.
-                text = ""
-                ocr_pages = list(range(len(doc)))
-                self._meta.method = "ocr"
+                if avg_chars > DIGITAL_CHARS_THRESHOLD:
+                    logger.info(
+                        "Digital PDF detected (avg %.0f chars/page), using PyMuPDF",
+                        avg_chars,
+                    )
+                    text, ocr_pages = self._extract_digital(doc, pdf_path)
+                    self._meta.method = "pymupdf" if not ocr_pages else "pymupdf+ocr"
+                else:
+                    logger.info(
+                        "Scanned PDF detected (avg %.0f chars/page), routing all pages to OCR",
+                        avg_chars,
+                    )
+                    # No point doing block extraction on a scanned PDF.
+                    # Let OCRService produce the structured Markdown.
+                    text = ""
+                    ocr_pages = list(range(len(doc)))
+                    self._meta.method = "ocr"
 
-            doc.close()
-            self._meta.ocr_pages = len(ocr_pages)
+                self._meta.ocr_pages = len(ocr_pages)
 
             return {
                 "status": "success",

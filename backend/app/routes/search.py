@@ -64,4 +64,4 @@ async def search_web(
         raise HTTPException(status_code=502, detail="External search service error")
     except Exception as e:
         logger.exception("Web search failed")
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Search failed")

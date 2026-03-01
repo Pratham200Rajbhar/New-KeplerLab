@@ -58,12 +58,14 @@ export function AppProvider({ children }) {
     }, []);
 
     // Add a message to chat
-    const addMessage = useCallback((role, content, citations = null) => {
+    const addMessage = useCallback((role, content, extra = null) => {
         const message = {
             id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             role,
             content,
-            citations: citations || null,
+            // Support legacy citations-only call and new object call
+            citations: extra?.citations || (Array.isArray(extra) ? extra : null),
+            slashCommand: extra?.slashCommand || null,
             timestamp: new Date(),
         };
         setMessages(prev => [...prev, message]);

@@ -62,7 +62,7 @@ async def get_mindmap(
     if not content:
         raise HTTPException(status_code=404, detail="Mind map not found")
 
-    data = content.data if isinstance(content.data, dict) else json.loads(content.data)
+    data = content.data if isinstance(content.data, dict) else (json.loads(content.data) if content.data else {})
     return JSONResponse(content=data)
 
 

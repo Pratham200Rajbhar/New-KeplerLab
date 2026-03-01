@@ -59,7 +59,7 @@ async def _authenticate(token: str) -> str | None:
         return None
 
 
-def _close_msg(code: int, reason: str) -> None:
+def _close_msg(code: int, reason: str) -> str:
     """Return a pre-serialised close error message (send before closing)."""
     return json.dumps({"type": "error", "code": code, "reason": reason})
 
@@ -129,7 +129,7 @@ async def ws_jobs(
         await ws_manager.connect_user(user_id, websocket)
     else:
         # Already accepted (first-message auth path) — register directly
-        ws_manager._user_connections[user_id].append(websocket)
+        ws_manager._user_connections.setdefault(user_id, []).append(websocket)
     logger.info("WS /ws/jobs/%s connected", user_id)
 
     # Send initial handshake

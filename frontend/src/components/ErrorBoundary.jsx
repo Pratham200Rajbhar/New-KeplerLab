@@ -45,7 +45,7 @@ class ErrorBoundary extends Component {
               {this.props.message || 'An unexpected error occurred. Please try again.'}
             </p>
             {this.state.error && (
-              <details className="text-left text-sm text-text-secondary bg-surface-secondary rounded-lg p-4">
+              <details className="text-left text-sm text-text-secondary bg-surface-overlay rounded-lg p-4">
                 <summary className="cursor-pointer font-medium mb-2">Error Details</summary>
                 <pre className="whitespace-pre-wrap break-words text-xs overflow-auto max-h-40">
                   {this.state.error.toString()}
@@ -56,15 +56,15 @@ class ErrorBoundary extends Component {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 
+                className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-dark 
                          transition-colors font-medium"
               >
                 Try Again
               </button>
               <button
                 onClick={this.handleReload}
-                className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg 
-                         hover:bg-surface-secondary/80 transition-colors font-medium"
+                className="px-4 py-2 bg-surface-raised text-text-primary rounded-lg 
+                         hover:bg-surface-overlay transition-colors font-medium"
               >
                 Reload Page
               </button>

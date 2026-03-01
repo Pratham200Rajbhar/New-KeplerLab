@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from contextlib import nullcontext
 from typing import List, Tuple, Optional
 import torch
 
@@ -158,7 +159,3 @@ def rerank_chunks(
     except Exception as e:
         logger.error("Reranking failed: %s, returning original chunks", e)
         return [(c, 1.0) for c in chunks[:top_k]] if top_k else [(c, 1.0) for c in chunks]
-
-
-# Null context manager for CPU path
-from contextlib import nullcontext

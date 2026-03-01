@@ -192,7 +192,7 @@ export default function PodcastPlayer() {
                     key={s}
                     onClick={() => { changeSpeed(s); setShowSpeedMenu(false); }}
                     className={`block w-full px-3 py-1.5 text-xs text-left transition-colors ${
-                      playbackSpeed === s ? 'text-accent bg-accent/10' : 'text-text-secondary hover:bg-glass-light'
+                      playbackSpeed === s ? 'text-accent bg-accent/10' : 'text-text-secondary hover:bg-surface-raised'
                     }`}
                   >
                     {s}x

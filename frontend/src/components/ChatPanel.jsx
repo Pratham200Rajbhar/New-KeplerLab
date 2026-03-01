@@ -9,6 +9,10 @@ import ResearchProgress from './chat/ResearchProgress';
 import AgentThinkingBar from './chat/AgentThinkingBar';
 import AgentActionBlock from './chat/AgentActionBlock';
 import Modal from './Modal';
+import SlashCommandPills from './chat/SlashCommandPills';
+import SlashCommandDropdown from './chat/SlashCommandDropdown';
+import CommandBadge from './chat/CommandBadge';
+import { parseSlashCommand } from './chat/slashCommands';
 
 const QUICK_ACTIONS = [
     { id: 'summarize', label: 'Summarize', icon: '📝' },
@@ -101,6 +105,12 @@ export default function ChatPanel() {
     const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
+
+    // ── Slash command state ──────────────────────────────────
+    const [activeCommand, setActiveCommand] = useState(null);      // selected slash command object
+    const [showSlashDropdown, setShowSlashDropdown] = useState(false);
+    const [slashFilter, setSlashFilter] = useState('');            // text after "/" for filtering
+    const [isInputFocused, setIsInputFocused] = useState(false);
 
     // Toast for user-visible error feedback
     const [toastMsg, setToastMsg] = useState(null);
@@ -296,9 +306,32 @@ export default function ChatPanel() {
     const handleSend = async (message = inputValue) => {
         if (!message.trim() || !hasSource || !currentNotebook?.id || currentNotebook.isDraft) return;
 
-        const userMessage = message.trim();
+        let userMessage = message.trim();
+
+        // ── Determine intent override from slash command ──────────
+        let intentOverride = null;
+        let commandForMessage = activeCommand;  // the badge to persist on user message
+
+        // If no active command badge, check if the message itself starts with a slash command
+        if (!commandForMessage) {
+            const parsed = parseSlashCommand(userMessage);
+            if (parsed) {
+                commandForMessage = parsed.command;
+                intentOverride = parsed.command.intent;
+                // Strip the slash prefix — intent is carried by intent_override
+                userMessage = parsed.remainingMessage || commandForMessage.label;
+            }
+        } else {
+            intentOverride = commandForMessage.intent;
+        }
+
+        // Clear slash command state
+        setActiveCommand(null);
+        setShowSlashDropdown(false);
+        setSlashFilter('');
         setInputValue('');
-        addMessage('user', userMessage);
+
+        addMessage('user', userMessage, { slashCommand: commandForMessage || undefined });
         setLoadingState('chat', true);
         setStreamingContent('');
         setAgentStepLabel('');
@@ -338,7 +371,8 @@ export default function ChatPanel() {
                 currentNotebook.id,
                 effectiveIds,
                 sessionIdToUse,
-                ac.signal
+                ac.signal,
+                intentOverride
             );
 
             await readSSEStream(response, {
@@ -645,11 +679,48 @@ export default function ChatPanel() {
     };
 
     const handleKeyDown = (e) => {
+        // When slash dropdown is visible, let it handle arrow/enter/escape
+        if (showSlashDropdown) return;
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
     };
+
+    // ── Slash command input handling ─────────────────────────
+    const handleInputChange = useCallback((e) => {
+        const val = e.target.value;
+        setInputValue(val);
+
+        // Detect slash command typing (only when no command is already selected)
+        if (!activeCommand) {
+            if (val === '/') {
+                setShowSlashDropdown(true);
+                setSlashFilter('');
+            } else if (val.startsWith('/') && !val.includes(' ')) {
+                setShowSlashDropdown(true);
+                setSlashFilter(val.slice(1));
+            } else {
+                setShowSlashDropdown(false);
+                setSlashFilter('');
+            }
+        } else {
+            setShowSlashDropdown(false);
+        }
+    }, [activeCommand]);
+
+    const handleSlashSelect = useCallback((cmd) => {
+        setActiveCommand(cmd);
+        setShowSlashDropdown(false);
+        setSlashFilter('');
+        setInputValue('');
+        textareaRef.current?.focus();
+    }, []);
+
+    const handleRemoveCommand = useCallback(() => {
+        setActiveCommand(null);
+        textareaRef.current?.focus();
+    }, []);
 
     const handleQuickAction = (action) => {
         const prompts = {
@@ -1099,8 +1170,8 @@ export default function ChatPanel() {
                     {mindMapBanner && (
                         <div
                             style={{
-                                borderLeft: '3px solid #68d391',
-                                background: '#2d3748',
+                                borderLeft: '3px solid var(--accent-light)',
+                                background: 'var(--surface-raised)',
                                 padding: '6px 12px',
                                 marginBottom: '8px',
                                 borderRadius: '0 6px 6px 0',
@@ -1109,15 +1180,15 @@ export default function ChatPanel() {
                                 justifyContent: 'space-between',
                             }}
                         >
-                            <span style={{ fontSize: '12px', color: '#a0aec0' }}>
-                                Asking about: <strong style={{ color: '#e2e8f0' }}>{mindMapBanner}</strong>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                Asking about: <strong style={{ color: 'var(--text-primary)' }}>{mindMapBanner}</strong>
                             </span>
                             <button
                                 onClick={() => setMindMapBanner(null)}
                                 style={{
                                     background: 'none',
                                     border: 'none',
-                                    color: '#a0aec0',
+                                    color: 'var(--text-secondary)',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                     padding: '0 4px',
@@ -1128,19 +1199,45 @@ export default function ChatPanel() {
                         </div>
                     )}
 
+                    {/* Slash Command Suggestion Pills — shown when focused, no command active */}
+                    <SlashCommandPills
+                        visible={isInputFocused && !activeCommand && !inputValue && hasSource && !isLoading}
+                        onSelect={handleSlashSelect}
+                    />
+
+                    {/* Slash Command Dropdown — shown when typing "/" */}
+                    <SlashCommandDropdown
+                        visible={showSlashDropdown && !activeCommand}
+                        filter={slashFilter}
+                        onSelect={handleSlashSelect}
+                        onClose={() => { setShowSlashDropdown(false); setSlashFilter(''); }}
+                    />
+
                     <div className="chat-input-container rounded-2xl shadow-elevated bg-surface-raised border border-border focus-within:ring-2 ring-accent/20 transition-all transform-gpu hover:shadow-lg">
-                        <textarea
-                            ref={textareaRef}
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder={hasSource
-                                ? (isLoading ? 'AI is thinking…' : selectedSources.size > 1 ? `Ask about ${selectedSources.size} sources…` : 'Ask anything about your source…')
-                                : isSourceProcessing ? 'Processing source, please wait…' : 'Select a source to start…'}
-                            disabled={!hasSource || isLoading}
-                            className="flex-1 bg-transparent text-[15px] sm:text-base text-text-primary placeholder-text-muted resize-none outline-none min-h-[48px] max-h-[200px] py-3.5 px-4 leading-relaxed"
-                            rows={1}
-                        />
+                        <div className="flex items-center flex-1 min-w-0">
+                            {/* Active command badge inside input */}
+                            {activeCommand && (
+                                <div className="pl-3 flex-shrink-0">
+                                    <CommandBadge command={activeCommand} onRemove={handleRemoveCommand} />
+                                </div>
+                            )}
+                            <textarea
+                                ref={textareaRef}
+                                value={inputValue}
+                                onChange={handleInputChange}
+                                onKeyDown={handleKeyDown}
+                                onFocus={() => setIsInputFocused(true)}
+                                onBlur={() => setTimeout(() => setIsInputFocused(false), 150)}
+                                placeholder={activeCommand
+                                    ? `Type your ${activeCommand.label.toLowerCase()} prompt…`
+                                    : hasSource
+                                        ? (isLoading ? 'AI is thinking…' : selectedSources.size > 1 ? `Ask about ${selectedSources.size} sources…` : 'Ask anything about your source… (type / for commands)')
+                                        : isSourceProcessing ? 'Processing source, please wait…' : 'Select a source to start…'}
+                                disabled={!hasSource || isLoading}
+                                className="flex-1 bg-transparent text-[15px] sm:text-base text-text-primary placeholder-text-muted resize-none outline-none min-h-[48px] max-h-[200px] py-3.5 px-4 leading-relaxed"
+                                rows={1}
+                            />
+                        </div>
                         <div className="flex items-end pb-2.5 pr-2.5 gap-1">
                             {/* ✨ Suggest button */}
                             {inputValue.trim().length > 0 && (
@@ -1200,7 +1297,8 @@ export default function ChatPanel() {
                             <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border/50 font-mono text-[10px]">Enter</kbd> send
                             &nbsp;·&nbsp;
                             <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border/50 font-mono text-[10px]">⇧ Enter</kbd> new line
-                            &nbsp;·&nbsp; 🔬 deep research
+                            &nbsp;·&nbsp;
+                            <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border/50 font-mono text-[10px]">/</kbd> commands
                         </p>
                         {inputValue.length > 0 && (
                             <span className={`text-xs tabular-nums ${ inputValue.length > 1800 ? 'text-status-error' : 'text-text-muted' }`}>

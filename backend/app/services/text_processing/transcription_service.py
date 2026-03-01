@@ -243,7 +243,7 @@ class AudioTranscriptionService:
             
             try:
                 transcribe_options = {
-                    'fp16': False,
+                    'fp16': getattr(self, '_use_fp16', False),
                     'verbose': False,
                     'word_timestamps': True  # Enable word-level timestamps
                 }

@@ -42,6 +42,28 @@
   --scrollbar-hover: rgba(0, 0, 0, 0.2);
   --selection: rgba(37, 99, 235, 0.16);
   --focus-ring: rgba(37, 99, 235, 0.4);
+
+  /* ── Semantic Status Colors ── */
+  --success: #10b981;
+  --success-light: #34d399;
+  --success-dark: #059669;
+  --success-subtle: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.25);
+
+  --danger: #ef4444;
+  --danger-light: #f87171;
+  --danger-dark: #dc2626;
+  --danger-subtle: rgba(239, 68, 68, 0.1);
+  --danger-border: rgba(239, 68, 68, 0.25);
+
+  --warning: #f97316;
+  --warning-light: #fb923c;
+  --warning-subtle: rgba(249, 115, 22, 0.1);
+
+  --info: #6366f1;
+  --info-light: #818cf8;
+  --info-subtle: rgba(99, 102, 241, 0.1);
+  --info-border: rgba(99, 102, 241, 0.25);
 }
 
 .dark {
@@ -78,6 +100,28 @@
   --scrollbar-hover: rgba(255, 255, 255, 0.15);
   --selection: rgba(59, 130, 246, 0.25);
   --focus-ring: rgba(59, 130, 246, 0.5);
+
+  /* ── Semantic Status Colors (Dark) ── */
+  --success: #10b981;
+  --success-light: #86efac;
+  --success-dark: #059669;
+  --success-subtle: rgba(16, 185, 129, 0.15);
+  --success-border: rgba(16, 185, 129, 0.3);
+
+  --danger: #ef4444;
+  --danger-light: #fca5a5;
+  --danger-dark: #dc2626;
+  --danger-subtle: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.3);
+
+  --warning: #f97316;
+  --warning-light: #fdba74;
+  --warning-subtle: rgba(249, 115, 22, 0.15);
+
+  --info: #6366f1;
+  --info-light: #a5b4fc;
+  --info-subtle: rgba(99, 102, 241, 0.15);
+  --info-border: rgba(99, 102, 241, 0.3);
 }
 
 /* ==================== BASE STYLES ==================== */

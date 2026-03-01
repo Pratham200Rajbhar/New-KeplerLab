@@ -1,3 +1,4 @@
+import asyncio
 import ipaddress
 import os
 import re
@@ -50,7 +51,7 @@ VIEWABLE_EXTENSIONS = INLINE_EXTENSIONS | OFFICE_EXTENSIONS | {".txt", ".csv", "
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-def _validate_url(url: str) -> str:
+async def _validate_url(url: str) -> str:
     """
     Parse, validate and normalise a file URL.
     Raises HTTPException 400 for disallowed URLs.
@@ -79,9 +80,13 @@ def _validate_url(url: str) -> str:
         if any(ip in net for net in _PRIVATE_NETWORKS):
             raise HTTPException(status_code=400, detail="Access to private network addresses is not allowed.")
     except ValueError:
-        # Not a numeric IP — try DNS resolution check
+        # Not a numeric IP — try DNS resolution check (non-blocking)
         try:
-            resolved_ip = ipaddress.ip_address(socket.getaddrinfo(hostname, None)[0][4][0])
+            loop = asyncio.get_running_loop()
+            resolved = await loop.run_in_executor(
+                None, socket.getaddrinfo, hostname, None
+            )
+            resolved_ip = ipaddress.ip_address(resolved[0][4][0])
             if any(resolved_ip in net for net in _PRIVATE_NETWORKS):
                 raise HTTPException(status_code=400, detail="Resolved IP is in a private range.")
         except (socket.gaierror, OSError):
@@ -121,7 +126,7 @@ async def proxy_webpage(
     Requires authentication. Only HTTPS URLs are allowed (SSRF protection).
     """
     # Validate URL — enforce HTTPS and block private networks
-    url = _validate_url(url)
+    url = await _validate_url(url)
 
     try:
         headers = {
@@ -130,7 +135,7 @@ async def proxy_webpage(
             "Accept-Language": "en-US,en;q=0.9",
         }
 
-        async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
+        async with httpx.AsyncClient(follow_redirects=False, timeout=10.0) as client:
             response = await client.get(url, headers=headers)
             response.raise_for_status()
 
@@ -156,13 +161,16 @@ async def proxy_webpage(
 
 
 @router.get("/file-viewer/info")
-async def file_viewer_info(url: str = Query(..., description="Public HTTPS file URL")):
+async def file_viewer_info(
+    url: str = Query(..., description="Public HTTPS file URL"),
+    current_user=Depends(get_current_user),
+):
     """
     Validate a public file URL and return viewer metadata.
     Tells the frontend which viewer strategy to use (pdf / office / text / other).
     Also provides the MS Office Online Viewer embed URL for office documents.
     """
-    url = _validate_url(url)
+    url = await _validate_url(url)
     meta = _detect_file_type(url)
 
     result = {
@@ -180,13 +188,16 @@ async def file_viewer_info(url: str = Query(..., description="Public HTTPS file 
 
 
 @router.get("/file-viewer/proxy")
-async def file_viewer_proxy(url: str = Query(..., description="Public HTTPS PDF/text URL")):
+async def file_viewer_proxy(
+    url: str = Query(..., description="Public HTTPS PDF/text URL"),
+    current_user=Depends(get_current_user),
+):
     """
     Proxy a PDF or plain-text file and serve it with Content-Disposition: inline
     so the browser renders it directly instead of forcing a download.
     Only allows HTTPS non-private URLs.
     """
-    url = _validate_url(url)
+    url = await _validate_url(url)
     meta = _detect_file_type(url)
 
     if meta["kind"] not in ("pdf", "text"):

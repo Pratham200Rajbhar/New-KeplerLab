@@ -591,7 +591,7 @@ function StudioPanelInner() {
                             "{showDeleteConfirm.title || showDeleteConfirm.content_type}" will be permanently deleted.
                         </p>
                         <div className="flex justify-end gap-2">
-                            <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm rounded-lg text-text-secondary hover:bg-bg-secondary transition-colors">Cancel</button>
+                            <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm rounded-lg text-text-secondary hover:bg-surface-raised transition-colors">Cancel</button>
                             <button onClick={confirmHistoryDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium transition-colors">Delete</button>
                         </div>
                     </div>
@@ -719,14 +719,14 @@ function StudioPanelInner() {
                     {/* Error Toast */}
                     {actionError && (
                         <div className="absolute top-4 left-4 right-4 z-50 animate-fade-in fade-up">
-                            <div className="bg-[#ef4444]/10 border border-[#ef4444]/30 p-3 rounded-xl shadow-lg backdrop-blur-md flex items-start gap-3">
-                                <div className="mt-0.5 w-6 h-6 rounded-full bg-[#ef4444]/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-[#ef4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="bg-danger-subtle border border-danger-border p-3 rounded-xl shadow-lg backdrop-blur-md flex items-start gap-3">
+                                <div className="mt-0.5 w-6 h-6 rounded-full bg-danger/20 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                 </div>
                                 <div className="flex-1">
-                                    <h5 className="text-sm font-bold text-[#f87171]">Generation Failed</h5>
+                                    <h5 className="text-sm font-bold text-danger-light">Generation Failed</h5>
                                     <p className="text-xs text-text-secondary mt-0.5">{actionError}</p>
                                 </div>
                                 <button onClick={() => setActionError(null)} className="text-text-muted hover:text-text-primary p-1">
@@ -852,7 +852,7 @@ function StudioPanelInner() {
                                                         <div className="absolute right-4 top-[80%] mt-1 w-36 glass-strong rounded-lg shadow-glass overflow-hidden z-50">
                                                             <button
                                                                 onClick={(e) => openHistoryRenameModal(item, e)}
-                                                                className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-glass-light flex items-center gap-2 transition-colors"
+                                                                className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-raised flex items-center gap-2 transition-colors"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -861,7 +861,7 @@ function StudioPanelInner() {
                                                             </button>
                                                             <button
                                                                 onClick={(e) => handleHistoryDownload(item, e)}
-                                                                className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-glass-light flex items-center gap-2 transition-colors"
+                                                                className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-raised flex items-center gap-2 transition-colors"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -870,7 +870,7 @@ function StudioPanelInner() {
                                                             </button>
                                                             <button
                                                                 onClick={(e) => handleHistoryShare(item, e)}
-                                                                className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-glass-light flex items-center gap-2 transition-colors"
+                                                                className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-raised flex items-center gap-2 transition-colors"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -1627,9 +1627,9 @@ function InlineQuizView({ data }) {
 
                     if (showState) {
                         if (isCorrect) {
-                            stateClass = 'border-[#10b981] bg-[#10b981]/10 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+                            stateClass = 'border-success bg-success-subtle shadow-[0_0_15px_rgba(16,185,129,0.15)]';
                         } else if (isSelected) {
-                            stateClass = 'border-[#ef4444] bg-[#ef4444]/10';
+                            stateClass = 'border-danger bg-danger-subtle';
                         } else {
                             stateClass = 'border-border bg-surface opacity-40 grayscale-[50%]';
                         }
@@ -1646,12 +1646,12 @@ function InlineQuizView({ data }) {
                                 {option}
                             </span>
                             {showState && isCorrect && (
-                                <span className="flex-shrink-0 ml-3 w-6 h-6 rounded-full bg-[#10b981] text-white flex items-center justify-center animate-scale-in">
+                                <span className="flex-shrink-0 ml-3 w-6 h-6 rounded-full bg-success text-white flex items-center justify-center animate-scale-in">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                                 </span>
                             )}
                             {showState && isSelected && !isCorrect && (
-                                <span className="flex-shrink-0 ml-3 w-6 h-6 rounded-full bg-[#ef4444] text-white flex items-center justify-center animate-scale-in">
+                                <span className="flex-shrink-0 ml-3 w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center animate-scale-in">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                                 </span>
                             )}
@@ -1662,11 +1662,11 @@ function InlineQuizView({ data }) {
 
             {selectedAnswer !== null && (
                 <div className={`p-5 rounded-xl text-sm animate-fade-up flex flex-col gap-3 border backdrop-blur-sm ${selectedAnswer === question.correct_answer
-                    ? 'bg-gradient-to-r from-[#10b981]/10 to-[#10b981]/5 border-[#10b981]/30 shadow-[0_4px_20px_rgba(16,185,129,0.1)]'
-                    : 'bg-gradient-to-r from-[#ef4444]/10 to-[#ef4444]/5 border-[#ef4444]/30 shadow-[0_4px_20px_rgba(239,68,68,0.1)]'
+                    ? 'bg-gradient-to-r from-success-subtle to-success-subtle/50 border-success-border shadow-[0_4px_20px_rgba(16,185,129,0.1)]'
+                    : 'bg-gradient-to-r from-danger-subtle to-danger-subtle/50 border-danger-border shadow-[0_4px_20px_rgba(239,68,68,0.1)]'
                     }`}>
                     {selectedAnswer === question.correct_answer ? (
-                        <div className="flex items-center gap-2 text-[#10b981] font-bold text-base">
+                        <div className="flex items-center gap-2 text-success font-bold text-base">
                             <span className="animate-bounce">
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1676,7 +1676,7 @@ function InlineQuizView({ data }) {
                         </div>
                     ) : (
                         <div>
-                            <div className="flex items-center gap-2 text-[#ef4444] font-bold text-base mb-2">
+                            <div className="flex items-center gap-2 text-danger font-bold text-base mb-2">
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -1714,6 +1714,7 @@ function InlineExplainerView({ data }) {
     const [videoBlobUrl, setVideoBlobUrl] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const blobUrlRef = useRef(null);
 
     const explainerId = data?.explainer_id;
     const duration = data?.duration || 0;
@@ -1735,6 +1736,7 @@ function InlineExplainerView({ data }) {
         fetchExplainerVideoBlob(explainerId)
             .then(blobUrl => {
                 if (!cancelled) {
+                    blobUrlRef.current = blobUrl;
                     setVideoBlobUrl(blobUrl);
                     setLoading(false);
                 }
@@ -1748,7 +1750,10 @@ function InlineExplainerView({ data }) {
 
         return () => {
             cancelled = true;
-            if (videoBlobUrl) URL.revokeObjectURL(videoBlobUrl);
+            if (blobUrlRef.current) {
+                URL.revokeObjectURL(blobUrlRef.current);
+                blobUrlRef.current = null;
+            }
         };
     }, [explainerId]);
 
@@ -1800,7 +1805,7 @@ function InlineExplainerView({ data }) {
                     <h4 className="text-xs font-medium text-text-secondary uppercase tracking-wider">Chapters</h4>
                     <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                         {chapters.map((ch, i) => (
-                            <div key={i} className="flex items-center gap-3 text-xs text-text-muted py-1.5 px-2 rounded hover:bg-glass-light transition-colors">
+                            <div key={i} className="flex items-center gap-3 text-xs text-text-muted py-1.5 px-2 rounded hover:bg-surface-raised transition-colors">
                                 <span className="text-text-secondary tabular-nums font-mono">
                                     {Math.floor(ch.start_time / 60)}:{String(Math.floor(ch.start_time % 60)).padStart(2, '0')}
                                 </span>

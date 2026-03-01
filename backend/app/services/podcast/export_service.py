@@ -326,7 +326,7 @@ async def generate_summary(session_id: str, user_id: str) -> str:
     )
 
     llm = get_llm(mode="chat", max_tokens=1000)
-    response = await asyncio.get_event_loop().run_in_executor(
+    response = await asyncio.get_running_loop().run_in_executor(
         None,
         lambda: llm.invoke(prompt),
     )

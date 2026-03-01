@@ -322,9 +322,9 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     color: #fff;
                 }
                 .pv-icon-btn.active {
-                    background: rgba(99,102,241,0.2);
-                    border-color: rgba(99,102,241,0.4);
-                    color: #818cf8;
+                    background: var(--accent-subtle);
+                    border-color: var(--accent-border);
+                    color: var(--accent-light);
                 }
                 /* Stage: fills all remaining space */
                 .pv-stage {
@@ -390,8 +390,8 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                 .pv-hover-arrow.right { right: 16px; }
                 .pv-slide-wrapper:hover .pv-hover-arrow { opacity: 1; }
                 .pv-hover-arrow:hover {
-                    background: rgba(99,102,241,0.9);
-                    border-color: #818cf8;
+                    background: var(--accent);
+                    border-color: var(--accent-light);
                     transform: translateY(-50%) scale(1.1);
                 }
                 .pv-footer {
@@ -473,8 +473,8 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     position: relative;
                     background: rgba(255,255,255,0.04);
                 }
-                .pv-overview-item:hover { border-color: rgba(99,102,241,0.5); transform: translateY(-3px); }
-                .pv-overview-item.active { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.4); }
+                .pv-overview-item:hover { border-color: var(--accent-border); transform: translateY(-3px); }
+                .pv-overview-item.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-border); }
                 .pv-overview-num {
                     position: absolute;
                     bottom: 6px;
@@ -521,7 +521,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                     border: none;
                     text-align: left;
                 }
-                .pv-dropdown-item:hover { background: rgba(99,102,241,0.2); color: #fff; }
+                .pv-dropdown-item:hover { background: var(--accent-subtle); color: #fff; }
                 .pv-dropdown-item-icon {
                     width: 32px; height: 32px;
                     border-radius: 8px;
@@ -561,7 +561,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                             <button
                                 className="pv-nav-btn"
                                 onClick={onRegenerate}
-                                style={{ padding: '6px 12px', background: 'rgba(99,102,241,0.1)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,0.2)' }}
+                                style={{ padding: '6px 12px', background: 'var(--accent-subtle)', color: 'var(--accent-light)', borderColor: 'var(--accent-border)' }}
                             >
                                 <RegenerateIcon /> <span style={{ fontSize: 12 }}>Regenerate</span>
                             </button>
@@ -625,11 +625,11 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                             <div style={{
                                 width: SLIDE_W * scale,
                                 height: SLIDE_H * scale,
-                                background: 'linear-gradient(135deg,#1e2235,#0e1020)',
+                                background: 'var(--surface-sunken)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: 'rgba(255,255,255,0.4)',
+                                color: 'var(--text-muted)',
                                 fontSize: 14,
                                 borderRadius: 8,
                             }}>
@@ -677,7 +677,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                                 className="pv-icon-btn"
                                 onClick={() => setShowDownload(v => !v)}
                                 title="Download"
-                                style={showDownload ? { background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,0.4)' } : {}}
+                                style={showDownload ? { background: 'var(--accent-subtle)', color: 'var(--accent-light)', borderColor: 'var(--accent-border)' } : {}}
                             >
                                 <DownloadIcon />
                             </button>
@@ -685,7 +685,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                             {showDownload && (
                                 <div className="pv-dropdown">
                                     <button className="pv-dropdown-item" onClick={handleDownloadHTML}>
-                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(249,115,22,0.15)' }}>
+                                        <div className="pv-dropdown-item-icon" style={{ background: 'var(--warning-subtle, rgba(249,115,22,0.15))' }}>
                                             <HtmlIcon />
                                         </div>
                                         <div>
@@ -695,7 +695,7 @@ export default function InlinePresentationView({ data, onRegenerate, loading }) 
                                     </button>
                                     <div className="pv-dropdown-divider" />
                                     <button className="pv-dropdown-item" onClick={handleDownloadSlideHTML} disabled={!currentSlide?.html}>
-                                        <div className="pv-dropdown-item-icon" style={{ background: 'rgba(16,185,129,0.15)' }}>
+                                        <div className="pv-dropdown-item-icon" style={{ background: 'var(--success-subtle, rgba(16,185,129,0.15))' }}>
                                             <SlideIcon />
                                         </div>
                                         <div>
@@ -911,27 +911,27 @@ const ImageOffIcon = () => (
 );
 
 const HtmlIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
     </svg>
 );
 
 const PdfIcon = () => (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#ef4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
         <line x1="9" y1="15" x2="15" y2="15" /><line x1="9" y1="11" x2="15" y2="11" />
     </svg>
 );
 
 const PngIcon = () => (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
     </svg>
 );
 
 const SlideIcon = () => (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" />
         <line x1="8" y1="21" x2="16" y2="21" />
         <line x1="12" y1="17" x2="12" y2="21" />

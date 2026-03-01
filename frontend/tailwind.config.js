@@ -39,6 +39,38 @@ export default {
         'status-success': '#16a34a',
         'status-warning': '#d97706',
         'status-error': '#dc2626',
+        /* ── Semantic colors for components ── */
+        success: {
+          DEFAULT: 'var(--success)',
+          light: 'var(--success-light)',
+          dark: 'var(--success-dark)',
+          subtle: 'var(--success-subtle)',
+          border: 'var(--success-border)',
+        },
+        danger: {
+          DEFAULT: 'var(--danger)',
+          light: 'var(--danger-light)',
+          dark: 'var(--danger-dark)',
+          subtle: 'var(--danger-subtle)',
+          border: 'var(--danger-border)',
+        },
+        warning: {
+          DEFAULT: 'var(--warning)',
+          light: 'var(--warning-light)',
+          subtle: 'var(--warning-subtle)',
+        },
+        info: {
+          DEFAULT: 'var(--info)',
+          light: 'var(--info-light)',
+          lighter: 'var(--info-light)',
+          subtle: 'var(--info-subtle)',
+          border: 'var(--info-border)',
+          muted: 'var(--info-border)',
+        },
+        /* ── Backdrop ── */
+        backdrop: 'var(--backdrop)',
+        /* ── Code ── */
+        'code-bg': 'var(--code-bg)',
 
         /* ── Legacy aliases (backward compat) ── */
         dark: {

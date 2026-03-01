@@ -128,6 +128,10 @@ async def update_session(
         if not result:
             raise HTTPException(404, "Session not found")
     if req.current_segment is not None:
+        # Verify ownership before updating segment
+        session = await session_manager.get_session(session_id, str(user.id))
+        if not session:
+            raise HTTPException(404, "Session not found")
         await session_manager.update_current_segment(session_id, req.current_segment)
     
     return await session_manager.get_session(session_id, user.id)

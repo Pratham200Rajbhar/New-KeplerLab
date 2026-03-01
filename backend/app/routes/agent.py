@@ -323,7 +323,12 @@ async def download_generated_file(
     token_data = await require_file_token(token)
 
     # IDOR protection: verify the token owner matches the requested user
-    token_user_id = getattr(token_data, "user_id", None) or (token_data.get("user_id") if isinstance(token_data, dict) else None)
+    # token_data is a plain user_id string from require_file_token()
+    token_user_id = (
+        token_data if isinstance(token_data, str)
+        else getattr(token_data, "user_id", None)
+        or (token_data.get("user_id") if isinstance(token_data, dict) else None)
+    )
     if not token_user_id:
         return JSONResponse(status_code=403, content={"detail": "Invalid token: missing user identity"})
     if str(token_user_id) != str(user_id):

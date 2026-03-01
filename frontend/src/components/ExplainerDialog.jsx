@@ -250,7 +250,7 @@ export default function ExplainerDialog({ isOpen, onClose, materialIds, notebook
                                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                                     selectedPptId === ppt.id
                                         ? 'border-accent bg-accent/10'
-                                        : 'border-border hover:border-border-hover bg-surface-raised'
+                                        : 'border-border hover:border-border-strong bg-surface-raised'
                                 }`}
                             >
                                 <div className="font-medium text-sm text-text-primary truncate">{ppt.title}</div>
@@ -292,7 +292,7 @@ export default function ExplainerDialog({ isOpen, onClose, materialIds, notebook
                             className={`flex flex-col items-center p-2 rounded-lg border text-xs transition-colors ${
                                 pptLanguage === lang.code
                                     ? 'border-accent bg-accent/10 text-accent'
-                                    : 'border-border hover:border-border-hover text-text-secondary'
+                                    : 'border-border hover:border-border-strong text-text-secondary'
                             }`}
                         >
                             <span className="text-base">{lang.flag}</span>
@@ -314,7 +314,7 @@ export default function ExplainerDialog({ isOpen, onClose, materialIds, notebook
                             className={`flex flex-col items-center p-2 rounded-lg border text-xs transition-colors ${
                                 narrationLanguage === lang.code
                                     ? 'border-accent bg-accent/10 text-accent'
-                                    : 'border-border hover:border-border-hover text-text-secondary'
+                                    : 'border-border hover:border-border-strong text-text-secondary'
                             }`}
                         >
                             <span className="text-base">{lang.flag}</span>
@@ -350,7 +350,7 @@ export default function ExplainerDialog({ isOpen, onClose, materialIds, notebook
                             className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                                 voiceGender === g
                                     ? 'border-accent bg-accent/10 text-accent'
-                                    : 'border-border hover:border-border-hover text-text-secondary'
+                                    : 'border-border hover:border-border-strong text-text-secondary'
                             }`}
                         >
                             {g === 'female' ? '👩 Female' : '👨 Male'}
@@ -406,7 +406,7 @@ export default function ExplainerDialog({ isOpen, onClose, materialIds, notebook
                         </div>
 
                         {/* Progress bar */}
-                        <div className="w-full bg-bg-secondary rounded-full h-2 overflow-hidden">
+                        <div className="w-full bg-surface-raised rounded-full h-2 overflow-hidden">
                             <div
                                 className="h-full bg-accent rounded-full transition-all duration-500 ease-out"
                                 style={{ width: `${progress}%` }}

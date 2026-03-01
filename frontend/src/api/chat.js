@@ -6,7 +6,7 @@ import { apiFetch, apiJson } from './config';
  * The backend will yield SSE events:
  *   event: start  | event: step | event: token | event: meta | event: done | event: error
  */
-export async function streamChat(materialId, message, notebookId, materialIds = null, sessionId = null, signal = null) {
+export async function streamChat(materialId, message, notebookId, materialIds = null, sessionId = null, signal = null, intentOverride = null) {
   const body = {
     message,
     notebook_id: notebookId,
@@ -14,6 +14,9 @@ export async function streamChat(materialId, message, notebookId, materialIds = 
   };
   if (sessionId) {
     body.session_id = sessionId;
+  }
+  if (intentOverride) {
+    body.intent_override = intentOverride;
   }
 
   if (materialIds && materialIds.length > 0) {

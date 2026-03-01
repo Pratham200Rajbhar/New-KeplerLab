@@ -2,9 +2,9 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 const depthColors = {
-    0: '#3d4f6b',
-    1: '#2d4a3e',
-    2: '#2d3748',
+    0: 'var(--surface-overlay)',
+    1: 'var(--surface-raised)',
+    2: 'var(--surface-100)',
 };
 
 function MindMapNode({ data, id }) {
@@ -19,7 +19,7 @@ function MindMapNode({ data, id }) {
         depth,
     } = data;
 
-    const bgColor = depthColors[depth] || '#252d3a';
+    const bgColor = depthColors[depth] || 'var(--surface-50)';
     const isHighlighted = highlightedIds && highlightedIds.has(id);
     const hasHighlights = highlightedIds && highlightedIds.size > 0;
     const isCollapsed = collapsedNodes && collapsedNodes.has(id);
@@ -33,25 +33,25 @@ function MindMapNode({ data, id }) {
                 onClick={() => onNodeLabelClick(id, question_hint, label)}
                 style={{
                     background: bgColor,
-                    border: `1px solid ${isHighlighted ? '#68d391' : '#4a5568'}`,
+                    border: `1px solid ${isHighlighted ? 'var(--accent-light)' : 'var(--border-strong)'}`,
                     borderRadius: '6px',
                     padding: '8px 12px',
-                    color: 'white',
+                    color: 'var(--text-primary)',
                     fontSize: '13px',
                     fontWeight: 500,
                     cursor: 'pointer',
                     opacity: hasHighlights && !isHighlighted ? 0.3 : 1,
-                    boxShadow: isHighlighted ? '0 0 0 2px #68d391' : 'none',
+                    boxShadow: isHighlighted ? '0 0 0 2px var(--accent-light)' : 'none',
                     transition: 'border-color 0.2s, opacity 0.2s, box-shadow 0.2s',
                     maxWidth: '200px',
                     wordBreak: 'break-word',
                 }}
                 onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#68d391';
+                    e.currentTarget.style.borderColor = 'var(--accent-light)';
                 }}
                 onMouseLeave={(e) => {
                     if (!isHighlighted) {
-                        e.currentTarget.style.borderColor = '#4a5568';
+                        e.currentTarget.style.borderColor = 'var(--border-strong)';
                     }
                 }}
             >
@@ -68,10 +68,10 @@ function MindMapNode({ data, id }) {
                     style={{
                         width: '20px',
                         height: '20px',
-                        background: '#4a5568',
+                        background: 'var(--surface-overlay)',
                         borderRadius: '4px',
                         border: 'none',
-                        color: 'white',
+                        color: 'var(--text-primary)',
                         fontSize: '11px',
                         marginLeft: '6px',
                         cursor: 'pointer',

@@ -147,7 +147,7 @@ async def detect_satisfaction_llm(message: str, language: str = "en") -> bool:
 
     try:
         llm = get_llm(mode="structured", max_tokens=10)
-        response = await asyncio.get_event_loop().run_in_executor(
+        response = await asyncio.get_running_loop().run_in_executor(
             None,
             lambda: llm.invoke(prompt),
         )

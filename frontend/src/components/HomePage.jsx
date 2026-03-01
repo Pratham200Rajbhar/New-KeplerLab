@@ -154,7 +154,7 @@ export default function HomePage() {
                                     </div>
                                     <button
                                         onClick={logout}
-                                        className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-glass-light flex items-center gap-3 transition-colors"
+                                        className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-surface-raised flex items-center gap-3 transition-colors"
                                     >
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -252,7 +252,7 @@ export default function HomePage() {
                                         <div className="absolute top-10 right-3 w-36 glass-strong rounded-xl shadow-glass overflow-hidden z-50 animate-fade-in">
                                             <button
                                                 onClick={(e) => openRenameModal(notebook, e)}
-                                                className="w-full px-3 py-2.5 text-left text-sm text-text-secondary hover:bg-glass-light flex items-center gap-2.5 transition-colors"
+                                                className="w-full px-3 py-2.5 text-left text-sm text-text-secondary hover:bg-surface-raised flex items-center gap-2.5 transition-colors"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

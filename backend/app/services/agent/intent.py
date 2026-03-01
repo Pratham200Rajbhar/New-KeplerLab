@@ -23,6 +23,19 @@ CODE_EXECUTION = "CODE_EXECUTION"
 FILE_GENERATION = "FILE_GENERATION"
 CONTENT_GENERATION = "CONTENT_GENERATION"
 
+# ── Slash Command → Intent Mapping ────────────────────────────
+# Used by the frontend to skip AI intent detection via intent_override.
+SLASH_COMMAND_INTENTS: Dict[str, str] = {
+    "agent":     RESEARCH,           # full agentic multi-step execution
+    "web":       RESEARCH,           # web search and synthesize
+    "code":      CODE_EXECUTION,     # write and run Python code
+    "data":      DATA_ANALYSIS,      # analyze uploaded data files
+    "quiz":      CONTENT_GENERATION, # generate quiz inline in chat
+    "flash":     CONTENT_GENERATION, # generate flashcards inline in chat
+    "summarize": QUESTION,           # summarize selected materials
+    "mindmap":   CONTENT_GENERATION, # trigger mind map generation
+}
+
 # ── Intent Hierarchy — order matters, checked top to bottom ──
 
 _INTENT_RULES = [
@@ -131,13 +144,21 @@ async def detect_intent(state: AgentState) -> AgentState:
     """
     # ── Fast bypass: caller pre-set the intent or intent_override ──────────
     if state.get("intent_override"):
+        override = state["intent_override"]
+        # Map override to a valid intent.  SUMMARIZE is a special modifier
+        # that routes to QUESTION but the planner reads the override value.
+        intent_map = {
+            "SUMMARIZE": QUESTION,
+            "MINDMAP": CONTENT_GENERATION,
+        }
+        resolved_intent = intent_map.get(override, override)
         logger.info(
-            "[intent] intent_override=%s — using directly",
-            state["intent_override"],
+            "[intent] intent_override=%s → resolved intent=%s — using directly",
+            override, resolved_intent,
         )
         return {
             **state,
-            "intent": state["intent_override"],
+            "intent": resolved_intent,
             "intent_confidence": 1.0,
         }
 

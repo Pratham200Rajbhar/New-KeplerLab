@@ -54,7 +54,7 @@ function getDomain(url) {
 
 function TopBar({ filename, domain, fileUrl, onBack }) {
     return (
-        <div className="h-12 flex-shrink-0 flex items-center gap-3 px-4 bg-[#191B21] border-b border-[#2A2D35] z-10">
+        <div className="h-12 flex-shrink-0 flex items-center gap-3 px-4 bg-surface-sunken border-b border-border z-10">
             <button
                 onClick={onBack}
                 className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors group"
@@ -66,7 +66,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
                 <span className="hidden sm:inline">Back</span>
             </button>
 
-            <div className="w-px h-5 bg-[#2A2D35]" />
+            <div className="w-px h-5 bg-border" />
 
             {/* Favicon + domain */}
             <img
@@ -77,7 +77,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
             />
             <span className="text-xs text-gray-500 font-medium uppercase tracking-wide hidden sm:block">{domain}</span>
 
-            <div className="w-px h-5 bg-[#2A2D35] hidden sm:block" />
+            <div className="w-px h-5 bg-border hidden sm:block" />
 
             {/* Filename */}
             <span className="text-sm text-gray-200 truncate flex-1 min-w-0">{decodeURIComponent(filename)}</span>
@@ -87,7 +87,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
                 <a
                     href={fileUrl}
                     download
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-[#2A2D35] transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-surface-overlay transition-colors"
                     title="Download original"
                 >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -99,7 +99,7 @@ function TopBar({ filename, domain, fileUrl, onBack }) {
                     href={fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-[#2A2D35] transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-surface-overlay transition-colors"
                     title="Open original URL"
                 >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -139,7 +139,7 @@ function ErrorCard({ message, fileUrl }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     download
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2A2D35] hover:bg-[#3A3F4B] text-gray-200 text-sm transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-overlay hover:bg-surface-100 text-gray-200 text-sm transition-colors"
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -154,7 +154,7 @@ function ErrorCard({ message, fileUrl }) {
 function OtherFileCard({ fileUrl, filename, ext }) {
     return (
         <div className="flex-1 flex flex-col items-center justify-center gap-5 p-8">
-            <div className="w-20 h-20 rounded-2xl bg-[#2A2D35] border border-[#3A3F4B] flex items-center justify-center">
+            <div className="w-20 h-20 rounded-2xl bg-surface-overlay border border-border-strong flex items-center justify-center">
                 <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -180,7 +180,7 @@ function OtherFileCard({ fileUrl, filename, ext }) {
                     href={fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2A2D35] hover:bg-[#3A3F4B] text-gray-200 text-sm transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-overlay hover:bg-surface-100 text-gray-200 text-sm transition-colors"
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -256,7 +256,7 @@ export default function FileViewerPage() {
 
     // ── Render ──────────────────────────────────────────────────────────────
     return (
-        <div className="h-screen flex flex-col bg-[#0F1117] text-white overflow-hidden">
+        <div className="h-screen flex flex-col bg-surface text-text-primary overflow-hidden">
             <TopBar
                 filename={filename}
                 domain={domain}
@@ -276,7 +276,7 @@ export default function FileViewerPage() {
                     // ── PDF via backend proxy ───────────────────────────────
                     <div className="flex-1 relative flex flex-col">
                         {!iframeLoaded && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-[#0F1117] z-10">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-surface z-10">
                                 <div className="w-10 h-10 border-2 border-gray-600 border-t-red-400 rounded-full animate-spin" />
                                 <p className="text-sm">Loading PDF…</p>
                             </div>
@@ -295,13 +295,13 @@ export default function FileViewerPage() {
                     // ── Office files via MS Office Online Viewer ────────────
                     <div className="flex-1 relative flex flex-col">
                         {!iframeLoaded && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-[#0F1117] z-10">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-surface z-10">
                                 <div className="w-10 h-10 border-2 border-gray-600 border-t-blue-400 rounded-full animate-spin" />
                                 <p className="text-sm">Opening in Office Viewer…</p>
                                 <p className="text-xs text-gray-600">The file must be publicly accessible on the internet.</p>
                             </div>
                         )}
-                        <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-[#1C1E26] border-b border-[#2A2D35] text-xs text-gray-500">
+                        <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-surface-raised border-b border-border text-xs text-gray-500">
                             <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M21.393 6.143A1 1 0 0020.5 5.5h-5V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1v-1.5h4.5a1 1 0 00.98-.804l1.5-10a1 1 0 00-.587-1.053zM14 19H6V5h7v1.5a1 1 0 001 1h4.375l-1.2 8H15a1 1 0 00-1 1V19z" />
                             </svg>
@@ -321,7 +321,7 @@ export default function FileViewerPage() {
                     // ── Plain text via backend proxy ────────────────────────
                     <div className="flex-1 relative flex flex-col">
                         {!iframeLoaded && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-[#0F1117] z-10">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-surface z-10">
                                 <div className="w-10 h-10 border-2 border-gray-600 border-t-green-400 rounded-full animate-spin" />
                                 <p className="text-sm">Loading file…</p>
                             </div>

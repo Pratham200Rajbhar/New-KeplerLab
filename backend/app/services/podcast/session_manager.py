@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from prisma import Json
@@ -98,7 +98,7 @@ async def update_session_status(
     db = get_prisma()
     data = {"status": status, **extra_fields}
     if status == "completed":
-        data["completedAt"] = datetime.utcnow()
+        data["completedAt"] = datetime.now(timezone.utc)
     await db.podcastsession.update(where={"id": session_id}, data=data)
     logger.info("Session %s → %s", session_id, status)
 

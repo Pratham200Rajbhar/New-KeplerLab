@@ -182,11 +182,15 @@ app.add_middleware(
 
 # Trusted host validation (prevents host-header attacks)
 if settings.ENVIRONMENT == "production":
+    from urllib.parse import urlparse as _urlparse
+    _allowed_hosts = (
+        [_urlparse(o).hostname for o in settings.CORS_ORIGINS if _urlparse(o).hostname]
+        if settings.CORS_ORIGINS and settings.CORS_ORIGINS != ["*"]
+        else ["*"]
+    )
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=settings.CORS_ORIGINS
-            if settings.CORS_ORIGINS and settings.CORS_ORIGINS != ["*"]
-            else ["*"],
+        allowed_hosts=_allowed_hosts or ["*"],
     )
 
 
@@ -197,8 +201,11 @@ _MAX_BODY_SIZE = 100 * 1024 * 1024
 @app.middleware("http")
 async def limit_request_body(request, call_next):
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > _MAX_BODY_SIZE:
-        return JSONResponse(status_code=413, content={"detail": "Request body too large"})
+    try:
+        if content_length and int(content_length) > _MAX_BODY_SIZE:
+            return JSONResponse(status_code=413, content={"detail": "Request body too large"})
+    except (ValueError, TypeError):
+        return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length header"})
     return await call_next(request)
 
 

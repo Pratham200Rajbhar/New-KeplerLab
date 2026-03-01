@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.prompts import get_mindmap_prompt
 from app.models.mindmap_schemas import MindMapResponse
@@ -64,7 +64,7 @@ async def generate_mindmap(
     result["id"] = mindmap_id
     result["notebook_id"] = notebook_id
     result["material_ids"] = material_ids
-    result["created_at"] = datetime.utcnow().isoformat()
+    result["created_at"] = datetime.now(timezone.utc).isoformat()
 
     # ── Step 5: Upsert into GeneratedContent ──────────────
     prisma = get_prisma()

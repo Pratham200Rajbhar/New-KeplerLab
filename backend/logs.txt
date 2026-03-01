@@ -1,162 +1,151 @@
-2026-03-01 15:48:54,086 app.db.prisma_client INFO Prisma client connected to database
-2026-03-01 15:48:54,086 main INFO Warming up embedding model (running in thread pool)…
-2026-03-01 15:48:54,157 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
-2026-03-01 15:48:54,159 app.db.chroma INFO ChromaDB collection 'chapters' ready
-2026-03-01 15:48:54,389 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
-2026-03-01 15:48:54,390 main INFO Preloading reranker model (running in thread pool)…
-2026-03-01 15:48:56,118 app.services.rag.reranker ERROR Failed to load reranker: Failed to import transformers.integrations.integration_utils because of the following error (look up to see its traceback):
+2026-03-01 17:39:26,833 app.db.prisma_client INFO Prisma client connected to database
+2026-03-01 17:39:26,834 main INFO Warming up embedding model (running in thread pool)…
+2026-03-01 17:39:26,911 app.db.chroma INFO ChromaDB client initialised at /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/chroma
+2026-03-01 17:39:26,913 app.db.chroma INFO ChromaDB collection 'chapters' ready
+2026-03-01 17:39:27,127 app.services.rag.embedder INFO Embedding model (ChromaDB ONNX) warm-up complete.
+2026-03-01 17:39:27,127 main INFO Preloading reranker model (running in thread pool)…
+2026-03-01 17:39:28,732 app.services.rag.reranker ERROR Failed to load reranker: Failed to import transformers.integrations.integration_utils because of the following error (look up to see its traceback):
 Failed to import transformers.modeling_utils because of the following error (look up to see its traceback):
 operator torchvision::nms does not exist
-2026-03-01 15:48:56,118 main INFO Reranker preloaded.
-2026-03-01 15:48:56,119 main INFO Background job processor task created.
-2026-03-01 15:48:56,119 main INFO Ensuring sandbox packages are installed…
-2026-03-01 15:48:56,789 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
-2026-03-01 15:48:56,794 main INFO Output directories ensured.
-2026-03-01 15:48:56,794 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
-2026-03-01 15:49:01,881 main INFO POST /auth/refresh 200 0.02s [65fcb645]
-2026-03-01 15:49:01,889 main INFO GET /auth/me 200 0.00s [c65afed3]
-2026-03-01 15:49:01,902 performance INFO request_performance
-2026-03-01 15:49:01,902 main INFO GET /notebooks 200 0.01s [b3d07778]
-2026-03-01 15:49:01,909 performance INFO request_performance
-2026-03-01 15:49:01,909 main INFO GET /notebooks 200 0.01s [a61bb487]
-2026-03-01 15:49:05,321 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
-2026-03-01 15:49:09,483 app.routes.upload INFO Batch upload started: 1 files user=01941404-58a5-4299-a515-7bf44eb0f16b
-2026-03-01 15:49:09,489 app.services.notebook_service INFO Created notebook: ea151b11-f632-4e33-a6d5-241ac9555162 for user: 01941404-58a5-4299-a515-7bf44eb0f16b
-2026-03-01 15:49:09,489 app.routes.upload INFO Auto-created notebook '4. IaaS' id=ea151b11-f632-4e33-a6d5-241ac9555162 for batch
-2026-03-01 15:49:09,491 app.routes.upload INFO Batch stream: 0.9ms  file=4. IaaS.pdf  size=454825 bytes
-2026-03-01 15:49:09,493 app.services.file_validator INFO File validation passed: 4. IaaS.pdf → 0b24a94363b74c1480e9213a8f46216e.pdf (application/pdf, 454825 bytes)
-2026-03-01 15:49:09,494 app.routes.upload INFO Validation passed: 4. IaaS.pdf -> 0b24a94363b74c1480e9213a8f46216e.pdf (application/pdf)
-2026-03-01 15:49:09,503 app.services.material_service INFO Created material record 52e101fb-2038-4bcd-be67-5040c7f8fb3b (pending) for user 01941404-58a5-4299-a515-7bf44eb0f16b
-2026-03-01 15:49:09,511 app.services.job_service INFO Created background job 6835a9c8-6861-4df1-9f61-301084f56fc1 type=material_processing for user=01941404-58a5-4299-a515-7bf44eb0f16b
-2026-03-01 15:49:09,513 main INFO POST /upload/batch 202 0.05s [9100c683]
-2026-03-01 15:49:09,517 app.services.worker INFO Processing job 6835a9c8-6861-4df1-9f61-301084f56fc1 | material=52e101fb-2038-4bcd-be67-5040c7f8fb3b type=file user=01941404-58a5-4299-a515-7bf44eb0f16b
-2026-03-01 15:49:09,532 app.services.text_processing.extractor INFO Extracting file: /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/uploads/01941404-58a5-4299-a515-7bf44eb0f16b/f49af4329ff74f0e9029d7939dd179ca_4. IaaS.pdf  ext=pdf  mime=application/pdf  category=document
-2026-03-01 15:49:09,613 performance INFO request_performance
-2026-03-01 15:49:09,614 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [03534000]
-2026-03-01 15:49:09,614 main INFO GET /materials 200 0.02s [917f5348]
-2026-03-01 15:49:09,630 main INFO GET /materials 200 0.01s [0e883e12]
-2026-03-01 15:49:09,653 app.services.text_processing.pdf_extractor INFO Digital PDF detected (avg 542 chars/page), using PyMuPDF
-2026-03-01 15:49:09,712 performance INFO request_performance
-2026-03-01 15:49:09,713 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.12s [08960b2a]
-2026-03-01 15:49:09,714 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.12s [e498d511]
-2026-03-01 15:49:09,716 performance INFO request_performance
-2026-03-01 15:49:09,717 main INFO GET /materials 200 0.03s [19e6e302]
-2026-03-01 15:49:09,717 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.12s [e0535751]
-2026-03-01 15:49:10,700 app.services.text_processing.resilient_runner INFO PDF-OCR attempt 1/2 (timeout=300s)
-2026-03-01 15:49:10,703 app.services.text_processing.resilient_runner WARNING PDF-OCR attempt 1/2 failed: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
-2026-03-01 15:49:10,703 app.services.text_processing.resilient_runner INFO Retrying PDF-OCR in 1.0 seconds…
-2026-03-01 15:49:11,703 app.services.text_processing.resilient_runner INFO PDF-OCR attempt 2/2 (timeout=300s)
-2026-03-01 15:49:11,709 app.services.text_processing.resilient_runner WARNING PDF-OCR attempt 2/2 failed: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
-2026-03-01 15:49:11,709 app.services.text_processing.extractor WARNING PDFExtractor failed (PDF-OCR failed after 2 attempt(s): partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)), trying pypdf fallback
-2026-03-01 15:49:13,036 app.services.material_service INFO PERF extraction: 3504.5ms  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b  category=document
-2026-03-01 15:49:13,036 app.services.storage_service INFO Saved material text: 52e101fb-2038-4bcd-be67-5040c7f8fb3b (20726 chars)
-2026-03-01 15:49:13,036 app.services.material_service INFO PERF save_text: 0.4ms  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b  chars=20726
-2026-03-01 15:49:13,037 app.services.text_processing.chunker INFO No structure detected, using paragraph-based chunking
-2026-03-01 15:49:13,038 app.services.text_processing.chunker INFO Filtered 0 low-quality chunks
-2026-03-01 15:49:13,038 app.services.text_processing.chunker INFO Created 15 chunks from 1 sections (filtered 0 low-quality)
-2026-03-01 15:49:13,038 app.services.material_service INFO PERF chunking: 1.5ms  chunks=15  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b
-2026-03-01 15:49:13,551 app.services.rag.embedder INFO Stored 15 chunks successfully  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b  user=01941404-58a5-4299-a515-7bf44eb0f16b
-2026-03-01 15:49:13,552 app.services.material_service INFO PERF embedding: 505.2ms  chunks=15  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b
-2026-03-01 15:49:13,557 app.services.material_service INFO PERF _process_material total (critical path): 520.6ms  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b
-2026-03-01 15:49:13,557 app.services.material_service INFO PERF process_material_by_id total: 4039.3ms  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b
-2026-03-01 15:49:13,563 app.services.worker INFO [WORKER] job_processing_time=4039.3ms  job=6835a9c8-6861-4df1-9f61-301084f56fc1  material=52e101fb-2038-4bcd-be67-5040c7f8fb3b  status=completed
-2026-03-01 15:49:13,569 main INFO GET /materials 200 0.01s [3e6f6ec4]
-2026-03-01 15:49:19,118 performance INFO request_performance
-2026-03-01 15:49:19,118 main INFO POST /chat/sessions 200 0.01s [7a35cfe8]
-2026-03-01 15:49:19,144 performance INFO request_performance
-2026-03-01 15:49:19,144 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [e71310b0]
-2026-03-01 15:49:19,158 performance INFO request_performance
-2026-03-01 15:49:19,159 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [6a508aa0]
-2026-03-01 15:49:19,206 app.services.agent.tools_registry INFO Registered tool: rag_tool
-2026-03-01 15:49:19,206 app.services.agent.tools_registry INFO Registered tool: quiz_tool
-2026-03-01 15:49:19,207 app.services.agent.tools_registry INFO Registered tool: flashcard_tool
-2026-03-01 15:49:19,207 app.services.agent.tools_registry INFO Registered tool: ppt_tool
-2026-03-01 15:49:19,207 app.services.agent.tools_registry INFO Registered tool: python_tool
-2026-03-01 15:49:19,207 app.services.agent.tools_registry INFO Registered tool: research_tool
-2026-03-01 15:49:19,207 app.services.agent.tools_registry INFO Initialized 6 tools: ['rag_tool', 'quiz_tool', 'flashcard_tool', 'ppt_tool', 'python_tool', 'research_tool']
-2026-03-01 15:49:19,219 app.services.agent.graph INFO Agent graph compiled successfully
-2026-03-01 15:49:19,219 performance INFO request_performance
-2026-03-01 15:49:19,253 main INFO POST /chat 200 0.10s [39dbfc29]
-2026-03-01 15:49:19,257 app.services.agent.intent INFO Detecting intent for message: give list of topics...
-2026-03-01 15:49:19,259 app.services.agent.intent INFO Keyword intent: QUESTION (confidence=0.50)
-2026-03-01 15:49:19,530 app.services.material_service INFO Background AI title updated: material=52e101fb-2038-4bcd-be67-5040c7f8fb3b  title='IaaS Definition and Characteristics'
-2026-03-01 15:49:19,543 main INFO GET /materials 200 0.01s [e754500d]
-2026-03-01 15:49:24,081 app.services.agent.intent INFO [intent] LLM fallback: CONTENT_GENERATION (confidence=0.80)
-2026-03-01 15:49:24,081 app.services.agent.planner INFO Planning execution for intent: CONTENT_GENERATION
-2026-03-01 15:49:24,084 app.services.agent.planner INFO Plan: ['rag_tool']
-2026-03-01 15:49:24,085 app.services.agent.router INFO [router] Executing | intent=CONTENT_GENERATION | step=1/1 | tool=rag_tool | iter=0 | desc='Generate requested content from materials'
-2026-03-01 15:49:24,085 app.services.agent.tools_registry INFO [rag_tool] START | user=01941404-58a5-4299-a515-7bf44eb0f16b | materials=['52e101fb-2038-4bcd-be67-5040c7f8fb3b'] | query='give list of topics'
-2026-03-01 15:49:24,087 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: give list of topics...
-2026-03-01 15:49:24,266 app.services.rag.secure_retriever INFO Retrieved 10 valid chunks
-2026-03-01 15:49:24,448 app.services.rag.secure_retriever WARNING MMR failed, continuing without diversity: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-2026-03-01 15:49:24,453 app.services.rag.reranker ERROR Failed to load reranker: Failed to import transformers.integrations.integration_utils because of the following error (look up to see its traceback):
+2026-03-01 17:39:28,733 main INFO Reranker preloaded.
+2026-03-01 17:39:28,733 main INFO Background job processor task created.
+2026-03-01 17:39:28,734 main INFO Ensuring sandbox packages are installed…
+2026-03-01 17:39:29,352 app.services.code_execution.sandbox_env INFO [sandbox_env] All 17 packages already installed
+2026-03-01 17:39:29,353 main INFO Output directories ensured.
+2026-03-01 17:39:29,353 app.services.worker INFO Background job processor started (poll_interval=2.0s, concurrent_limit=5)
+2026-03-01 17:39:31,914 main INFO POST /auth/refresh 200 0.02s [68473a09]
+2026-03-01 17:39:31,931 main INFO GET /auth/me 200 0.00s [c13285ff]
+2026-03-01 17:39:31,968 performance INFO request_performance
+2026-03-01 17:39:31,968 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [1979b2d1]
+2026-03-01 17:39:31,975 performance INFO request_performance
+2026-03-01 17:39:31,975 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [de57d615]
+2026-03-01 17:39:32,050 performance INFO request_performance
+2026-03-01 17:39:32,051 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.07s [77c51231]
+2026-03-01 17:39:32,055 main INFO GET /materials 200 0.08s [173f081b]
+2026-03-01 17:39:32,058 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.07s [85c1ee9c]
+2026-03-01 17:39:32,062 performance INFO request_performance
+2026-03-01 17:39:32,062 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.08s [dd647afd]
+2026-03-01 17:39:32,083 performance INFO request_performance
+2026-03-01 17:39:32,084 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.10s [d6c3a635]
+2026-03-01 17:39:32,084 main INFO GET /materials 200 0.01s [b40782ab]
+2026-03-01 17:39:34,788 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
+2026-03-01 17:39:35,732 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
+2026-03-01 17:39:35,732 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
+2026-03-01 17:39:37,271 main INFO POST /auth/refresh 200 0.02s [774df1d9]
+2026-03-01 17:39:37,279 main INFO GET /auth/me 200 0.00s [1149eb79]
+2026-03-01 17:39:37,296 performance INFO request_performance
+2026-03-01 17:39:37,297 main INFO GET /notebooks 200 0.00s [fdb66833]
+2026-03-01 17:39:37,302 performance INFO request_performance
+2026-03-01 17:39:37,302 main INFO GET /notebooks 200 0.00s [9d3ffc21]
+2026-03-01 17:39:38,652 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
+2026-03-01 17:39:41,050 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
+2026-03-01 17:39:41,050 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
+2026-03-01 17:39:41,059 performance INFO request_performance
+2026-03-01 17:39:41,059 main INFO GET /notebooks 200 0.01s [93b45300]
+2026-03-01 17:39:41,066 performance INFO request_performance
+2026-03-01 17:39:41,066 main INFO GET /notebooks 200 0.00s [f874d4c1]
+2026-03-01 17:39:41,802 performance INFO request_performance
+2026-03-01 17:39:41,803 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.00s [4345fca1]
+2026-03-01 17:39:41,809 performance INFO request_performance
+2026-03-01 17:39:41,809 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [5b05f26f]
+2026-03-01 17:39:41,819 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
+2026-03-01 17:39:41,829 main INFO GET /materials 200 0.01s [ccdcead2]
+2026-03-01 17:39:41,837 performance INFO request_performance
+2026-03-01 17:39:41,837 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [c59c8d3b]
+2026-03-01 17:39:41,837 performance INFO request_performance
+2026-03-01 17:39:41,837 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [d6877bd8]
+2026-03-01 17:39:41,837 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [f820f4d9]
+2026-03-01 17:39:41,839 performance INFO request_performance
+2026-03-01 17:39:41,840 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.02s [a09d7d94]
+2026-03-01 17:39:41,856 main INFO GET /materials 200 0.01s [84ab4905]
+2026-03-01 17:39:41,977 performance INFO request_performance
+2026-03-01 17:39:41,977 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [a6026731]
+2026-03-01 17:40:10,310 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [4c40bb5d]
+2026-03-01 17:40:10,319 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [e4295e4c]
+2026-03-01 17:40:32,063 performance INFO request_performance
+2026-03-01 17:40:32,063 main INFO POST /chat/sessions 200 0.01s [098680ca]
+2026-03-01 17:40:32,080 performance INFO request_performance
+2026-03-01 17:40:32,080 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [ddf69930]
+2026-03-01 17:40:32,114 performance INFO request_performance
+2026-03-01 17:40:32,114 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [8ded8427]
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Registered tool: rag_tool
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Registered tool: quiz_tool
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Registered tool: flashcard_tool
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Registered tool: ppt_tool
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Registered tool: python_tool
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Registered tool: research_tool
+2026-03-01 17:40:40,211 app.services.agent.tools_registry INFO Initialized 6 tools: ['rag_tool', 'quiz_tool', 'flashcard_tool', 'ppt_tool', 'python_tool', 'research_tool']
+2026-03-01 17:40:40,223 app.services.agent.graph INFO Agent graph compiled successfully
+2026-03-01 17:40:40,223 performance INFO request_performance
+2026-03-01 17:40:40,252 main INFO POST /chat 200 0.10s [d6bed5a1]
+2026-03-01 17:40:40,258 app.services.agent.intent INFO Detecting intent for message: what is IaaS...
+2026-03-01 17:40:40,261 app.services.agent.intent INFO Keyword intent: QUESTION (confidence=0.50)
+2026-03-01 17:40:43,010 app.services.agent.intent INFO [intent] LLM fallback: QUESTION (confidence=0.80)
+2026-03-01 17:40:43,011 app.services.agent.planner INFO Planning execution for intent: QUESTION
+2026-03-01 17:40:43,016 app.services.agent.planner INFO Plan: ['rag_tool', 'research_tool']
+2026-03-01 17:40:43,017 app.services.agent.router INFO [router] Executing | intent=QUESTION | step=1/2 | tool=rag_tool | iter=0 | desc='Search materials for answer'
+2026-03-01 17:40:43,017 app.services.agent.tools_registry INFO [rag_tool] START | user=01941404-58a5-4299-a515-7bf44eb0f16b | materials=['52e101fb-2038-4bcd-be67-5040c7f8fb3b'] | query='what is IaaS'
+2026-03-01 17:40:43,020 app.services.rag.secure_retriever INFO Single-source retrieval: top 10 chunks for query: what is IaaS...
+2026-03-01 17:40:43,214 app.services.rag.secure_retriever INFO Retrieved 9 valid chunks
+2026-03-01 17:40:43,389 app.services.rag.secure_retriever WARNING MMR failed, continuing without diversity: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2026-03-01 17:40:43,394 app.services.rag.reranker ERROR Failed to load reranker: Failed to import transformers.integrations.integration_utils because of the following error (look up to see its traceback):
 Failed to import transformers.modeling_utils because of the following error (look up to see its traceback):
 partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
-2026-03-01 15:49:24,454 app.services.rag.reranker WARNING Reranker not available, returning chunks without reranking
-2026-03-01 15:49:24,454 app.services.rag.secure_retriever INFO Reranked to top 10 chunks
-2026-03-01 15:49:24,454 app.services.rag.context_formatter INFO Formatted 10 sources with citation metadata
-2026-03-01 15:49:38,582 app.services.agent.tools_registry INFO [rag_tool] OK | elapsed=14.50s | answer_len=7410 | context_len=16635
-2026-03-01 15:49:38,582 app.services.agent.router INFO [router] Result | tool=rag_tool | success=True | output="Here's a list of topics covered in your materials, organized for clarity and easy navigation:\n\n### 1. Infrastructure as " | iter=0
-2026-03-01 15:49:38,585 app.services.agent.reflection INFO [reflect] iter=1 | tool=rag_tool | intent=CONTENT_GENERATION | steps=1/1 | retries=0 | repairs=0 | tokens=1988
-2026-03-01 15:49:38,585 app.services.agent.reflection INFO [reflect] RESPOND: all 1 plan step(s) complete
-2026-03-01 15:49:52,186 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 404 0.01s [c28770e1]
-2026-03-01 15:49:52,200 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 404 0.01s [7ac9276c]
-2026-03-01 15:50:34,610 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
-2026-03-01 15:50:34,640 main INFO POST /mindmap 200 42.43s [15005e9a]
-2026-03-01 15:50:42,017 app.services.llm_service.structured_invoker INFO Structured output validated successfully (attempt 1)
-2026-03-01 15:50:42,028 main INFO POST /mindmap 200 49.84s [959e571d]
-2026-03-01 15:51:10,321 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
-2026-03-01 15:51:10,322 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
-2026-03-01 15:51:10,703 main INFO POST /auth/refresh 200 0.02s [ae711ec6]
-2026-03-01 15:51:10,714 main INFO GET /auth/me 200 0.00s [2c4a4c03]
-2026-03-01 15:51:10,756 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
-2026-03-01 15:51:12,844 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
-2026-03-01 15:51:12,849 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
-2026-03-01 15:51:12,855 performance INFO request_performance
-2026-03-01 15:51:12,855 main INFO GET /notebooks 200 0.01s [4d5ba02c]
-2026-03-01 15:51:12,861 performance INFO request_performance
-2026-03-01 15:51:12,862 main INFO GET /notebooks 200 0.00s [562d4d8d]
-2026-03-01 15:51:13,620 performance INFO request_performance
-2026-03-01 15:51:13,620 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [d18a74fc]
-2026-03-01 15:51:13,623 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
-2026-03-01 15:51:13,626 performance INFO request_performance
-2026-03-01 15:51:13,627 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.00s [b7368017]
-2026-03-01 15:51:13,655 main INFO GET /materials 200 0.02s [17dc7cdb]
-2026-03-01 15:51:13,659 performance INFO request_performance
-2026-03-01 15:51:13,659 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [ed8ba168]
-2026-03-01 15:51:13,663 performance INFO request_performance
-2026-03-01 15:51:13,665 performance INFO request_performance
-2026-03-01 15:51:13,665 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.03s [dc661333]
-2026-03-01 15:51:13,665 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.03s [3f8d3d31]
-2026-03-01 15:51:13,666 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.03s [52ebae54]
-2026-03-01 15:51:13,686 main INFO GET /materials 200 0.01s [cd6212c6]
-2026-03-01 15:51:13,787 performance INFO request_performance
-2026-03-01 15:51:13,787 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [10720ce4]
-2026-03-01 15:55:16,250 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [4f419d01]
-2026-03-01 15:55:16,253 performance INFO request_performance
-2026-03-01 15:55:16,254 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.01s [c172bb14]
-2026-03-01 15:55:25,231 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [7d807707]
-2026-03-01 15:55:25,236 performance INFO request_performance
-2026-03-01 15:55:25,237 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.02s [c107544c]
-2026-03-01 16:04:10,746 main INFO POST /auth/refresh 200 0.02s [7d579fe5]
-2026-03-01 16:05:12,697 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [7a2a4168]
-2026-03-01 16:05:12,710 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [27d842c7]
-2026-03-01 16:17:10,772 main INFO POST /auth/refresh 200 0.02s [1a441b67]
-2026-03-01 16:17:47,675 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
-2026-03-01 16:17:47,676 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
-2026-03-01 16:17:48,535 main INFO POST /auth/refresh 200 0.01s [8added20]
-2026-03-01 16:17:48,549 main INFO GET /auth/me 200 0.00s [217ca6b4]
-2026-03-01 16:17:48,592 performance INFO request_performance
-2026-03-01 16:17:48,592 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [9355a24c]
-2026-03-01 16:17:48,597 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
-2026-03-01 16:17:48,600 performance INFO request_performance
-2026-03-01 16:17:48,600 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [0fea39a7]
-2026-03-01 16:17:48,625 main INFO GET /materials 200 0.01s [e746bed9]
-2026-03-01 16:17:48,630 performance INFO request_performance
-2026-03-01 16:17:48,630 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [8c63ff1f]
-2026-03-01 16:17:48,655 main INFO GET /materials 200 0.01s [59432e34]
-2026-03-01 16:17:48,693 performance INFO request_performance
-2026-03-01 16:17:48,694 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.08s [008caf21]
-2026-03-01 16:17:48,698 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.08s [2c1f9b7a]
-2026-03-01 16:17:48,701 performance INFO request_performance
-2026-03-01 16:17:48,701 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.08s [152fdaa2]
+2026-03-01 17:40:43,395 app.services.rag.reranker WARNING Reranker not available, returning chunks without reranking
+2026-03-01 17:40:43,395 app.services.rag.secure_retriever INFO Reranked to top 9 chunks
+2026-03-01 17:40:43,395 app.services.rag.context_formatter INFO Formatted 9 sources with citation metadata
+2026-03-01 17:40:49,472 app.services.agent.tools_registry INFO [rag_tool] OK | elapsed=6.45s | answer_len=3555 | context_len=14948
+2026-03-01 17:40:49,472 app.services.agent.router INFO [router] Result | tool=rag_tool | success=True | output='IaaS, or **Infrastructure as a Service**, is a cloud computing service model that provides users with access to fundamen' | iter=0
+2026-03-01 17:40:49,475 app.services.agent.reflection INFO [reflect] iter=1 | tool=rag_tool | intent=QUESTION | steps=1/2 | retries=0 | repairs=0 | tokens=1040
+2026-03-01 17:40:49,475 app.services.agent.reflection INFO [reflect] CONTINUE: next step 2/2
+2026-03-01 17:40:49,478 app.services.agent.router INFO [router] Skipping conditional step 'research_tool' — previous tool had results
+2026-03-01 17:40:49,480 app.services.agent.reflection INFO [reflect] iter=2 | tool=rag_tool | intent=QUESTION | steps=2/2 | retries=0 | repairs=0 | tokens=1040
+2026-03-01 17:40:49,480 app.services.agent.reflection INFO [reflect] RESPOND: all 2 plan step(s) complete
+2026-03-01 17:41:21,452 app.routes.upload INFO Batch upload started: 1 files user=01941404-58a5-4299-a515-7bf44eb0f16b
+2026-03-01 17:41:21,454 app.routes.upload INFO Batch stream: 0.9ms  file=Covid cases in India (1).xlsx  size=14940 bytes
+2026-03-01 17:41:21,461 app.services.file_validator INFO File validation passed: Covid cases in India (1).xlsx → f5061e381f604b6d9c58d1215f5f053b.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, 14940 bytes)
+2026-03-01 17:41:21,462 app.routes.upload INFO Validation passed: Covid cases in India (1).xlsx -> f5061e381f604b6d9c58d1215f5f053b.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+2026-03-01 17:41:21,470 app.services.material_service INFO Created material record 3d3a9d0f-c09a-4a39-b8fc-142f30878875 (pending) for user 01941404-58a5-4299-a515-7bf44eb0f16b
+2026-03-01 17:41:21,473 app.services.job_service INFO Created background job 9dd4fb53-aa73-4037-ab0a-5ccd99b3109b type=material_processing for user=01941404-58a5-4299-a515-7bf44eb0f16b
+2026-03-01 17:41:21,474 main INFO POST /upload/batch 202 0.03s [999ef680]
+2026-03-01 17:41:21,477 app.services.worker INFO Processing job 9dd4fb53-aa73-4037-ab0a-5ccd99b3109b | material=3d3a9d0f-c09a-4a39-b8fc-142f30878875 type=file user=01941404-58a5-4299-a515-7bf44eb0f16b
+2026-03-01 17:41:21,482 app.services.text_processing.extractor INFO Extracting file: /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/uploads/01941404-58a5-4299-a515-7bf44eb0f16b/eed36854540541fe82e2f4f24c8d1920_Covid cases in India (1).xlsx  ext=xlsx  mime=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet  category=document
+2026-03-01 17:41:21,484 app.services.material_service INFO PERF extraction: 1.8ms  material=3d3a9d0f-c09a-4a39-b8fc-142f30878875  category=document
+2026-03-01 17:41:21,484 app.services.material_service ERROR Material 3d3a9d0f-c09a-4a39-b8fc-142f30878875 failed: Extraction failed: Spreadsheet extraction failed: Pandas requires version '3.1.5' or newer of 'openpyxl' (version '3.1.2' currently installed).
+2026-03-01 17:41:21,490 app.services.worker INFO [WORKER] job_processing_time=9.9ms  job=9dd4fb53-aa73-4037-ab0a-5ccd99b3109b  material=3d3a9d0f-c09a-4a39-b8fc-142f30878875  status=completed
+2026-03-01 17:41:21,516 main INFO GET /materials 200 0.00s [4a86e916]
+2026-03-01 17:41:25,085 app.services.storage_service WARNING Material text not found: 3d3a9d0f-c09a-4a39-b8fc-142f30878875
+2026-03-01 17:41:25,086 main INFO GET /materials/3d3a9d0f-c09a-4a39-b8fc-142f30878875/text 404 0.01s [1c2bf2a1]
+2026-03-01 17:41:28,881 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
+2026-03-01 17:41:28,882 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
+2026-03-01 17:41:29,244 main INFO POST /auth/refresh 200 0.01s [c1a02e93]
+2026-03-01 17:41:29,252 main INFO GET /auth/me 200 0.00s [c039729a]
+2026-03-01 17:41:29,286 performance INFO request_performance
+2026-03-01 17:41:29,286 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [88853518]
+2026-03-01 17:41:29,297 performance INFO request_performance
+2026-03-01 17:41:29,297 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [d32b4c5d]
+2026-03-01 17:41:29,301 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
+2026-03-01 17:41:29,320 main INFO GET /materials 200 0.02s [2ce33f3a]
+2026-03-01 17:41:29,327 performance INFO request_performance
+2026-03-01 17:41:29,328 performance INFO request_performance
+2026-03-01 17:41:29,328 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [a29003ce]
+2026-03-01 17:41:29,328 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [9ea5e75c]
+2026-03-01 17:41:29,329 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.02s [d3681b7f]
+2026-03-01 17:41:29,332 performance INFO request_performance
+2026-03-01 17:41:29,333 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.03s [bccb3a43]
+2026-03-01 17:41:29,355 main INFO GET /materials 200 0.01s [068f0f24]
+2026-03-01 17:41:37,489 app.services.material_service INFO Deleted ChromaDB embeddings for material 3d3a9d0f-c09a-4a39-b8fc-142f30878875
+2026-03-01 17:41:37,490 app.services.storage_service WARNING Material text not found for deletion: 3d3a9d0f-c09a-4a39-b8fc-142f30878875
+2026-03-01 17:41:37,491 app.services.material_service INFO Deleted text storage for material 3d3a9d0f-c09a-4a39-b8fc-142f30878875
+2026-03-01 17:41:37,491 app.services.material_service INFO Deleted upload file: /disk2/Projects/KeplerLab-AI-Notebook/backend/./data/uploads/01941404-58a5-4299-a515-7bf44eb0f16b/eed36854540541fe82e2f4f24c8d1920_Covid cases in India (1).xlsx
+2026-03-01 17:41:37,498 app.services.material_service INFO Deleted material record 3d3a9d0f-c09a-4a39-b8fc-142f30878875
+2026-03-01 17:41:37,499 main INFO DELETE /materials/3d3a9d0f-c09a-4a39-b8fc-142f30878875 200 0.02s [d10cde87]
+2026-03-01 17:41:37,528 main INFO GET /materials 200 0.01s [a91718e9]
+2026-03-01 17:41:39,232 performance INFO request_performance
+2026-03-01 17:41:39,233 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.00s [fc0e2296]
+2026-03-01 17:41:39,242 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
+2026-03-01 17:41:39,243 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
+2026-03-01 17:41:39,251 performance INFO request_performance
+2026-03-01 17:41:39,251 main INFO GET /notebooks 200 0.01s [ad8629dc]
+2026-03-01 17:41:39,260 performance INFO request_performance
+2026-03-01 17:41:39,260 main INFO GET /notebooks 200 0.01s [7cf50170]

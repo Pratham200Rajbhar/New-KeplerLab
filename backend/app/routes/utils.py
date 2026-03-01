@@ -72,7 +72,7 @@ async def require_material_text(material_id: str, user_id) -> str:
     Raises:
         HTTPException: 404 if material not found, 400 if no text content.
     """
-    await require_material(material_id, user_id, require_text=True)
+    await require_material(material_id, user_id, require_text=False)
     
     from app.services.material_service import get_material_text
     text = await get_material_text(str(material_id), str(user_id))

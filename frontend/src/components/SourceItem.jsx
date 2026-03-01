@@ -222,8 +222,8 @@ export default memo(function SourceItem({ source, checked, active, anySelected, 
     return (
         <div
             className={`source-item group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors border border-transparent 
-            ${checked ? 'bg-[#2A2D35]' : 'hover:bg-[#20222A]'} 
-            ${isProcessing ? 'bg-[#2A2D35]/50' : ''}`}
+            ${checked ? 'bg-surface-overlay' : 'hover:bg-surface-100'} 
+            ${isProcessing ? 'bg-surface-overlay/50' : ''}`}
         >
             {/* Icon with type color (Left) */}
             <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border backdrop-blur-sm shadow-inner ${getSourceTypeColor(sourceType, source.filename)} ${isProcessing ? 'animate-pulse' : ''} ${isFailed ? 'grayscale opacity-50' : ''}`}>
@@ -266,7 +266,7 @@ export default memo(function SourceItem({ source, checked, active, anySelected, 
                         setMenuOpen((o) => !o);
                     }}
                     title="More actions"
-                    className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-[#3A3F4B] transition-colors"
+                    className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-surface-100 transition-colors"
                 >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="6" r="1.5" />
@@ -276,12 +276,12 @@ export default memo(function SourceItem({ source, checked, active, anySelected, 
                 </button>
                 {menuOpen && (
                     <div
-                        className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-xl bg-[#20222A] border border-[#3A3F4B] shadow-xl"
+                        className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-xl bg-surface-100 border border-border-strong shadow-xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
                             onClick={handleSeeText}
-                            className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-[#2A2D35] hover:text-white flex items-center gap-2"
+                            className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-surface-overlay hover:text-white flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -291,7 +291,7 @@ export default memo(function SourceItem({ source, checked, active, anySelected, 
                         </button>
                         <button
                             onClick={handleRename}
-                            className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-[#2A2D35] hover:text-white flex items-center gap-2"
+                            className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-surface-overlay hover:text-white flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -324,7 +324,7 @@ export default memo(function SourceItem({ source, checked, active, anySelected, 
                     onClick={(e) => { e.stopPropagation(); onToggle(source); }}
                     className={`flex-shrink-0 w-4 h-4 mt-0.5 rounded-[4px] border flex items-center justify-center transition-colors ${checked
                         ? 'bg-transparent border-white text-white'
-                        : 'border-[#4A4E58] bg-transparent hover:border-gray-400'
+                        : 'border-border-strong bg-transparent hover:border-gray-400'
                         }`}
                     title={checked ? 'Deselect' : 'Select'}
                     disabled={isFailed}

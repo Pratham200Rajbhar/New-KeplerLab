@@ -127,7 +127,7 @@ function StepCard({ step, idx, isLiveRunning = false }) {
                                 <SyntaxHighlighter
                                     language="python"
                                     style={oneDark}
-                                    customStyle={{ margin: 0, padding: '10px 12px', fontSize: '11.5px', lineHeight: '1.6', background: '#1a1b26' }}
+                                    customStyle={{ margin: 0, padding: '10px 12px', fontSize: '11.5px', lineHeight: '1.6', background: 'var(--surface-sunken)' }}
                                 >
                                     {step.code}
                                 </SyntaxHighlighter>

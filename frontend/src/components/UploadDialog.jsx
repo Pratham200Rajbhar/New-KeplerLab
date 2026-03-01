@@ -496,9 +496,9 @@ const UploadDialog = ({ isOpen, onClose, currentNotebook, draftMode, onMaterialA
                     <div
                         className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium animate-fade-up"
                         style={{
-                            background: toast.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
-                            border: `1px solid ${toast.type === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
-                            color: toast.type === 'error' ? '#fca5a5' : '#86efac',
+                            background: toast.type === 'error' ? 'var(--danger-subtle, rgba(239,68,68,0.15))' : 'var(--success-subtle, rgba(34,197,94,0.15))',
+                            border: `1px solid ${toast.type === 'error' ? 'var(--danger-border, rgba(239,68,68,0.3))' : 'var(--success-border, rgba(34,197,94,0.3))'}`,
+                            color: toast.type === 'error' ? 'var(--danger-light, #fca5a5)' : 'var(--success-light, #86efac)',
                             backdropFilter: 'blur(12px)',
                         }}
                     >
@@ -515,7 +515,7 @@ const UploadDialog = ({ isOpen, onClose, currentNotebook, draftMode, onMaterialA
 
                 {/* ── LOADING OVERLAY ── */}
                 {loading && (
-                    <div className="absolute inset-0 rounded-2xl flex items-center justify-center z-10" style={{ background: 'rgba(17,17,24,0.6)', backdropFilter: 'blur(2px)' }}>
+                    <div className="absolute inset-0 rounded-2xl flex items-center justify-center z-10" style={{ background: 'var(--backdrop, rgba(17,17,24,0.6))', backdropFilter: 'blur(2px)' }}>
                         <div className="flex flex-col items-center gap-3">
                             <div className="loading-spinner w-8 h-8" />
                             <p className="text-sm text-text-secondary">Processing your source…</p>

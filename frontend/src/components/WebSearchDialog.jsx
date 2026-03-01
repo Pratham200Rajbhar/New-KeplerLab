@@ -108,8 +108,8 @@ export default function WebSearchDialog({
         >
             <div className="flex gap-6 h-[60vh] min-h-[450px]">
                 {/* Left Side: Results List */}
-                <div className="w-[55%] flex flex-col h-full border-r border-[#3A3F4B]/50 pr-6">
-                    <div className="flex justify-between items-center pb-4 border-b border-[#3A3F4B]/50 shrink-0">
+                <div className="w-[55%] flex flex-col h-full border-r border-border-strong/50 pr-6">
+                    <div className="flex justify-between items-center pb-4 border-b border-border-strong/50 shrink-0">
                         <p className="text-sm text-gray-400">
                             Results for <span className="text-blue-400 font-medium font-mono">"{query}"</span>
                         </p>
@@ -167,14 +167,14 @@ export default function WebSearchDialog({
                                                 setPreviewResult(result);
                                             }}
                                             className={`p-3 rounded-xl border transition-all cursor-pointer group 
-                                                ${isSelected ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-[#2A2D35]/40 border-[#3A3F4B]/50 hover:bg-[#2C3039] hover:border-[#3A3F4B]'}
+                                                ${isSelected ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-surface-overlay/40 border-border-strong/50 hover:bg-surface-overlay hover:border-border-strong'}
                                                 ${isPreviewed && !isSelected ? 'ring-1 ring-blue-500/20' : ''}
                                             `}
                                         >
                                             <div className="flex items-center gap-3.5">
                                                 <div className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${isSelected
                                                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/40'
-                                                    : 'border-[#4A4E58] bg-[#1C1E26] group-hover:border-gray-400'
+                                                    : 'border-border-strong bg-surface-100 group-hover:border-gray-400'
                                                     }`}>
                                                     {isSelected && (
                                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
@@ -219,7 +219,7 @@ export default function WebSearchDialog({
                 {/* Right Side: Preview Panel */}
                 <div className="w-[45%] flex flex-col h-full pl-0">
                     {previewResult ? (
-                        <div className="flex flex-col h-full min-h-0 bg-gradient-to-br from-[#2A2D35]/80 to-[#1C1E26]/80 rounded-2xl border border-[#3A3F4B]/50 overflow-hidden relative shadow-inner">
+                        <div className="flex flex-col h-full min-h-0 bg-gradient-to-br from-surface-overlay/80 to-surface-100/80 rounded-2xl border border-border-strong/50 overflow-hidden relative shadow-inner">
                             {/* Decorative background blur */}
                             <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl pointer-events-none transform translate-x-10 -translate-y-10"></div>
 
@@ -228,7 +228,7 @@ export default function WebSearchDialog({
                                     <img
                                         src={`https://www.google.com/s2/favicons?sz=64&domain=${getDomain(previewResult.link)}`}
                                         alt=""
-                                        className="w-10 h-10 rounded-lg bg-white/5 object-contain p-1 border border-[#3A3F4B]/50"
+                                        className="w-10 h-10 rounded-lg bg-white/5 object-contain p-1 border border-border-strong/50"
                                         onError={(e) => { e.target.style.display = 'none'; }}
                                     />
                                     <div className="min-w-0">
@@ -240,7 +240,7 @@ export default function WebSearchDialog({
                                 <h3 className="text-[19px] font-bold text-white mb-4 leading-snug">
                                     {previewResult.title}
                                 </h3>
-                                <div className="mb-6 pb-6 border-b border-[#3A3F4B]/50">
+                                <div className="mb-6 pb-6 border-b border-border-strong/50">
                                     <p className="text-[14.5px] text-gray-300 leading-[1.7] antialiased">
                                         {previewResult.snippet || "No additional snippet available for this resource."}
                                     </p>
@@ -253,7 +253,7 @@ export default function WebSearchDialog({
                                             href={viewerHref(previewResult.link)}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#2A2D35] hover:bg-blue-600/20 hover:border-blue-500/50 hover:text-blue-300 text-gray-300 text-[14px] font-semibold rounded-xl transition-all border border-[#3A3F4B]/80 group"
+                                            className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 bg-surface-overlay hover:bg-blue-600/20 hover:border-blue-500/50 hover:text-blue-300 text-gray-300 text-[14px] font-semibold rounded-xl transition-all border border-border-strong/80 group"
                                         >
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -270,7 +270,7 @@ export default function WebSearchDialog({
                                             href={previewResult.link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#2A2D35] hover:bg-blue-600/20 hover:border-blue-500/50 hover:text-blue-300 text-gray-300 text-[14px] font-semibold rounded-xl transition-all border border-[#3A3F4B]/80 group"
+                                            className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 bg-surface-overlay hover:bg-blue-600/20 hover:border-blue-500/50 hover:text-blue-300 text-gray-300 text-[14px] font-semibold rounded-xl transition-all border border-border-strong/80 group"
                                         >
                                             <span>Visit Website</span>
                                             <svg className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -282,8 +282,8 @@ export default function WebSearchDialog({
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-[#2A2D35]/10 rounded-2xl border border-dashed border-[#3A3F4B]/50">
-                            <div className="w-16 h-16 bg-[#2A2D35]/40 rounded-full flex items-center justify-center mb-4 transition-transform duration-500 hover:scale-110">
+                        <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-surface-overlay/10 rounded-2xl border border-dashed border-border-strong/50">
+                            <div className="w-16 h-16 bg-surface-overlay/40 rounded-full flex items-center justify-center mb-4 transition-transform duration-500 hover:scale-110">
                                 <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />

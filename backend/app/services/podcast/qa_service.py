@@ -16,7 +16,7 @@ import asyncio
 import logging
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from app.db.prisma_client import get_prisma
@@ -176,5 +176,5 @@ async def resolve_doubt(doubt_id: str) -> None:
     db = get_prisma()
     await db.podcastdoubt.update(
         where={"id": doubt_id},
-        data={"resolvedAt": datetime.utcnow()},
+        data={"resolvedAt": datetime.now(timezone.utc)},
     )

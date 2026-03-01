@@ -13,13 +13,14 @@ import GeneratedFileCard from './chat/GeneratedFileCard';
 import ExecutionPanel from './chat/ExecutionPanel';
 import ChartRenderer from './chat/ChartRenderer';
 import BlockHoverMenu from './chat/BlockHoverMenu';
+import CommandBadge from './chat/CommandBadge';
 
 // Custom code theme — dark, clean, modern
 const customCodeTheme = {
     ...oneDark,
     'pre[class*="language-"]': {
         ...oneDark['pre[class*="language-"]'],
-        background: '#1a1b26',
+        background: 'var(--surface-sunken)',
         borderRadius: '0 0 12px 12px',
         margin: 0,
         padding: '16px',
@@ -549,6 +550,11 @@ export default memo(function ChatMessage({ message, notebookId }) {
             <div className="chat-msg chat-msg-user flex justify-end py-3">
                 <div className="max-w-[80%] sm:max-w-[70%]">
                     <div className="user-bubble">
+                        {message.slashCommand && (
+                            <div className="mb-1.5">
+                                <CommandBadge command={message.slashCommand} small />
+                            </div>
+                        )}
                         <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{message.content}</p>
                     </div>
                 </div>

@@ -393,6 +393,8 @@ async def block_followup(
             },
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Block followup failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to process block followup")

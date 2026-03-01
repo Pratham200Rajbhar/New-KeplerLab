@@ -83,8 +83,10 @@ async def generate_presentation(
     # ── Step 2: Invoke LLM with validation ────────────────
     t1 = time.time()
     try:
-        result: PresentationHTMLOutput = invoke_structured(
-            prompt, PresentationHTMLOutput, max_retries=2
+        # Run sync LLM call in executor to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        result: PresentationHTMLOutput = await loop.run_in_executor(
+            None, invoke_structured, prompt, PresentationHTMLOutput, 2
         )
     except Exception as exc:
         llm_time = time.time() - t1
@@ -110,7 +112,7 @@ async def generate_presentation(
     t2 = time.time()
     try:
         # Run CPU-bound HTML parsing in a thread to avoid blocking the event loop
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         slides_data = await loop.run_in_executor(None, extract_slides, html)
     except Exception as exc:
         logger.error("PPT slide extraction FAILED: %s", exc)

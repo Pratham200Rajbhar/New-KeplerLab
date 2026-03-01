@@ -66,7 +66,7 @@ try:
 
     def _capture_show(*args, **kwargs):
         buf = io.BytesIO()
-        _plt_orig.savefig(buf, format="png", bbox_inches="tight", dpi=72)
+        _plt_orig.savefig(buf, format="png", bbox_inches="tight", dpi=100)
         buf.seek(0)
         b64 = base64.b64encode(buf.read()).decode("utf-8")
         print(f"__CHART_BASE64__{{b64}}__END_CHART__")

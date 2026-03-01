@@ -422,8 +422,11 @@ async def upload_url(
         hostname = parsed.hostname
         if not hostname:
             raise HTTPException(status_code=400, detail="Invalid URL: no hostname")
-        # Resolve hostname to IP and check for private ranges
-        resolved_ips = socket.getaddrinfo(hostname, None)
+        # Resolve hostname to IP and check for private ranges (non-blocking)
+        loop = asyncio.get_running_loop()
+        resolved_ips = await loop.run_in_executor(
+            None, socket.getaddrinfo, hostname, None
+        )
         for _, _, _, _, addr in resolved_ips:
             ip = ipaddress.ip_address(addr[0])
             if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
