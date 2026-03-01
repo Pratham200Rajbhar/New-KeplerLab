@@ -142,3 +142,21 @@ partially initialized module 'torchvision' has no attribute 'extension' (most li
 2026-03-01 16:05:12,697 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [7a2a4168]
 2026-03-01 16:05:12,710 main INFO GET /mindmap/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [27d842c7]
 2026-03-01 16:17:10,772 main INFO POST /auth/refresh 200 0.02s [1a441b67]
+2026-03-01 16:17:47,675 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b disconnected
+2026-03-01 16:17:47,676 app.services.ws_manager INFO WS disconnect: user=01941404-58a5-4299-a515-7bf44eb0f16b  remaining=0
+2026-03-01 16:17:48,535 main INFO POST /auth/refresh 200 0.01s [8added20]
+2026-03-01 16:17:48,549 main INFO GET /auth/me 200 0.00s [217ca6b4]
+2026-03-01 16:17:48,592 performance INFO request_performance
+2026-03-01 16:17:48,592 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [9355a24c]
+2026-03-01 16:17:48,597 app.routes.websocket_router INFO WS /ws/jobs/01941404-58a5-4299-a515-7bf44eb0f16b connected
+2026-03-01 16:17:48,600 performance INFO request_performance
+2026-03-01 16:17:48,600 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [0fea39a7]
+2026-03-01 16:17:48,625 main INFO GET /materials 200 0.01s [e746bed9]
+2026-03-01 16:17:48,630 performance INFO request_performance
+2026-03-01 16:17:48,630 main INFO GET /chat/history/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.01s [8c63ff1f]
+2026-03-01 16:17:48,655 main INFO GET /materials 200 0.01s [59432e34]
+2026-03-01 16:17:48,693 performance INFO request_performance
+2026-03-01 16:17:48,694 main INFO GET /chat/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.08s [008caf21]
+2026-03-01 16:17:48,698 main INFO GET /podcast/sessions/ea151b11-f632-4e33-a6d5-241ac9555162 200 0.08s [2c1f9b7a]
+2026-03-01 16:17:48,701 performance INFO request_performance
+2026-03-01 16:17:48,701 main INFO GET /notebooks/ea151b11-f632-4e33-a6d5-241ac9555162/content 200 0.08s [152fdaa2]
